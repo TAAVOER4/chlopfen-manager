@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -28,16 +27,14 @@ const Index = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="text-center mb-4">
+      <div className="text-center mb-6">
         <h1 className="text-4xl font-bold text-swiss-blue mb-2">Wettchlöpfen Manager</h1>
         <div className="flex justify-center mb-4">
-          <div className="bg-white p-4 rounded-lg shadow-md max-w-md">
-            <img 
-              src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
-              alt="Wettchlöpfen" 
-              className="mx-auto h-48 object-contain"
-            />
-          </div>
+          <img 
+            src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
+            alt="Wettchlöpfen" 
+            className="h-48 object-contain"
+          />
         </div>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Digitale Verwaltung und Bewertung für Wettchlöpfen-Turniere
