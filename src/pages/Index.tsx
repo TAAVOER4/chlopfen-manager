@@ -7,11 +7,12 @@ import {
   BarChart, 
   Calendar,
   User,
-  UsersRound
+  UsersRound,
+  Group
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockParticipants } from '../data/mockData';
+import { mockParticipants, mockGroups } from '../data/mockData';
 import { getCategoryDisplay, getCategoryClass } from '../utils/categoryUtils';
 
 const Index = () => {
@@ -45,6 +46,12 @@ const Index = () => {
     }>
   );
 
+  // Group statistics
+  const totalGroups = mockGroups.length;
+  const threePersonGroups = mockGroups.filter(g => g.size === 'three').length;
+  const fourPersonGroups = mockGroups.filter(g => g.size === 'four').length;
+
+  // Participant statistics
   const totalParticipants = mockParticipants.length;
   const individualParticipants = mockParticipants.filter(p => !p.isGroupOnly).length;
   const groupOnlyParticipants = mockParticipants.filter(p => p.isGroupOnly).length;
@@ -86,8 +93,8 @@ const Index = () => {
         </p>
       </div>
 
-      {/* Overview Cards - Total Participants */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -126,6 +133,20 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="text-2xl font-bold">{groupOnlyParticipants}</div>
               <UsersRound className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Gruppen Total
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{totalGroups}</div>
+              <Group className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -201,6 +222,37 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
               <div className="font-medium">{participantsByCategory['active']?.groupOnly.length || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Group Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <span>Dreiergruppen</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Anzahl:</div>
+              <div className="text-2xl font-bold">{threePersonGroups}</div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <span>Vierergruppen</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Anzahl:</div>
+              <div className="text-2xl font-bold">{fourPersonGroups}</div>
             </div>
           </CardContent>
         </Card>
