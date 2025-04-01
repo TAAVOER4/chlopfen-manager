@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, X, UserRound, RefreshCw, Trash } from 'lucide-react';
@@ -41,7 +40,7 @@ import { mockGroups, mockParticipants } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Participant, Category, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { generateGroupName } from '../../utils/groupUtils';
+import { generateGroupName, isDuplicateGroup } from '../../utils/groupUtils';
 
 // Schema for group registration form
 const groupSchema = z.object({
@@ -226,9 +225,22 @@ const EditGroup = () => {
       return;
     }
     
+    // Get participant IDs for checking duplicates
+    const participantIds = selectedParticipants.map(p => p.id);
+    
+    // Check if a duplicate group exists, excluding this group
+    if (isDuplicateGroup(participantIds, group.id)) {
+      toast({
+        title: "Doppelte Gruppe",
+        description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Get old participant IDs to remove group association
     const oldParticipantIds = group.participantIds || [];
-    const newParticipantIds = selectedParticipants.map(p => p.id);
+    const newParticipantIds = participantIds;
     
     // Remove participants who are no longer in the group
     oldParticipantIds.forEach(oldId => {

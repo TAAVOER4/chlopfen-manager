@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, UserRound, RefreshCw } from 'lucide-react';
@@ -21,7 +20,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -34,7 +32,7 @@ import { mockGroups, mockParticipants } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { Participant, Category, GroupSize } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { generateGroupName } from '../../utils/groupUtils';
+import { generateGroupName, isDuplicateGroup } from '../../utils/groupUtils';
 
 // Schema for group registration form
 const groupSchema = z.object({
@@ -157,6 +155,17 @@ const RegisterGroup = () => {
       toast({
         title: "Falsche Anzahl an Teilnehmern",
         description: `Eine ${data.size === 'three' ? 'Dreier' : 'Vierer'}gruppe muss genau ${requiredParticipants} Teilnehmer haben.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if a duplicate group already exists
+    const participantIds = selectedParticipants.map(p => p.id);
+    if (isDuplicateGroup(participantIds)) {
+      toast({
+        title: "Doppelte Gruppe",
+        description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
         variant: "destructive"
       });
       return;
