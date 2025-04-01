@@ -75,6 +75,9 @@ export const mockGroups: Group[] = [
   }
 ];
 
+// Default password hash (for the password "password")
+const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+
 // Mock Judges
 export const mockJudges: Judge[] = [
   { 
@@ -82,6 +85,7 @@ export const mockJudges: Judge[] = [
     name: 'Hans Fischer', 
     username: 'hans', 
     role: 'admin',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipStrikes'
     }
@@ -91,6 +95,7 @@ export const mockJudges: Judge[] = [
     name: 'Maria Gerber', 
     username: 'maria', 
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'rhythm'
     }
@@ -100,6 +105,7 @@ export const mockJudges: Judge[] = [
     name: 'Peter Keller', 
     username: 'peter', 
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'stance'
     }
@@ -109,6 +115,7 @@ export const mockJudges: Judge[] = [
     name: 'Christine Wagner', 
     username: 'christine', 
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'posture'
     }
@@ -118,6 +125,7 @@ export const mockJudges: Judge[] = [
     name: 'Thomas Schneider', 
     username: 'thomas', 
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipControl'
     }
