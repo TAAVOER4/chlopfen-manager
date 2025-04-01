@@ -23,7 +23,14 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from '@/components/ui/dialog';
 import { mockParticipants } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { Category, Participant } from '../../types';
@@ -47,11 +54,7 @@ const JudgingPage = () => {
     return initialParticipants;
   });
   const [draggingCategory, setDraggingCategory] = useState<Category | null>(null);
-  const [isShowingOrderingTools, setIsShowingOrderingTools] = useState<Record<string, boolean>>({
-    kids: false,
-    juniors: false,
-    active: false
-  });
+  const [activeReorderCategory, setActiveReorderCategory] = useState<Category | null>(null);
   
   const { toast } = useToast();
   const { isAdmin } = useUser();
@@ -111,11 +114,8 @@ const JudgingPage = () => {
     setDraggingCategory(null);
   };
 
-  const toggleOrderingTools = (category: Category) => {
-    setIsShowingOrderingTools(prev => ({
-      ...prev, 
-      [category]: !prev[category]
-    }));
+  const openReorderDialog = (category: Category) => {
+    setActiveReorderCategory(category);
   };
 
   const updateParticipantOrder = (category: Category, participantId: string, newPosition: number) => {
@@ -195,7 +195,7 @@ const JudgingPage = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => toggleOrderingTools(category)}
+                              onClick={() => openReorderDialog(category)}
                               className="ml-2"
                             >
                               <Move className="h-4 w-4" />
@@ -211,56 +211,6 @@ const JudgingPage = () => {
                           {category === 'kids' ? '17 Schläge' : 
                            category === 'juniors' ? '23 Schläge' : '33 Schläge'}
                         </p>
-
-                        {isAdmin && isShowingOrderingTools[category] && (
-                          <Collapsible open={true} className="border rounded-md p-2 bg-muted/50">
-                            <CollapsibleContent className="space-y-2">
-                              <p className="text-sm font-medium">Reihenfolge anpassen</p>
-                              
-                              <div className="space-y-2">
-                                {participants.map((participant, index) => (
-                                  <div 
-                                    key={participant.id}
-                                    draggable
-                                    onDragStart={e => handleDragStart(e, index, category)}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={e => handleDrop(e, index, category)}
-                                    className={`flex items-center justify-between p-2 rounded-md border ${draggingCategory === category ? 'cursor-grab' : ''}`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <Move className="h-4 w-4 text-muted-foreground cursor-grab" />
-                                      <span>{participant.firstName} {participant.lastName}</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        min={1}
-                                        max={participants.length}
-                                        defaultValue={index + 1}
-                                        className="w-16 h-8 text-center border rounded-md"
-                                        onBlur={(e) => {
-                                          const val = parseInt(e.target.value);
-                                          if (!isNaN(val)) {
-                                            updateParticipantOrder(category, participant.id, val);
-                                          }
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            const val = parseInt((e.target as HTMLInputElement).value);
-                                            if (!isNaN(val)) {
-                                              updateParticipantOrder(category, participant.id, val);
-                                            }
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        )}
                       </CardContent>
                       <CardFooter>
                         <Button asChild className="w-full">
@@ -337,6 +287,68 @@ const JudgingPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Reorder Participants Dialog */}
+      <Dialog open={activeReorderCategory !== null} onOpenChange={(open) => !open && setActiveReorderCategory(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Reihenfolge anpassen - {activeReorderCategory ? getCategoryDisplay(activeReorderCategory) : ''}
+            </DialogTitle>
+            <DialogDescription>
+              Teilnehmer per Drag & Drop oder durch Eingabe einer Positionsnummer neu anordnen.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto py-2">
+            {activeReorderCategory && participantsByCategory[activeReorderCategory]?.map((participant, index) => (
+              <div 
+                key={participant.id}
+                draggable
+                onDragStart={e => handleDragStart(e, index, activeReorderCategory)}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={e => handleDrop(e, index, activeReorderCategory)}
+                className={`flex items-center justify-between p-3 rounded-md border ${draggingCategory === activeReorderCategory ? 'cursor-grab' : ''} hover:bg-accent/50`}
+              >
+                <div className="flex items-center gap-2">
+                  <Move className="h-4 w-4 text-muted-foreground cursor-grab" />
+                  <span>{participant.firstName} {participant.lastName}</span>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={participantsByCategory[activeReorderCategory].length}
+                    defaultValue={index + 1}
+                    className="w-16 h-8 text-center border rounded-md"
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val)) {
+                        updateParticipantOrder(activeReorderCategory, participant.id, val);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = parseInt((e.target as HTMLInputElement).value);
+                        if (!isNaN(val)) {
+                          updateParticipantOrder(activeReorderCategory, participant.id, val);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end mt-4">
+            <DialogClose asChild>
+              <Button>Fertig</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
