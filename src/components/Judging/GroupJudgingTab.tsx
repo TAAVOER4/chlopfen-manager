@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -68,6 +68,14 @@ const GroupJudgingTab = () => {
     }
   };
 
+  // Create an array of card configurations based on the requested layout
+  const cardConfigs = [
+    { categoryLabel: 'Kids/Junioren', size: 'three' as GroupSize, category: 'kids' as Category },
+    { categoryLabel: 'Kids/Junioren', size: 'four' as GroupSize, category: 'juniors' as Category },
+    { categoryLabel: 'Aktive', size: 'three' as GroupSize, category: 'active' as Category },
+    { categoryLabel: 'Aktive', size: 'four' as GroupSize, category: 'active' as Category }
+  ];
+
   return (
     <>
       <Card>
@@ -89,47 +97,46 @@ const GroupJudgingTab = () => {
 
           <p className="mb-4">Wählen Sie eine Kategorie für die Bewertung:</p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((category) => (
-              <>
-                {groupSizes.map((size) => (
-                  <Card key={`${category}-${size}`} className="flex flex-col h-full">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex justify-between items-center text-base">
-                        <div className="flex items-center">
-                          <User className="mr-2 h-5 w-5" />
-                          {getCategoryDisplay(category)} - {getGroupSizeDisplay(size)}
-                        </div>
-                        {isAdmin && groupsBySizeAndCategory[size][category].length > 1 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => openReorderDialog(size, category)}
-                            title="Reihenfolge anpassen"
-                          >
-                            <MoveVertical className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </CardTitle>
-                      <CardDescription>
-                        {getCategoryInfo(category).strikes}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0 mt-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cardConfigs.map((config, index) => (
+              <Card key={`${config.categoryLabel}-${config.size}-${index}`} className="flex flex-col h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex justify-between items-center text-base">
+                    <div className="flex items-center">
+                      <User className="mr-2 h-5 w-5" />
+                      {config.categoryLabel} - {getGroupSizeDisplay(config.size)}
+                    </div>
+                    {isAdmin && groupsBySizeAndCategory[config.size][config.category].length > 1 && (
                       <Button 
-                        asChild 
-                        className="w-full mt-2"
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => openReorderDialog(config.size, config.category)}
+                        title="Reihenfolge anpassen"
                       >
-                        <Link to={`/judging/group/${size}?category=${category}`}>
-                          Bewerten
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
+                        <MoveVertical className="h-4 w-4" />
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    {getCategoryInfo(config.category).strikes}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0 mt-auto">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {groupsBySizeAndCategory[config.size][config.category].length} Gruppen
+                  </p>
+                  <Button 
+                    asChild 
+                    className="w-full mt-2"
+                  >
+                    <Link to={`/judging/group/${config.size}?category=${config.category}`}>
+                      Bewerten
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>

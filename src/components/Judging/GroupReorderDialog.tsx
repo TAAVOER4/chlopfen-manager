@@ -43,6 +43,17 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
   const positionInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   
   const sizeLabel = activeReorderSize === 'three' ? 'Dreier' : 'Vierer';
+  
+  // For combined categories display (Kids/Juniors)
+  const getCategoryLabel = () => {
+    if (!activeReorderCategory) return '';
+    
+    if (activeReorderCategory === 'kids' || activeReorderCategory === 'juniors') {
+      return activeReorderSize === 'three' ? 'Kids/Junioren' : 'Kids/Junioren';
+    } else {
+      return getCategoryDisplay(activeReorderCategory);
+    }
+  };
 
   return (
     <Dialog 
@@ -52,7 +63,7 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Reihenfolge anpassen - {sizeLabel}gruppen {activeReorderCategory ? getCategoryDisplay(activeReorderCategory) : ''}
+            Reihenfolge anpassen - {getCategoryLabel()} {sizeLabel}gruppen
           </DialogTitle>
           <DialogDescription>
             Gruppen per Drag & Drop oder durch Eingabe einer Positionsnummer neu anordnen.
