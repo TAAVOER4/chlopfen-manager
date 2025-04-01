@@ -63,6 +63,21 @@ const JudgingPage = () => {
   const categories: Category[] = ['kids', 'juniors', 'active'];
 
   useEffect(() => {
+    if (Object.keys(participantsByCategory).length > 0) {
+      const groupOnlyParticipants = mockParticipants.filter(p => p.isGroupOnly);
+      
+      mockParticipants.splice(0, mockParticipants.length);
+      
+      Object.values(participantsByCategory).forEach(categoryParticipants => {
+        categoryParticipants.forEach(participant => {
+          mockParticipants.push(participant);
+        });
+      });
+      
+      groupOnlyParticipants.forEach(participant => {
+        mockParticipants.push(participant);
+      });
+    }
   }, [participantsByCategory]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number, category: Category) => {
