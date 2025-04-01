@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { mockParticipants } from '../../data/mockData';
@@ -39,10 +40,28 @@ const IndividualJudging = () => {
   const currentParticipant = categoryParticipants[currentIndex];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);
 
+  const scoreOptions = [
+    1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 
+    5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0
+  ];
+
   const handleScoreChange = (field: string, value: number) => {
-    // Ensure score is between 1 and 10
-    const score = Math.max(1, Math.min(10, value));
+    // Ensure score is between 1 and 10 with one decimal place
+    const score = Math.max(1, Math.min(10, Math.round(value * 10) / 10));
     setScores({ ...scores, [field]: score });
+  };
+
+  const handleScoreInput = (field: string, value: string) => {
+    let numValue = parseFloat(value);
+    
+    if (isNaN(numValue)) {
+      numValue = 0;
+    } else {
+      // Limit to 1 decimal place and range 1-10
+      numValue = Math.max(1, Math.min(10, Math.round(numValue * 10) / 10));
+    }
+    
+    setScores({ ...scores, [field]: numValue });
   };
 
   const handleSave = () => {
@@ -101,6 +120,46 @@ const IndividualJudging = () => {
     );
   }
 
+  const renderScoreInput = (field: string, label: string) => {
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <label className="font-medium">{label}</label>
+          <span className="text-sm text-muted-foreground">Note: {scores[field] || '-'}/10</span>
+        </div>
+        
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {scoreOptions.map((score) => (
+            <button
+              key={`${field}-${score}`}
+              className={`px-2 py-1.5 rounded border-2 flex items-center justify-center transition-all min-w-10 text-sm ${
+                scores[field] === score
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input hover:border-primary'
+              }`}
+              onClick={() => handleScoreChange(field, score)}
+            >
+              {score % 1 === 0 ? score.toFixed(0) : score.toFixed(1)}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Manuelle Eingabe:</span>
+          <Input
+            type="number"
+            min="1"
+            max="10"
+            step="0.1"
+            value={scores[field] || ''}
+            onChange={(e) => handleScoreInput(field, e.target.value)}
+            className="w-20"
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -138,119 +197,19 @@ const IndividualJudging = () => {
         <CardContent>
           <div className="space-y-8">
             {/* Whip Strikes */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <label className="font-medium">Schläge ({requiredStrikes})</label>
-                <span className="text-sm text-muted-foreground">Note: {scores.whipStrikes || '-'}/10</span>
-              </div>
-              <div className="grid grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                  <button
-                    key={`whipStrikes-${score}`}
-                    className={`h-12 rounded-md border-2 flex items-center justify-center transition-all ${
-                      scores.whipStrikes === score
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input hover:border-primary'
-                    }`}
-                    onClick={() => handleScoreChange('whipStrikes', score)}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
             
             {/* Rhythm */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <label className="font-medium">Rhythmus</label>
-                <span className="text-sm text-muted-foreground">Note: {scores.rhythm || '-'}/10</span>
-              </div>
-              <div className="grid grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                  <button
-                    key={`rhythm-${score}`}
-                    className={`h-12 rounded-md border-2 flex items-center justify-center transition-all ${
-                      scores.rhythm === score
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input hover:border-primary'
-                    }`}
-                    onClick={() => handleScoreChange('rhythm', score)}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {renderScoreInput('rhythm', 'Rhythmus')}
             
             {/* Stance */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <label className="font-medium">Stand</label>
-                <span className="text-sm text-muted-foreground">Note: {scores.stance || '-'}/10</span>
-              </div>
-              <div className="grid grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                  <button
-                    key={`stance-${score}`}
-                    className={`h-12 rounded-md border-2 flex items-center justify-center transition-all ${
-                      scores.stance === score
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input hover:border-primary'
-                    }`}
-                    onClick={() => handleScoreChange('stance', score)}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {renderScoreInput('stance', 'Stand')}
             
             {/* Posture */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <label className="font-medium">Körperhaltung</label>
-                <span className="text-sm text-muted-foreground">Note: {scores.posture || '-'}/10</span>
-              </div>
-              <div className="grid grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                  <button
-                    key={`posture-${score}`}
-                    className={`h-12 rounded-md border-2 flex items-center justify-center transition-all ${
-                      scores.posture === score
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input hover:border-primary'
-                    }`}
-                    onClick={() => handleScoreChange('posture', score)}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {renderScoreInput('posture', 'Körperhaltung')}
             
             {/* Whip Control */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <label className="font-medium">Geiselführung</label>
-                <span className="text-sm text-muted-foreground">Note: {scores.whipControl || '-'}/10</span>
-              </div>
-              <div className="grid grid-cols-10 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                  <button
-                    key={`whipControl-${score}`}
-                    className={`h-12 rounded-md border-2 flex items-center justify-center transition-all ${
-                      scores.whipControl === score
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input hover:border-primary'
-                    }`}
-                    onClick={() => handleScoreChange('whipControl', score)}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {renderScoreInput('whipControl', 'Geiselführung')}
             
             <Separator />
             
@@ -260,7 +219,7 @@ const IndividualJudging = () => {
                 <p className="text-sm text-muted-foreground">Summe aller Kategorien</p>
               </div>
               <div className="text-4xl font-bold">
-                {Object.values(scores).reduce((sum, score) => sum + score, 0)}
+                {Object.values(scores).reduce((sum, score) => sum + score, 0).toFixed(1)}
               </div>
             </div>
           </div>

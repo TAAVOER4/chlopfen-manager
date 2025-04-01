@@ -17,7 +17,7 @@ export interface IndividualScore {
   participantId: string;
   judgeId: string;
   round: 1 | 2;
-  whipStrikes: number;
+  whipStrikes: number; // Now allows decimal values like 9.1
   rhythm: number;
   stance: number;
   posture: number;
