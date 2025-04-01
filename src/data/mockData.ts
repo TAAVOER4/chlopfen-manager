@@ -1,3 +1,4 @@
+
 import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
@@ -9,7 +10,8 @@ export const mockParticipants: Participant[] = [
     lastName: 'Muster',
     location: 'Bern',
     birthYear: 2011,
-    category: 'kids'
+    category: 'kids',
+    groupIds: ['g1']
   },
   {
     id: '2',
@@ -17,7 +19,8 @@ export const mockParticipants: Participant[] = [
     lastName: 'Schmidt',
     location: 'Zürich',
     birthYear: 2010,
-    category: 'kids'
+    category: 'kids',
+    groupIds: ['g1']
   },
   {
     id: '3',
@@ -25,7 +28,8 @@ export const mockParticipants: Participant[] = [
     lastName: 'Meier',
     location: 'Luzern',
     birthYear: 2007,
-    category: 'juniors'
+    category: 'juniors',
+    groupIds: ['g2']
   },
   {
     id: '4',
@@ -33,7 +37,8 @@ export const mockParticipants: Participant[] = [
     lastName: 'Huber',
     location: 'Basel',
     birthYear: 2008,
-    category: 'juniors'
+    category: 'juniors',
+    groupIds: ['g2']
   },
   {
     id: '5',

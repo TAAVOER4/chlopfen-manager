@@ -1,13 +1,45 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Users } from 'lucide-react';
+import { PlusCircle, Users, Pencil, Trash } from 'lucide-react';
 import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
+import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
+import { Participant } from '../../types';
 
 const ParticipantsPage = () => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleDeleteParticipant = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleParticipantDeleted = () => {
+    // Refresh the component
+    setRefreshKey(prev => prev + 1);
+  };
+
+  // Function to get all group names a participant belongs to
+  const getParticipantGroups = (participantId: string) => {
+    const groupsForParticipant = mockGroups.filter(group => 
+      group.participantIds.includes(participantId)
+    );
+    
+    if (groupsForParticipant.length === 0) return '-';
+    
+    return groupsForParticipant.map(g => g.name).join(', ');
+  };
+  
+  // Force update when needed
+  React.useEffect(() => {
+    // This effect ensures the component updates when refreshKey changes
+  }, [refreshKey]);
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -40,8 +72,8 @@ const ParticipantsPage = () => {
                 <TableHead>Kategorie</TableHead>
                 <TableHead>Jahrgang</TableHead>
                 <TableHead>Wohnort</TableHead>
-                <TableHead>Gruppe</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead>Gruppe(n)</TableHead>
+                <TableHead className="w-[160px]">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -54,17 +86,36 @@ const ParticipantsPage = () => {
                   <TableCell>{participant.birthYear}</TableCell>
                   <TableCell>{participant.location}</TableCell>
                   <TableCell>
-                    {participant.group ? 
-                      mockGroups.find(g => g.id === participant.group)?.name || '-' : 
-                      '-'}
+                    {getParticipantGroups(participant.id)}
                   </TableCell>
                   <TableCell>
-                    <Link to={`/participants/edit/${participant.id}`}>
-                      <Button variant="ghost" size="sm">Bearbeiten</Button>
-                    </Link>
+                    <div className="flex space-x-2">
+                      <Link to={`/participants/edit/${participant.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Bearbeiten
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteParticipant(participant)}
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Löschen
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
+              {mockParticipants.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Keine Teilnehmer vorhanden
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -80,7 +131,7 @@ const ParticipantsPage = () => {
                 <TableHead>Kategorie</TableHead>
                 <TableHead>Größe</TableHead>
                 <TableHead>Mitglieder</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[100px]">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -96,7 +147,12 @@ const ParticipantsPage = () => {
                     }).join(', ')}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm">Bearbeiten</Button>
+                    <Link to={`/participants/edit-group/${group.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Bearbeiten
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}
@@ -111,6 +167,13 @@ const ParticipantsPage = () => {
           </Table>
         </div>
       </div>
+
+      <DeleteParticipantDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        participant={selectedParticipant}
+        onDeleted={handleParticipantDeleted}
+      />
     </div>
   );
 };

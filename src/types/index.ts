@@ -1,4 +1,3 @@
-
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
@@ -10,8 +9,7 @@ export interface Participant {
   location: string;
   birthYear: number;
   category: Category;
-  group?: string;
-  groupSize?: GroupSize;
+  groupIds?: string[]; // Changed to multiple groupIds
 }
 
 export interface Group {
