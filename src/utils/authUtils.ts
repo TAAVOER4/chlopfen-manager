@@ -1,7 +1,7 @@
 
 import bcryptjs from 'bcryptjs';
 import { User } from '@/types';
-import { mockJudges } from '@/data/mockJudges';
+import { mockJudges, updateMockJudges } from '@/data/mockJudges';
 
 // Hash a password
 export const hashPassword = (password: string): string => {
@@ -27,13 +27,15 @@ export const authenticateUser = (username: string, password: string): User | nul
 
 // Change a user's password
 export const changePassword = (userId: string, newPassword: string): boolean => {
-  const userIndex = mockJudges.findIndex(user => user.id === userId);
+  const updatedJudges = [...mockJudges];
+  const userIndex = updatedJudges.findIndex(user => user.id === userId);
   
   if (userIndex !== -1) {
-    mockJudges[userIndex] = {
-      ...mockJudges[userIndex],
+    updatedJudges[userIndex] = {
+      ...updatedJudges[userIndex],
       passwordHash: hashPassword(newPassword)
     };
+    updateMockJudges(updatedJudges);
     return true;
   }
   
