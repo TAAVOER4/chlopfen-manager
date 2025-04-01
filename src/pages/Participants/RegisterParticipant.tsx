@@ -10,6 +10,7 @@ import { determineCategory, getCategoryDisplay } from '../../utils/categoryUtils
 import { useToast } from '@/hooks/use-toast';
 import { Participant } from '../../types';
 import { mockParticipants } from '../../data/mockData';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const RegisterParticipant = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const RegisterParticipant = () => {
     lastName: '',
     location: '',
     birthYear: new Date().getFullYear() - 15,
+    isGroupOnly: false, // Default to participating in individual competition
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,6 +29,13 @@ const RegisterParticipant = () => {
     setParticipant(prev => ({
       ...prev,
       [name]: name === 'birthYear' ? parseInt(value) || 0 : value,
+    }));
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setParticipant(prev => ({
+      ...prev,
+      isGroupOnly: checked,
     }));
   };
 
@@ -59,7 +68,8 @@ const RegisterParticipant = () => {
       lastName: participant.lastName,
       location: participant.location,
       birthYear: participant.birthYear,
-      category: category
+      category: category,
+      isGroupOnly: participant.isGroupOnly || false
     };
     
     // Add to mock data (in a real app, this would save to the database)
@@ -150,6 +160,15 @@ const RegisterParticipant = () => {
                 placeholder="Wohnort"
                 required
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="isGroupOnly" 
+                checked={participant.isGroupOnly || false}
+                onCheckedChange={handleCheckboxChange}
+              />
+              <Label htmlFor="isGroupOnly">Nur Gruppenteilnahme (keine Einzelwertung)</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">

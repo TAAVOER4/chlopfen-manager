@@ -9,7 +9,8 @@ export interface Participant {
   location: string;
   birthYear: number;
   category: Category;
-  groupIds?: string[]; // Changed to multiple groupIds
+  groupIds?: string[];
+  isGroupOnly?: boolean; // New flag to indicate participant is only in groups, not individual competition
 }
 
 export interface Group {

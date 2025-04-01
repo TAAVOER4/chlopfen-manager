@@ -8,6 +8,7 @@ import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
 import { Participant } from '../../types';
+import { Badge } from '@/components/ui/badge';
 
 const ParticipantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -73,6 +74,7 @@ const ParticipantsPage = () => {
                 <TableHead>Jahrgang</TableHead>
                 <TableHead>Wohnort</TableHead>
                 <TableHead>Gruppe(n)</TableHead>
+                <TableHead>Teilnahme</TableHead>
                 <TableHead className="w-[160px]">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
@@ -87,6 +89,12 @@ const ParticipantsPage = () => {
                   <TableCell>{participant.location}</TableCell>
                   <TableCell>
                     {getParticipantGroups(participant.id)}
+                  </TableCell>
+                  <TableCell>
+                    {participant.isGroupOnly ? 
+                      <Badge variant="outline">Nur Gruppe</Badge> : 
+                      <Badge>Einzel & Gruppe</Badge>
+                    }
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -111,7 +119,7 @@ const ParticipantsPage = () => {
               ))}
               {mockParticipants.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Keine Teilnehmer vorhanden
                   </TableCell>
                 </TableRow>
