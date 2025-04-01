@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,16 +11,34 @@ import { useToast } from '@/hooks/use-toast';
 import { Participant } from '../../types';
 import { mockParticipants } from '../../data/mockData';
 
-const RegisterParticipant = () => {
+const EditParticipant = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  
   const [participant, setParticipant] = useState<Partial<Participant>>({
     firstName: '',
     lastName: '',
     location: '',
     birthYear: new Date().getFullYear() - 15,
   });
+
+  useEffect(() => {
+    // Find the participant to edit
+    const existingParticipant = mockParticipants.find(p => p.id === id);
+    
+    if (!existingParticipant) {
+      toast({
+        title: "Teilnehmer nicht gefunden",
+        description: "Der gesuchte Teilnehmer wurde nicht gefunden.",
+        variant: "destructive"
+      });
+      navigate('/participants');
+      return;
+    }
+    
+    setParticipant(existingParticipant);
+  }, [id, navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,30 +65,36 @@ const RegisterParticipant = () => {
       });
       return;
     }
-
-    // Generate a unique ID
-    const newId = `p${mockParticipants.length + 1}`;
     
-    // Create the new participant with category
+    // Update category based on birthYear
     const category = determineCategory(participant.birthYear);
-    const newParticipant: Participant = {
-      id: newId,
-      firstName: participant.firstName,
-      lastName: participant.lastName,
-      location: participant.location,
-      birthYear: participant.birthYear,
-      category: category
-    };
     
-    // Add to mock data (in a real app, this would save to the database)
-    mockParticipants.push(newParticipant);
+    // Find and update the participant in mockParticipants
+    const index = mockParticipants.findIndex(p => p.id === id);
     
-    toast({
-      title: "Teilnehmer registriert",
-      description: `${participant.firstName} ${participant.lastName} wurde erfolgreich registriert.`
-    });
-    
-    navigate('/participants');
+    if (index !== -1) {
+      mockParticipants[index] = {
+        ...mockParticipants[index],
+        firstName: participant.firstName as string,
+        lastName: participant.lastName as string,
+        location: participant.location as string,
+        birthYear: participant.birthYear as number,
+        category: category
+      };
+      
+      toast({
+        title: "Teilnehmer aktualisiert",
+        description: `Die Daten von ${participant.firstName} ${participant.lastName} wurden aktualisiert.`
+      });
+      
+      navigate('/participants');
+    } else {
+      toast({
+        title: "Fehler bei der Aktualisierung",
+        description: "Der Teilnehmer konnte nicht gefunden werden.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -80,15 +104,15 @@ const RegisterParticipant = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Zurück
         </Button>
-        <h1 className="text-3xl font-bold text-swiss-blue">Teilnehmer erfassen</h1>
+        <h1 className="text-3xl font-bold text-swiss-blue">Teilnehmer bearbeiten</h1>
       </div>
 
       <Card className="max-w-2xl mx-auto">
         <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle>Neuer Teilnehmer</CardTitle>
+            <CardTitle>Teilnehmer bearbeiten</CardTitle>
             <CardDescription>
-              Erfassen Sie die Informationen des Teilnehmers.
+              Bearbeiten Sie die Informationen des Teilnehmers.
               Die Kategorie wird automatisch basierend auf dem Jahrgang bestimmt.
             </CardDescription>
           </CardHeader>
@@ -99,7 +123,7 @@ const RegisterParticipant = () => {
                 <Input
                   id="firstName"
                   name="firstName"
-                  value={participant.firstName}
+                  value={participant.firstName || ''}
                   onChange={handleChange}
                   placeholder="Vorname"
                   required
@@ -110,7 +134,7 @@ const RegisterParticipant = () => {
                 <Input
                   id="lastName"
                   name="lastName"
-                  value={participant.lastName}
+                  value={participant.lastName || ''}
                   onChange={handleChange}
                   placeholder="Nachname"
                   required
@@ -145,7 +169,7 @@ const RegisterParticipant = () => {
               <Input
                 id="location"
                 name="location"
-                value={participant.location}
+                value={participant.location || ''}
                 onChange={handleChange}
                 placeholder="Wohnort"
                 required
@@ -156,7 +180,7 @@ const RegisterParticipant = () => {
             <Button variant="outline" type="button" onClick={() => navigate('/participants')}>
               Abbrechen
             </Button>
-            <Button type="submit">Teilnehmer speichern</Button>
+            <Button type="submit">Änderungen speichern</Button>
           </CardFooter>
         </form>
       </Card>
@@ -164,4 +188,4 @@ const RegisterParticipant = () => {
   );
 };
 
-export default RegisterParticipant;
+export default EditParticipant;

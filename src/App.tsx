@@ -8,6 +8,7 @@ import MainLayout from "./components/Layout/MainLayout";
 import Index from "./pages/Index";
 import ParticipantsPage from "./pages/Participants/ParticipantsPage";
 import RegisterParticipant from "./pages/Participants/RegisterParticipant";
+import EditParticipant from "./pages/Participants/EditParticipant";
 import JudgingPage from "./pages/Judging/JudgingPage";
 import IndividualJudging from "./pages/Judging/IndividualJudging";
 import ResultsPage from "./pages/Results/ResultsPage";
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/participants" element={<ParticipantsPage />} />
               <Route path="/participants/register" element={<RegisterParticipant />} />
+              <Route path="/participants/edit/:id" element={<EditParticipant />} />
               <Route path="/judging" element={<JudgingPage />} />
               <Route path="/judging/individual/:category" element={<IndividualJudging />} />
               <Route path="/results" element={<ResultsPage />} />
