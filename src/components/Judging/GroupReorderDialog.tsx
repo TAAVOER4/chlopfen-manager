@@ -1,7 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Move } from 'lucide-react';
-import { Category, Group, GroupSize } from '../../types';
+import { GroupCategory, Group, GroupSize } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import {
   Dialog,
@@ -15,16 +15,16 @@ import { Button } from '@/components/ui/button';
 
 interface GroupReorderDialogProps {
   activeReorderSize: GroupSize | null;
-  activeReorderCategory: Category | null;
+  activeReorderCategory: GroupCategory | null;
   closeReorderDialog: () => void;
-  groupsBySizeAndCategory: Record<GroupSize, Record<Category, Group[]>>;
-  updateGroupOrder: (size: GroupSize, category: Category, groupId: number, newPosition: number) => void;
-  handleDragStart: (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: Category) => void;
+  groupsBySizeAndCategory: Record<GroupSize, Record<GroupCategory, Group[]>>;
+  updateGroupOrder: (size: GroupSize, category: GroupCategory, groupId: number, newPosition: number) => void;
+  handleDragStart: (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: GroupCategory) => void;
   handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
-  handleDrop: (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: Category) => void;
+  handleDrop: (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: GroupCategory) => void;
   draggingSize: GroupSize | null;
-  draggingCategory: Category | null;
+  draggingCategory: GroupCategory | null;
 }
 
 const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
@@ -44,15 +44,9 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
   
   const sizeLabel = activeReorderSize === 'three' ? 'Dreier' : 'Vierer';
   
-  // For combined categories display (Kids/Juniors)
   const getCategoryLabel = () => {
     if (!activeReorderCategory) return '';
-    
-    if (activeReorderCategory === 'kids' || activeReorderCategory === 'juniors') {
-      return activeReorderSize === 'three' ? 'Kids/Junioren' : 'Kids/Junioren';
-    } else {
-      return getCategoryDisplay(activeReorderCategory);
-    }
+    return getCategoryDisplay(activeReorderCategory);
   };
 
   return (

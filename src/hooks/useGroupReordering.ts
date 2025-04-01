@@ -1,20 +1,20 @@
 
 import { useState } from 'react';
-import { Group, Category, GroupSize } from '../types';
+import { Group, GroupSize, GroupCategory } from '../types';
 import { reorderGroups } from '@/utils/scoreUtils';
 import { useToast } from '@/hooks/use-toast';
 
 export const useGroupReordering = (
-  groupsBySizeAndCategory: Record<GroupSize, Record<Category, Group[]>>,
-  setGroupsBySizeAndCategory: React.Dispatch<React.SetStateAction<Record<GroupSize, Record<Category, Group[]>>>>
+  groupsBySizeAndCategory: Record<GroupSize, Record<GroupCategory, Group[]>>,
+  setGroupsBySizeAndCategory: React.Dispatch<React.SetStateAction<Record<GroupSize, Record<GroupCategory, Group[]>>>>
 ) => {
   const [draggingSize, setDraggingSize] = useState<GroupSize | null>(null);
-  const [draggingCategory, setDraggingCategory] = useState<Category | null>(null);
+  const [draggingCategory, setDraggingCategory] = useState<GroupCategory | null>(null);
   const [activeReorderSize, setActiveReorderSize] = useState<GroupSize | null>(null);
-  const [activeReorderCategory, setActiveReorderCategory] = useState<Category | null>(null);
+  const [activeReorderCategory, setActiveReorderCategory] = useState<GroupCategory | null>(null);
   const { toast } = useToast();
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: Category) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: GroupCategory) => {
     e.dataTransfer.setData('application/json', JSON.stringify({ index, size, category }));
     setDraggingSize(size);
     setDraggingCategory(category);
@@ -29,7 +29,7 @@ export const useGroupReordering = (
     e.currentTarget.classList.remove('bg-accent');
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetIndex: number, size: GroupSize, category: Category) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetIndex: number, size: GroupSize, category: GroupCategory) => {
     e.preventDefault();
     e.currentTarget.classList.remove('bg-accent');
 
@@ -73,7 +73,7 @@ export const useGroupReordering = (
     setDraggingCategory(null);
   };
 
-  const updateGroupOrder = (size: GroupSize, category: Category, groupId: number, newPosition: number) => {
+  const updateGroupOrder = (size: GroupSize, category: GroupCategory, groupId: number, newPosition: number) => {
     if (isNaN(newPosition) || newPosition < 1 || newPosition > groupsBySizeAndCategory[size][category].length) {
       toast({
         title: "Ungültige Position",
@@ -105,7 +105,7 @@ export const useGroupReordering = (
     });
   };
 
-  const openReorderDialog = (size: GroupSize, category: Category) => {
+  const openReorderDialog = (size: GroupSize, category: GroupCategory) => {
     setActiveReorderSize(size);
     setActiveReorderCategory(category);
   };

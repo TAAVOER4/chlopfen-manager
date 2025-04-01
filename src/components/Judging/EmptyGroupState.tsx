@@ -1,44 +1,35 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import { GroupSize, Category } from '../../types';
-import { getCategoryDisplay } from '@/utils/categoryUtils';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { GroupSize, GroupCategory } from '../../types';
 
 interface EmptyGroupStateProps {
   size: GroupSize;
-  categoryParam: Category | null;
+  categoryParam: GroupCategory | null;
   handleBackClick: () => void;
 }
 
-const EmptyGroupState: React.FC<EmptyGroupStateProps> = ({
-  size,
-  categoryParam,
-  handleBackClick,
-}) => {
+const EmptyGroupState: React.FC<EmptyGroupStateProps> = ({ size, categoryParam, handleBackClick }) => {
+  const sizeText = size === 'three' ? 'Dreiergruppen' : 'Vierergruppen';
+  const categoryText = categoryParam ? 
+    (categoryParam === 'kids_juniors' ? 'Kids/Junioren' : 'Aktive') : 
+    'der ausgewählten Kategorie';
+
   return (
-    <div className="animate-fade-in">
-      <Button 
-        variant="outline" 
-        onClick={handleBackClick} 
-        className="mb-4"
-      >
-        <ChevronLeft className="mr-2 h-4 w-4" /> Zurück
-      </Button>
-      <Card>
-        <CardHeader>
-          <CardTitle>Keine Gruppen gefunden</CardTitle>
-          <CardDescription>
-            Es wurden keine {size === 'three' ? 'Dreier' : 'Vierer'}gruppen 
-            {categoryParam ? ` in der Kategorie ${getCategoryDisplay(categoryParam)}` : ''} gefunden
-          </CardDescription>
-        </CardHeader>
+    <div className="flex flex-col items-center justify-center h-[60vh] px-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6 text-center">
+          <h2 className="text-2xl font-bold mb-2">Keine Gruppen gefunden</h2>
+          <p className="text-muted-foreground">
+            Es wurden keine {sizeText} in {categoryText} gefunden.
+          </p>
+        </CardContent>
+        <CardFooter className="flex justify-center pb-6">
+          <Button onClick={handleBackClick}>
+            Zurück zur Bewertungsübersicht
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
