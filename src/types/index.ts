@@ -48,7 +48,10 @@ export interface Judge {
   name: string;
   username: string;
   role: 'admin' | 'judge';
-  assignedCriterion?: CriterionKey | GroupCriterionKey;
+  assignedCriteria?: {
+    individual?: CriterionKey;
+    group?: GroupCriterionKey;
+  };
 }
 
 export interface Sponsor {

@@ -1,4 +1,3 @@
-
 import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
@@ -83,35 +82,45 @@ export const mockJudges: Judge[] = [
     name: 'Hans Fischer', 
     username: 'hans', 
     role: 'admin',
-    assignedCriterion: 'whipStrikes'
+    assignedCriteria: {
+      individual: 'whipStrikes'
+    }
   },
   { 
     id: 'j2', 
     name: 'Maria Gerber', 
     username: 'maria', 
     role: 'judge',
-    assignedCriterion: 'rhythm'
+    assignedCriteria: {
+      individual: 'rhythm'
+    }
   },
   { 
     id: 'j3', 
     name: 'Peter Keller', 
     username: 'peter', 
     role: 'judge',
-    assignedCriterion: 'stance'
+    assignedCriteria: {
+      individual: 'stance'
+    }
   },
   { 
     id: 'j4', 
     name: 'Christine Wagner', 
     username: 'christine', 
     role: 'judge',
-    assignedCriterion: 'posture'
+    assignedCriteria: {
+      individual: 'posture'
+    }
   },
   { 
     id: 'j5', 
     name: 'Thomas Schneider', 
     username: 'thomas', 
     role: 'judge',
-    assignedCriterion: 'whipControl'
+    assignedCriteria: {
+      individual: 'whipControl'
+    }
   }
 ];
 
@@ -145,11 +154,9 @@ export const mockGroupScores: GroupScore[] = [
     groupId: 'g1',
     judgeId: 'j1',
     whipStrikes: 8,
-    rhythm1: 7,
-    rhythm2: 8,
-    tempo1: 8,
-    tempo2: 7,
-    timeSeconds: 43
+    rhythm: 7,
+    tempo: 8,
+    time: true
   }
 ];
 
