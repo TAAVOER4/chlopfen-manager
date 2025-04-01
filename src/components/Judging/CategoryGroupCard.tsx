@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { ArrowRight, MoveVertical, User } from 'lucide-react';
 import { Category, GroupSize, Group } from '../../types';
+import { getCategoryDisplay } from '../../utils/categoryUtils';
 
 interface CategoryGroupCardProps {
   categoryLabel: string;
