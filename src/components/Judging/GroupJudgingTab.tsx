@@ -27,7 +27,7 @@ const GroupJudgingTab: React.FC = () => {
   // Check if judge can score groups
   const canJudgeGroups = isAdmin || (
     currentUser?.assignedCriteria?.group && 
-    ['whipStrikes', 'rhythm', 'tempo', 'time'].includes(currentUser.assignedCriteria.group)
+    ['whipStrikes', 'rhythm', 'tempo'].includes(currentUser.assignedCriteria.group)
   );
   
   // Count groups by size
@@ -55,14 +55,13 @@ const GroupJudgingTab: React.FC = () => {
           <li>Schläge (Note 1-10)</li>
           <li>Rhythmus (Note 1-10)</li>
           <li>Takt (Note 1-10)</li>
-          <li>Zeit (Note 1-10)</li>
         </ul>
         
         {!canJudgeGroups && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-yellow-800">
               Sie sind nicht berechtigt, Gruppen zu bewerten. 
-              Nur Richter mit den Kriterien Schläge, Rhythmus, Takt oder Zeit können Gruppen bewerten.
+              Nur Richter mit den Kriterien Schläge, Rhythmus oder Takt können Gruppen bewerten.
             </p>
           </div>
         )}

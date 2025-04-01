@@ -62,7 +62,7 @@ export let mockJudges: Judge[] = [
     username: 'thomas.brunner',
     role: 'judge',
     assignedCriteria: {
-      group: 'time'
+      individual: 'whipControl'
     }
   }
 ];

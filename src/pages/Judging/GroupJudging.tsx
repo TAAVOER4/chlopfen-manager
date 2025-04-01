@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Save, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,7 +12,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { mockGroups } from '../../data/mockData';
 import { Group, GroupScore, GroupSize, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
@@ -53,7 +52,7 @@ const GroupJudging: React.FC = () => {
     }
 
     // Check if user has the right assignedCriteria for group judging
-    const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo', 'time'];
+    const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo'];
     if (currentUser.role !== 'admin' && 
         (!currentUser.assignedCriteria?.group || 
          !validGroupCriteria.includes(currentUser.assignedCriteria.group))) {
@@ -82,8 +81,7 @@ const GroupJudging: React.FC = () => {
         judgeId: currentUser?.id,
         whipStrikes: 0,
         rhythm: 0,
-        tempo: 0,
-        time: false // Initialize time as false (not correctly timed)
+        tempo: 0
       };
     });
     setScores(initialScores);
@@ -107,16 +105,6 @@ const GroupJudging: React.FC = () => {
       [groupId]: {
         ...prev[groupId],
         [criterion]: clampedValue
-      }
-    }));
-  };
-
-  const handleTimeChange = (groupId: string, value: boolean) => {
-    setScores(prev => ({
-      ...prev,
-      [groupId]: {
-        ...prev[groupId],
-        time: value
       }
     }));
   };
@@ -264,35 +252,6 @@ const GroupJudging: React.FC = () => {
                 />
                 {!canEditCriterion('tempo') && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Sie können dieses Kriterium nicht bewerten
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Zeit</h3>
-              <div className="flex items-center space-x-2 mt-2">
-                <Switch
-                  checked={scores[currentGroup.id]?.time || false}
-                  onCheckedChange={(checked) => handleTimeChange(currentGroup.id, checked)}
-                  disabled={!canEditCriterion('time')}
-                />
-                <span className="text-sm">
-                  {scores[currentGroup.id]?.time ? (
-                    <span className="flex items-center text-green-600">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Zeit eingehalten
-                    </span>
-                  ) : (
-                    <span className="flex items-center text-red-600">
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Zeit nicht eingehalten
-                    </span>
-                  )}
-                </span>
-                {!canEditCriterion('time') && (
-                  <p className="text-xs text-muted-foreground ml-2">
                     Sie können dieses Kriterium nicht bewerten
                   </p>
                 )}

@@ -1,8 +1,7 @@
-
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
-export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo' | 'time';
+export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
 
 export interface Participant {
   id: string;

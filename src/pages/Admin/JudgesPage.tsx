@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserPlus, User } from 'lucide-react';
@@ -39,7 +38,6 @@ const JudgesPage = () => {
     { value: 'whipStrikes', label: 'Schläge (Gruppe)' },
     { value: 'rhythm', label: 'Rhythmus (Gruppe)' },
     { value: 'tempo', label: 'Takt (Gruppe)' },
-    { value: 'time', label: 'Zeit (Gruppe)' },
   ];
 
   const handleImpersonate = (judgeId: string) => {
