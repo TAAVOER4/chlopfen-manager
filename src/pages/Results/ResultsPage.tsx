@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,28 +21,38 @@ import { Download, Medal, TrendingUp } from 'lucide-react';
 import { mockParticipants, mockIndividualScores, mockSponsors } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { Category, ParticipantResult } from '../../types';
-import { calculateIndividualTotal } from '../../utils/scoreUtils';
+import { calculateIndividualBestRound } from '../../utils/scoreUtils';
 
 const ResultsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('kids');
   const [selectedView, setSelectedView] = useState<string>('list');
 
-  // Generate mock results
   const generateResults = (category: Category): ParticipantResult[] => {
     const filteredParticipants = mockParticipants.filter(p => p.category === category);
     
+    const scoresByParticipant: Record<string, typeof mockIndividualScores> = {};
+    
+    mockIndividualScores.forEach(score => {
+      const participantId = score.participantId;
+      if (!scoresByParticipant[participantId]) {
+        scoresByParticipant[participantId] = [];
+      }
+      scoresByParticipant[participantId].push(score);
+    });
+    
     return filteredParticipants.map(participant => {
-      const participantScores = mockIndividualScores.filter(
-        score => score.participantId === participant.id
-      );
-      const totalScore = calculateIndividualTotal(participantScores);
-      const averageScore = participantScores.length > 0 ? totalScore / participantScores.length : 0;
+      const participantScores = scoresByParticipant[participant.id] || [];
+      
+      const bestRoundScore = calculateIndividualBestRound(participantScores);
+      
+      const totalCriteria = participantScores.length * 5;
+      const averageScore = totalCriteria > 0 ? bestRoundScore / (participantScores.length || 1) : 0;
       
       return {
         participant,
-        totalScore,
+        totalScore: bestRoundScore,
         averageScore,
-        rank: 0 // Will be set below
+        rank: 0
       };
     }).sort((a, b) => b.totalScore - a.totalScore)
       .map((result, index) => ({

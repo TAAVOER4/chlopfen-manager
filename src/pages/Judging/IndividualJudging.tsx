@@ -14,8 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { mockParticipants } from '@/data/mockData';
-import { mockIndividualScores } from '@/data/mockData';
+import { mockParticipants, mockIndividualScores } from '@/data/mockData';
 import { Participant, IndividualScore, Judge, Category, CriterionKey } from '@/types';
 import { getCategoryRequiredStrikes, getCategoryDisplay } from '@/utils/categoryUtils';
 import { Separator } from '@/components/ui/separator';
@@ -59,6 +58,35 @@ const IndividualJudging = () => {
   };
 
   const handleSave = () => {
+    if (!currentUser) {
+      toast({
+        title: "Fehler",
+        description: "Bitte melden Sie sich an, um bewerten zu können.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create a new score record
+    const newScore: IndividualScore = {
+      participantId: currentParticipant.id,
+      judgeId: currentUser.id,
+      round: round,
+      whipStrikes: scores.whipStrikes,
+      rhythm: scores.rhythm,
+      stance: scores.stance,
+      posture: scores.posture,
+      whipControl: scores.whipControl,
+    };
+
+    // Add the new score to the mockIndividualScores array
+    // In a real application, this would be a backend API call
+    mockIndividualScores.push(newScore);
+    
+    // Log to verify storage (for debugging)
+    console.log("Saved score:", newScore);
+    console.log("Updated scores data:", mockIndividualScores);
+
     toast({
       title: "Bewertung gespeichert",
       description: `Bewertung für ${currentParticipant.firstName} ${currentParticipant.lastName} gespeichert.`
@@ -102,6 +130,38 @@ const IndividualJudging = () => {
     
     return scores[assignedCriterion] > 0;
   };
+
+  // Check if the current participant already has scores for this round and judge
+  useEffect(() => {
+    if (currentParticipant && currentUser) {
+      const existingScore = mockIndividualScores.find(
+        score => 
+          score.participantId === currentParticipant.id && 
+          score.judgeId === currentUser.id &&
+          score.round === round
+      );
+
+      if (existingScore) {
+        // If there's an existing score, load it into the form
+        setScores({
+          whipStrikes: existingScore.whipStrikes,
+          rhythm: existingScore.rhythm,
+          stance: existingScore.stance,
+          posture: existingScore.posture,
+          whipControl: existingScore.whipControl,
+        });
+      } else {
+        // Reset scores when moving to a new participant
+        setScores({
+          whipStrikes: 0,
+          rhythm: 0,
+          stance: 0,
+          posture: 0,
+          whipControl: 0,
+        });
+      }
+    }
+  }, [currentParticipant, currentUser, round]);
 
   if (!currentParticipant) {
     return (
