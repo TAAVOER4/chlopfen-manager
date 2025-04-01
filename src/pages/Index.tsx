@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -35,8 +34,17 @@ const Index = () => {
         </p>
       </div>
 
+      <div className="mb-10 flex justify-center">
+        <div className="bg-white p-4 rounded-lg shadow-md max-w-md">
+          <img 
+            src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
+            alt="Wettchlöpfen" 
+            className="mx-auto h-48 object-contain"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Quick stats cards */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
