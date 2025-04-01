@@ -433,11 +433,14 @@ const EditGroup = () => {
             {availableParticipants.length > 0 ? (
               <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                 {availableParticipants.map((participant) => {
+                  // Check if we have the current group
+                  const currentGroup = group;
+                  
                   // Show existing group memberships
                   const existingGroups = participant.groupIds?.map(gId => {
-                    if (gId === group.id) return null; // Don't show current group
-                    const group = mockGroups.find(g => g.id === gId);
-                    return group?.name || '';
+                    if (currentGroup && gId === currentGroup.id) return null; // Don't show current group
+                    const foundGroup = mockGroups.find(g => g.id === gId);
+                    return foundGroup?.name || '';
                   }).filter(Boolean).join(', ');
                   
                   const isSelected = selectedParticipants.some(p => p.id === participant.id);
