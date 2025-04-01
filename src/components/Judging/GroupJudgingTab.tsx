@@ -56,18 +56,6 @@ const GroupJudgingTab = () => {
     return size === 'three' ? 'Dreiergruppen' : 'Vierergruppen';
   };
 
-  // Helper function to get required info based on category
-  const getCategoryInfo = (category: Category) => {
-    switch (category) {
-      case 'kids':
-        return { strikes: '17 Schläge' };
-      case 'juniors':
-        return { strikes: '23 Schläge' };
-      case 'active':
-        return { strikes: '33 Schläge' };
-    }
-  };
-
   // Create an array of card configurations based on the requested layout
   const cardConfigs = [
     { categoryLabel: 'Kids/Junioren', size: 'three' as GroupSize, category: 'kids' as Category },
@@ -119,10 +107,10 @@ const GroupJudgingTab = () => {
                     )}
                   </CardTitle>
                   <CardDescription>
-                    {getCategoryInfo(config.category).strikes}
+                    45 Sekunden
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-0 mt-auto">
+                <CardContent className="pt-0 flex flex-col justify-between h-full">
                   <p className="text-sm text-muted-foreground mb-2">
                     {groupsBySizeAndCategory[config.size][config.category].length} Gruppen
                   </p>
