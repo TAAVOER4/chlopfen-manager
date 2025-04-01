@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,10 @@ const ResultsPage = () => {
   const [selectedView, setSelectedView] = useState<string>('list');
 
   const generateResults = (category: Category): ParticipantResult[] => {
-    const filteredParticipants = mockParticipants.filter(p => p.category === category);
+    // Filter out participants that have isGroupOnly flag set to true
+    const filteredParticipants = mockParticipants.filter(p => 
+      p.category === category && !p.isGroupOnly
+    );
     
     const scoresByParticipant: Record<string, typeof mockIndividualScores> = {};
     

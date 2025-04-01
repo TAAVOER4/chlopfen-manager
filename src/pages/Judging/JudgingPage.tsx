@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -40,7 +39,9 @@ import { useUser } from '@/contexts/UserContext';
 const JudgingPage = () => {
   const [activeTab, setActiveTab] = useState<string>('individual');
   const [participantsByCategory, setParticipantsByCategory] = useState<Record<string, Participant[]>>(() => {
-    const initialParticipants = mockParticipants.reduce(
+    const individualParticipants = mockParticipants.filter(p => !p.isGroupOnly);
+    
+    const initialParticipants = individualParticipants.reduce(
       (acc, participant) => {
         if (!acc[participant.category]) {
           acc[participant.category] = [];
@@ -55,7 +56,6 @@ const JudgingPage = () => {
   const [draggingCategory, setDraggingCategory] = useState<Category | null>(null);
   const [activeReorderCategory, setActiveReorderCategory] = useState<Category | null>(null);
   
-  // Use refs to store references to position input elements
   const positionInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   
   const { toast } = useToast();
@@ -63,18 +63,6 @@ const JudgingPage = () => {
   const categories: Category[] = ['kids', 'juniors', 'active'];
 
   useEffect(() => {
-    // Update the global mockParticipants array when participantsByCategory changes
-    if (Object.keys(participantsByCategory).length > 0) {
-      // Clear the existing mockParticipants array without mutating the reference
-      mockParticipants.splice(0, mockParticipants.length);
-      
-      // Add all participants from participantsByCategory to mockParticipants
-      Object.values(participantsByCategory).forEach(categoryParticipants => {
-        categoryParticipants.forEach(participant => {
-          mockParticipants.push(participant);
-        });
-      });
-    }
   }, [participantsByCategory]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number, category: Category) => {
@@ -119,7 +107,6 @@ const JudgingPage = () => {
           [category]: updatedParticipants
         }));
 
-        // Update position input values to reflect the new order
         updatedParticipants.forEach((participant, idx) => {
           const inputRef = positionInputRefs.current.get(participant.id);
           if (inputRef) {
@@ -155,7 +142,7 @@ const JudgingPage = () => {
 
     const participants = participantsByCategory[category];
     const oldIndex = participants.findIndex(p => p.id === participantId);
-    const newIndex = newPosition - 1; // Convert to zero-based index
+    const newIndex = newPosition - 1;
 
     if (oldIndex === newIndex) return;
 
@@ -166,7 +153,6 @@ const JudgingPage = () => {
       [category]: updatedParticipants
     }));
 
-    // Update position input values to reflect the new order
     updatedParticipants.forEach((participant, idx) => {
       const inputRef = positionInputRefs.current.get(participant.id);
       if (inputRef) {
@@ -321,7 +307,6 @@ const JudgingPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Reorder Participants Dialog */}
       <Dialog open={activeReorderCategory !== null} onOpenChange={(open) => !open && setActiveReorderCategory(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
