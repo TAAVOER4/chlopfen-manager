@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   User, 
@@ -22,7 +22,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +58,21 @@ const JudgingPage = () => {
   const { toast } = useToast();
   const { isAdmin } = useUser();
   const categories: Category[] = ['kids', 'juniors', 'active'];
+
+  useEffect(() => {
+    // Update the global mockParticipants array when participantsByCategory changes
+    if (Object.keys(participantsByCategory).length > 0) {
+      // Clear the existing mockParticipants array without mutating the reference
+      mockParticipants.splice(0, mockParticipants.length);
+      
+      // Add all participants from participantsByCategory to mockParticipants
+      Object.values(participantsByCategory).forEach(categoryParticipants => {
+        categoryParticipants.forEach(participant => {
+          mockParticipants.push(participant);
+        });
+      });
+    }
+  }, [participantsByCategory]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number, category: Category) => {
     e.dataTransfer.setData('application/json', JSON.stringify({ index, category }));
