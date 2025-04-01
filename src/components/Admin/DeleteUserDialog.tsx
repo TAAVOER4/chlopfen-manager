@@ -9,46 +9,46 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Judge } from '@/types';
+import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-interface DeleteJudgeDialogProps {
+interface DeleteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  judge: Judge | null;
-  onDelete: (judgeId: number) => void;
+  user: User | null;
+  onDelete: (userId: number) => void;
 }
 
-const DeleteJudgeDialog: React.FC<DeleteJudgeDialogProps> = ({
+const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
   open,
   onOpenChange,
-  judge,
+  user,
   onDelete
 }) => {
   const { toast } = useToast();
 
   const handleDelete = () => {
-    if (!judge) return;
+    if (!user) return;
     
-    onDelete(judge.id);
+    onDelete(user.id);
     onOpenChange(false);
     
     toast({
-      title: "Richter gelöscht",
-      description: `${judge.name} wurde erfolgreich gelöscht.`
+      title: "Benutzer gelöscht",
+      description: `${user.name} wurde erfolgreich gelöscht.`
     });
   };
 
-  if (!judge) return null;
+  if (!user) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Richter löschen</DialogTitle>
+          <DialogTitle>Benutzer löschen</DialogTitle>
           <DialogDescription>
-            Sind Sie sicher, dass Sie {judge.name} löschen möchten?
-            {judge.role === 'admin' && (
+            Sind Sie sicher, dass Sie {user.name} löschen möchten?
+            {user.role === 'admin' && (
               <p className="mt-2 text-destructive font-medium">
                 Achtung: Dieser Benutzer ist ein Administrator.
               </p>
@@ -68,4 +68,4 @@ const DeleteJudgeDialog: React.FC<DeleteJudgeDialogProps> = ({
   );
 };
 
-export default DeleteJudgeDialog;
+export default DeleteUserDialog;

@@ -16,7 +16,7 @@ import IndividualJudging from "./pages/Judging/IndividualJudging";
 import GroupJudging from "./pages/Judging/GroupJudging";
 import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
-import UsersPage from "./pages/Admin/JudgesPage"; // Still using JudgesPage.tsx file but it's renamed to UsersPage component
+import UsersPage from "./pages/Admin/UsersPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Auth/LoginPage";
 import { UserProvider } from "./contexts/UserContext";
@@ -44,7 +44,7 @@ const App = () => (
               <Route path="/judging/group/:size" element={<GroupJudging />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/admin" element={<AdminPage />} />
-              <Route path="/admin/judges" element={<UsersPage />} />
+              <Route path="/admin/users" element={<UsersPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

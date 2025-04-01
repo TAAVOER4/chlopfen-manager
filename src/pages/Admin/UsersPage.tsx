@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { mockJudges, updateMockJudges } from '@/data/mockJudges';
 import { User, CriterionKey, GroupCriterionKey, UserRole } from '@/types';
 import { useUser } from '@/contexts/UserContext';
-import DeleteJudgeDialog from '@/components/Admin/DeleteJudgeDialog';
+import DeleteUserDialog from '@/components/Admin/DeleteUserDialog';
 import UserTable from '@/components/Admin/UserTable';
 import { hashPassword } from '@/utils/authUtils';
 
@@ -198,10 +198,10 @@ const UsersPage = () => {
         </CardFooter>
       </Card>
       
-      <DeleteJudgeDialog
+      <DeleteUserDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        judge={userToDelete}
+        user={userToDelete}
         onDelete={handleDeleteUser}
       />
     </div>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -70,21 +69,21 @@ const AdminPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Award className="h-5 w-5 mr-2" />
-              Richterverwaltung
+              Benutzerverwaltung
             </CardTitle>
             <CardDescription>
-              Verwaltung der Richter und Zugriffsrechte
+              Verwaltung der Benutzer und Zugriffsrechte
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Verwalten Sie die Richter, vergeben Sie Zugriffsrechte und weisen Sie Kategorien zu.
+              Verwalten Sie die Benutzer, vergeben Sie Zugriffsrechte und weisen Sie Kategorien zu.
             </p>
           </CardContent>
           <CardFooter>
             <Button asChild className="w-full">
-              <Link to="/admin/judges">
-                Zur Richterverwaltung
+              <Link to="/admin/users">
+                Zur Benutzerverwaltung
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
