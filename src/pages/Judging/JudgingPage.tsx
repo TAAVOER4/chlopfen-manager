@@ -7,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { mockParticipants } from '../../data/mockData';
+import { mockParticipants, mockGroups } from '../../data/mockData';
 import { Category, Participant } from '../../types';
 import { useUser } from '@/contexts/UserContext';
 import IndividualJudgingTab from '@/components/Judging/IndividualJudgingTab';

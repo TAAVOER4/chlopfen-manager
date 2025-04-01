@@ -1,4 +1,4 @@
-import { IndividualScore, GroupScore, Participant, Category } from '../types';
+import { IndividualScore, GroupScore, Participant, Category, Group } from '../types';
 
 export const calculateIndividualTotal = (scores: IndividualScore[]): number => {
   if (scores.length === 0) return 0;
@@ -106,6 +106,18 @@ export const reorderParticipants = (
   newIndex: number
 ): Participant[] => {
   const result = Array.from(participants);
+  const [removed] = result.splice(oldIndex, 1);
+  result.splice(newIndex, 0, removed);
+  return result;
+};
+
+// New function to reorder groups similar to reorderParticipants
+export const reorderGroups = (
+  groups: Group[],
+  oldIndex: number,
+  newIndex: number
+): Group[] => {
+  const result = Array.from(groups);
   const [removed] = result.splice(oldIndex, 1);
   result.splice(newIndex, 0, removed);
   return result;
