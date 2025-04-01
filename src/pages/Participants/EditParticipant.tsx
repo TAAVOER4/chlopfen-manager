@@ -25,7 +25,8 @@ const EditParticipant = () => {
 
   useEffect(() => {
     // Find the participant to edit
-    const existingParticipant = mockParticipants.find(p => p.id === id);
+    const participantId = id ? parseInt(id) : null;
+    const existingParticipant = participantId ? mockParticipants.find(p => p.id === participantId) : null;
     
     if (!existingParticipant) {
       toast({
@@ -70,7 +71,8 @@ const EditParticipant = () => {
     const category = determineCategory(participant.birthYear);
     
     // Find and update the participant in mockParticipants
-    const index = mockParticipants.findIndex(p => p.id === id);
+    const participantId = id ? parseInt(id) : null;
+    const index = participantId ? mockParticipants.findIndex(p => p.id === participantId) : -1;
     
     if (index !== -1) {
       mockParticipants[index] = {

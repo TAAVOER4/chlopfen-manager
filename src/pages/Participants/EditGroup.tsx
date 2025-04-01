@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, X, UserRound, RefreshCw, Trash } from 'lucide-react';
@@ -76,7 +77,9 @@ const EditGroup = () => {
   useEffect(() => {
     if (!id) return;
     
-    const foundGroup = mockGroups.find(g => g.id === id);
+    const groupId = parseInt(id);
+    const foundGroup = mockGroups.find(g => g.id === groupId);
+    
     if (!foundGroup) {
       toast({
         title: "Gruppe nicht gefunden",

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, UserRound, RefreshCw } from 'lucide-react';
@@ -172,7 +173,7 @@ const RegisterGroup = () => {
     }
 
     // Create a new group ID
-    const newId = `g${mockGroups.length + 1}`;
+    const newId = Math.max(...mockGroups.map(g => g.id), 0) + 1;
     
     // Create the new group
     const newGroup = {
@@ -180,7 +181,7 @@ const RegisterGroup = () => {
       name: data.name,
       size: data.size as GroupSize,
       category: data.category as Category,
-      participantIds: selectedParticipants.map(p => p.id)
+      participantIds: participantIds
     };
     
     // Update participants to be part of this group

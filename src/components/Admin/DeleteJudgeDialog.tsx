@@ -16,7 +16,7 @@ interface DeleteJudgeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   judge: Judge | null;
-  onDelete: (judgeId: string) => void;
+  onDelete: (judgeId: number) => void;
 }
 
 const DeleteJudgeDialog: React.FC<DeleteJudgeDialogProps> = ({

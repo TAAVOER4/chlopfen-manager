@@ -18,7 +18,7 @@ interface ParticipantReorderDialogProps {
   activeReorderCategory: Category | null;
   setActiveReorderCategory: (category: Category | null) => void;
   participantsByCategory: Record<string, Participant[]>;
-  updateParticipantOrder: (category: Category, participantId: string, newPosition: number) => void;
+  updateParticipantOrder: (category: Category, participantId: number, newPosition: number) => void;
   handleDragStart: (e: React.DragEvent<HTMLDivElement>, index: number, category: Category) => void;
   handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
@@ -37,7 +37,7 @@ const ParticipantReorderDialog: React.FC<ParticipantReorderDialogProps> = ({
   handleDrop,
   draggingCategory
 }) => {
-  const positionInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const positionInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   return (
     <Dialog open={activeReorderCategory !== null} onOpenChange={(open) => !open && setActiveReorderCategory(null)}>

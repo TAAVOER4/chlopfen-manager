@@ -19,7 +19,7 @@ interface GroupReorderDialogProps {
   activeReorderCategory: Category | null;
   closeReorderDialog: () => void;
   groupsBySizeAndCategory: Record<GroupSize, Record<Category, Group[]>>;
-  updateGroupOrder: (size: GroupSize, category: Category, groupId: string, newPosition: number) => void;
+  updateGroupOrder: (size: GroupSize, category: Category, groupId: number, newPosition: number) => void;
   handleDragStart: (e: React.DragEvent<HTMLDivElement>, index: number, size: GroupSize, category: Category) => void;
   handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
@@ -41,7 +41,7 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
   draggingSize,
   draggingCategory
 }) => {
-  const positionInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const positionInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   
   const sizeLabel = activeReorderSize === 'three' ? 'Dreier' : 'Vierer';
 

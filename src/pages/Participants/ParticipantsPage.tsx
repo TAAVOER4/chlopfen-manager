@@ -30,7 +30,7 @@ const ParticipantsPage = () => {
   };
 
   // Function to get all group names a participant belongs to
-  const getParticipantGroups = (participantId: string) => {
+  const getParticipantGroups = (participantId: number) => {
     const groupsForParticipant = mockGroups.filter(group => 
       group.participantIds.includes(participantId)
     );

@@ -1,52 +1,67 @@
 
-import { User } from '@/types';
-import { mockJudges, updateMockJudges } from '@/data/mockJudges';
+// This is a simplified version of bcrypt for browser environments
 
-// Diese Funktion ist für Browser optimiert und vermeidet bcryptjs-Probleme
-export const verifyPassword = (password: string, hash: string): boolean => {
-  // Für Entwicklungszwecke: Wenn der Hash dem vordefinierten entspricht und das Passwort "password" ist
-  const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
-  if (hash === defaultPasswordHash && password === "password") {
+/**
+ * Hash a password for storing.
+ */
+export function hashPassword(password: string): string {
+  if (password === "password") {
+    // Return a predefined hash for the default password to simplify development
+    return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+  }
+  
+  // For simplicity, we're not actually hashing in this example.
+  // In a real application, you would use a proper hashing algorithm.
+  return `hashed_${password}_${Date.now()}`;
+}
+
+/**
+ * Check a password against a hash.
+ */
+export function verifyPassword(password: string, hash: string): boolean {
+  // Special case for our default password and hash for development
+  if (password === "password" && hash === "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi") {
     return true;
   }
   
-  // Tatsächlicher Vergleich würde normalerweise so aussehen:
-  // return bcryptjs.compareSync(password, hash);
-  // Aber wir umgehen dies wegen Browser-Kompatibilitätsproblemen
-  
-  return false;
-};
+  // For simplicity, we're just checking if the hash starts with "hashed_" followed by the password
+  // In a real application, you would use a proper verification method
+  return hash.startsWith(`hashed_${password}_`);
+}
 
-// Hash a password - not used in browser environment
-export const hashPassword = (password: string): string => {
-  // Für Entwicklungszwecke geben wir einfach den vordefinierten Hash zurück
-  return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
-};
-
-// Authenticate a user by username and password
-export const authenticateUser = (username: string, password: string): User | null => {
-  const user = mockJudges.find(user => user.username === username);
+/**
+ * Find a user by username and verify the password.
+ */
+export function findUserByCredentials(users: any[], username: string, password: string) {
+  const user = users.find(u => u.username === username);
   
-  if (user && verifyPassword(password, user.passwordHash)) {
+  if (!user) {
+    return null;
+  }
+  
+  if (verifyPassword(password, user.passwordHash)) {
     return user;
   }
   
   return null;
-};
+}
 
-// Change a user's password
-export const changePassword = (userId: string, newPassword: string): boolean => {
-  const updatedJudges = [...mockJudges];
-  const userIndex = updatedJudges.findIndex(user => user.id === userId);
+/**
+ * Authenticate a user by checking username and password against all users.
+ */
+export function authenticateUser(users: any[], username: string, password: string) {
+  const user = findUserByCredentials(users, username, password);
   
-  if (userIndex !== -1) {
-    updatedJudges[userIndex] = {
-      ...updatedJudges[userIndex],
-      passwordHash: hashPassword(newPassword)
-    };
-    updateMockJudges(updatedJudges);
-    return true;
+  if (!user) {
+    throw new Error("Invalid username or password");
   }
   
-  return false;
-};
+  return user;
+}
+
+/**
+ * Check if a user exists with the given ID
+ */
+export function userExists(users: any[], userId: number) {
+  return users.some(user => user.id === userId);
+}

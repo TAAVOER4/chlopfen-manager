@@ -58,7 +58,7 @@ const RegisterParticipant = () => {
     }
 
     // Generate a unique ID
-    const newId = `p${mockParticipants.length + 1}`;
+    const newId = Math.max(...mockParticipants.map(p => p.id), 0) + 1;
     
     // Create the new participant with category
     const category = determineCategory(participant.birthYear);
