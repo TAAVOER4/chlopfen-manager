@@ -55,6 +55,9 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
                   <div>
                     <div className="font-medium">{participant.firstName} {participant.lastName}</div>
                     <div className="text-sm text-muted-foreground">{participant.location}, {participant.birthYear}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {getCategoryDisplay(participant.category)}
+                    </div>
                     {existingGroups && (
                       <div className="text-xs text-muted-foreground mt-1">
                         Bereits in: {existingGroups}

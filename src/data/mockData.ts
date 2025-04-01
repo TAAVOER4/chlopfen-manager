@@ -1,4 +1,4 @@
-import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group } from '../types';
+import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group, GroupCategory } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
 // Mock Participants
@@ -460,81 +460,81 @@ export const mockParticipants: Participant[] = [
   }
 ];
 
-// Mock Groups (Erweitert)
+// Mock Groups (Updated to use the new GroupCategory type)
 export const mockGroups: Group[] = [
   // Bestehende Gruppen
   {
     id: 1,
     name: 'Berner Jungs',
     size: 'three',
-    category: 'kids',
+    category: 'kids_juniors',
     participantIds: [1, 2]
   },
   {
     id: 2,
     name: 'Zürcher Junioren',
     size: 'four',
-    category: 'juniors',
+    category: 'kids_juniors',
     participantIds: [3, 4]
   },
   
-  // Zusätzliche Gruppen (Kids)
+  // Zusätzliche Gruppen (Kids/Juniors)
   {
     id: 3,
     name: 'Thuner Klopfer',
     size: 'three',
-    category: 'kids',
+    category: 'kids_juniors',
     participantIds: [7, 8, 9]
   },
   {
     id: 4,
     name: 'Churer Schlingel',
     size: 'three',
-    category: 'kids',
+    category: 'kids_juniors',
     participantIds: [10, 11, 12]
   },
   {
     id: 5,
     name: 'Schaffhauser Kids',
     size: 'three',
-    category: 'kids',
+    category: 'kids_juniors',
     participantIds: [13, 14, 15]
   },
   {
     id: 6,
     name: 'Aarauer Peitscher',
     size: 'three',
-    category: 'kids',
+    category: 'kids_juniors',
     participantIds: [16, 17, 18]
   },
   
-  // Zusätzliche Gruppen (Juniors)
+  // Zusätzliche Gruppen (Juniors - now kids_juniors)
   {
     id: 7,
     name: 'Berner Champions',
     size: 'three',
-    category: 'juniors',
+    category: 'kids_juniors',
     participantIds: [22, 23, 24]
   },
   {
     id: 8,
     name: 'Basler Jugend',
     size: 'three',
-    category: 'juniors',
+    category: 'kids_juniors',
     participantIds: [25, 26, 27]
   },
   {
     id: 9,
     name: 'St. Galler Falken',
     size: 'three',
-    category: 'juniors',
+    category: 'kids_juniors',
     participantIds: [28, 29, 30]
   },
   {
     id: 10,
     name: 'Zuger Adler',
     size: 'three',
-    category: 'juniors',
+    category: 'kids_juniors',
     participantIds: [31, 32, 33]
   },
   

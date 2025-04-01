@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -6,13 +5,13 @@ import { Label } from "@/components/ui/label";
 import { UseFormReturn } from "react-hook-form";
 import { RefreshCw } from 'lucide-react';
 import { z } from "zod";
-import { Category, GroupSize, Participant } from '../../types';
+import { GroupCategory, GroupSize, Participant } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 
-// Schema for group registration form
+// Updated schema for group registration form with GroupCategory
 export const groupSchema = z.object({
   name: z.string().min(2, { message: "Name muss mindestens 2 Zeichen lang sein" }),
-  category: z.enum(['kids', 'juniors', 'active']),
+  category: z.enum(['kids_juniors', 'active']),
   size: z.enum(['three', 'four']),
 });
 
@@ -81,8 +80,7 @@ const GroupInfoForm: React.FC<GroupInfoFormProps> = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
-                    <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
+                    <SelectItem value="kids_juniors">{getCategoryDisplay('kids_juniors')}</SelectItem>
                     <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
                   </SelectContent>
                 </Select>

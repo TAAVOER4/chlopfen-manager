@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { mockGroups, mockParticipants } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { Group } from '../../types';
+import { Group, GroupSize, GroupCategory } from '../../types';
 import { isDuplicateGroup } from '../../utils/groupUtils';
 import GroupInfoForm, { groupSchema, GroupFormValues } from '@/components/Groups/GroupInfoForm';
 import AvailableParticipants from '@/components/Groups/AvailableParticipants';
@@ -34,7 +34,7 @@ const EditGroup = () => {
     resolver: zodResolver(groupSchema),
     defaultValues: {
       name: "",
-      category: "kids",
+      category: "kids_juniors",
       size: "three",
     },
   });
@@ -176,7 +176,7 @@ const EditGroup = () => {
         ...mockGroups[groupIndex],
         name: data.name,
         size: data.size,
-        category: data.category,
+        category: data.category as GroupCategory,
         participantIds: newParticipantIds
       };
     }

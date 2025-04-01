@@ -1,5 +1,6 @@
 
 export type Category = 'kids' | 'juniors' | 'active';
+export type GroupCategory = 'kids_juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
@@ -20,7 +21,7 @@ export interface Group {
   id: number;
   name: string;
   size: GroupSize;
-  category: Category;
+  category: GroupCategory; // Changed from Category to GroupCategory
   participantIds: number[];
 }
 
@@ -76,7 +77,7 @@ export interface ParticipantResult {
 
 export interface GroupResult {
   groupId: number;
-  category: Category;
+  category: GroupCategory; // Updated to GroupCategory
   groupSize: GroupSize;
   members: Participant[];
   totalScore: number;

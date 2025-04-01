@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { mockGroups, mockParticipants } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { GroupSize } from '../../types';
+import { GroupSize, GroupCategory } from '../../types';
 import { isDuplicateGroup } from '../../utils/groupUtils';
 import { useGroupForm } from '@/hooks/useGroupForm';
 import GroupInfoForm, { groupSchema, GroupFormValues } from '@/components/Groups/GroupInfoForm';
@@ -26,12 +26,12 @@ const RegisterGroup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Initialize form with default values
+  // Initialize form with default values - Updated default category to kids_juniors
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
       name: "",
-      category: "kids",
+      category: "kids_juniors",
       size: "three",
     },
   });
@@ -88,7 +88,7 @@ const RegisterGroup = () => {
       id: newId,
       name: data.name,
       size: data.size as GroupSize,
-      category: data.category,
+      category: data.category as GroupCategory,
       participantIds: participantIds
     };
     
