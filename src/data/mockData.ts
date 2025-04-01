@@ -1,0 +1,124 @@
+
+import { Participant, IndividualScore, GroupScore, Judge, Sponsor } from '../types';
+import { determineCategory } from '../utils/categoryUtils';
+
+// Mock Participants
+export const mockParticipants: Participant[] = [
+  {
+    id: '1',
+    firstName: 'Max',
+    lastName: 'Muster',
+    location: 'Bern',
+    birthYear: 2011,
+    category: 'kids'
+  },
+  {
+    id: '2',
+    firstName: 'Anna',
+    lastName: 'Schmidt',
+    location: 'Zürich',
+    birthYear: 2010,
+    category: 'kids'
+  },
+  {
+    id: '3',
+    firstName: 'Tim',
+    lastName: 'Meier',
+    location: 'Luzern',
+    birthYear: 2007,
+    category: 'juniors'
+  },
+  {
+    id: '4',
+    firstName: 'Sarah',
+    lastName: 'Huber',
+    location: 'Basel',
+    birthYear: 2008,
+    category: 'juniors'
+  },
+  {
+    id: '5',
+    firstName: 'Michael',
+    lastName: 'Weber',
+    location: 'St. Gallen',
+    birthYear: 2000,
+    category: 'active'
+  },
+  {
+    id: '6',
+    firstName: 'Laura',
+    lastName: 'Müller',
+    location: 'Bern',
+    birthYear: 1995,
+    category: 'active'
+  }
+];
+
+// Mock Judges
+export const mockJudges: Judge[] = [
+  { id: 'j1', name: 'Hans Fischer', username: 'hans' },
+  { id: 'j2', name: 'Maria Gerber', username: 'maria' },
+  { id: 'j3', name: 'Peter Keller', username: 'peter' },
+  { id: 'j4', name: 'Christine Wagner', username: 'christine' },
+  { id: 'j5', name: 'Thomas Schneider', username: 'thomas' }
+];
+
+// Mock Individual Scores
+export const mockIndividualScores: IndividualScore[] = [
+  {
+    participantId: '1',
+    judgeId: 'j1',
+    round: 1,
+    whipStrikes: 8,
+    rhythm: 7,
+    stance: 8,
+    posture: 7,
+    whipControl: 8
+  },
+  {
+    participantId: '1',
+    judgeId: 'j2',
+    round: 1,
+    whipStrikes: 7,
+    rhythm: 8,
+    stance: 7,
+    posture: 8,
+    whipControl: 7
+  }
+];
+
+// Mock Group Scores
+export const mockGroupScores: GroupScore[] = [
+  {
+    groupId: 'g1',
+    judgeId: 'j1',
+    whipStrikes: 8,
+    rhythm1: 7,
+    rhythm2: 8,
+    tempo1: 8,
+    tempo2: 7,
+    timeSeconds: 43
+  }
+];
+
+// Mock Sponsors
+export const mockSponsors: Sponsor[] = [
+  {
+    id: 's1',
+    name: 'Swiss Traditions AG',
+    category: 'kids',
+    rank: 1
+  },
+  {
+    id: 's2',
+    name: 'Schweizer Folklore GmbH',
+    category: 'juniors',
+    rank: 1
+  },
+  {
+    id: 's3',
+    name: 'Alpen Traditions',
+    category: 'active',
+    rank: 1
+  }
+];
