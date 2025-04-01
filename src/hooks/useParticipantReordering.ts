@@ -63,7 +63,7 @@ export const useParticipantReordering = (participantsByCategory: Record<string, 
     setDraggingCategory(null);
   };
 
-  const updateParticipantOrder = (category: Category, participantId: string, newPosition: number) => {
+  const updateParticipantOrder = (category: Category, participantId: number, newPosition: number) => {
     if (isNaN(newPosition) || newPosition < 1 || newPosition > participantsByCategory[category].length) {
       toast({
         title: "Ungültige Position",

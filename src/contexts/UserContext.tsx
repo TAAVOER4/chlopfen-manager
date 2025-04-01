@@ -54,32 +54,34 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isImpersonating = !!originalAdmin;
 
   const login = (username: string, password: string): boolean => {
-    const authenticatedUser = authenticateUser(username, password);
-    
-    if (authenticatedUser) {
-      setCurrentUser(authenticatedUser);
+    try {
+      const authenticatedUser = authenticateUser(mockJudges, username, password);
       
-      // Store user in localStorage, but without password hash for security
-      const userToStore = { ...authenticatedUser };
-      delete (userToStore as any).passwordHash;
-      
-      localStorage.setItem('currentUser', JSON.stringify(userToStore));
-      
-      toast({
-        title: "Anmeldung erfolgreich",
-        description: `Willkommen, ${authenticatedUser.name}!`
-      });
-      
-      return true;
-    } else {
+      if (authenticatedUser) {
+        setCurrentUser(authenticatedUser);
+        
+        // Store user in localStorage, but without password hash for security
+        const userToStore = { ...authenticatedUser };
+        delete (userToStore as any).passwordHash;
+        
+        localStorage.setItem('currentUser', JSON.stringify(userToStore));
+        
+        toast({
+          title: "Anmeldung erfolgreich",
+          description: `Willkommen, ${authenticatedUser.name}!`
+        });
+        
+        return true;
+      }
+    } catch (error) {
       toast({
         title: "Anmeldung fehlgeschlagen",
         description: "Falscher Benutzername oder Passwort.",
         variant: "destructive"
       });
-      
-      return false;
     }
+    
+    return false;
   };
 
   const logout = () => {

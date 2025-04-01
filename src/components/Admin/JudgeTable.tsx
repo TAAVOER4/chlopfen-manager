@@ -15,7 +15,7 @@ interface JudgeTableProps {
   editingJudge: Judge | null;
   onEdit: (judge: Judge) => void;
   onSave: () => void;
-  onImpersonate: (judgeId: string) => void;
+  onImpersonate: (judgeId: number) => void;
   onDeleteClick: (judge: Judge) => void;
   onJudgeChange: (judge: Judge) => void;
   individualCriteria: { value: CriterionKey; label: string }[];

@@ -15,10 +15,10 @@ interface UserTableProps {
   editingUser: User | null;
   onEdit: (user: User) => void;
   onSave: () => void;
-  onImpersonate: (userId: string) => void;
+  onImpersonate: (userId: number) => void;
   onDeleteClick: (user: User) => void;
   onUserChange: (user: User) => void;
-  onPasswordChange: (userId: string, newPassword: string) => void;
+  onPasswordChange: (userId: number, newPassword: string) => void;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
 }

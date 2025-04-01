@@ -73,7 +73,7 @@ export const useGroupReordering = (
     setDraggingCategory(null);
   };
 
-  const updateGroupOrder = (size: GroupSize, category: Category, groupId: string, newPosition: number) => {
+  const updateGroupOrder = (size: GroupSize, category: Category, groupId: number, newPosition: number) => {
     if (isNaN(newPosition) || newPosition < 1 || newPosition > groupsBySizeAndCategory[size][category].length) {
       toast({
         title: "Ungültige Position",
