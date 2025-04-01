@@ -1,3 +1,4 @@
+
 import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group, GroupCategory } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
@@ -729,21 +730,24 @@ export const mockSponsors: Sponsor[] = [
     name: 'Swiss Traditions AG',
     category: 'kids',
     rank: 1,
-    logo: '/lovable-uploads/a5d2c313-c136-4233-8b7b-e1347138b272.png'
+    logo: '/lovable-uploads/a5d2c313-c136-4233-8b7b-e1347138b272.png',
+    type: 'prize'
   },
   {
     id: 2,
     name: 'Schweizer Folklore GmbH',
     category: 'juniors',
     rank: 1,
-    logo: '/lovable-uploads/d96b84f9-8847-4e45-bd71-c44b3fb53513.png'
+    logo: '/lovable-uploads/d96b84f9-8847-4e45-bd71-c44b3fb53513.png',
+    type: 'prize'
   },
   {
     id: 3,
     name: 'Alpen Traditions',
     category: 'active',
     rank: 1,
-    logo: '/lovable-uploads/4ea13025-c283-4b04-91f7-8176d706ccf7.png'
+    logo: '/lovable-uploads/4ea13025-c283-4b04-91f7-8176d706ccf7.png',
+    type: 'prize'
   },
   // Zusätzliche Sponsoren
   {
@@ -751,20 +755,23 @@ export const mockSponsors: Sponsor[] = [
     name: 'Bergfreunde GmbH',
     category: 'kids',
     rank: 2,
-    logo: '/lovable-uploads/b3e7c249-a712-4f5a-9b31-d7e8a1b9e654.png'
+    logo: '/lovable-uploads/b3e7c249-a712-4f5a-9b31-d7e8a1b9e654.png',
+    type: 'prize'
   },
   {
     id: 5,
     name: 'Heimatland Sponsoring',
     category: 'juniors',
     rank: 2,
-    logo: '/lovable-uploads/c5f9a3a7-e821-4d2b-b45c-f8d3e2a7bc32.png'
+    logo: '/lovable-uploads/c5f9a3a7-e821-4d2b-b45c-f8d3e2a7bc32.png',
+    type: 'prize'
   },
   {
     id: 6,
     name: 'Schweizer Bank AG',
     category: 'active',
     rank: 2,
-    logo: '/lovable-uploads/7d9e4a12-f3b6-4e78-a5c3-2d8e7b6f4321.png'
+    logo: '/lovable-uploads/7d9e4a12-f3b6-4e78-a5c3-2d8e7b6f4321.png',
+    type: 'prize'
   }
 ];

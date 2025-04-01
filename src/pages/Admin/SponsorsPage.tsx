@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,8 @@ import {
   Heart, 
   ListFilter,
   PenLine,
-  Trash2
+  Trash2,
+  ImageOff
 } from 'lucide-react';
 import {
   Card,
@@ -122,7 +122,7 @@ const SponsorsPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.logo || !formData.category) {
+    if (!formData.name || !formData.category) {
       toast({
         title: "Fehlerhafte Eingabe",
         description: "Bitte füllen Sie alle erforderlichen Felder aus.",
@@ -146,6 +146,7 @@ const SponsorsPage = () => {
       const newSponsor: Sponsor = {
         ...formData,
         id: Math.max(...sponsors.map(s => s.id), 0) + 1,
+        logo: formData.logo || '',
       } as Sponsor;
       
       setSponsors([...sponsors, newSponsor]);
@@ -467,15 +468,15 @@ const SponsorsPage = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="logo">Logo URL *</Label>
+                <Label htmlFor="logo">Logo URL</Label>
                 <Input 
                   id="logo" 
                   name="logo" 
-                  value={formData.logo} 
+                  value={formData.logo || ''} 
                   onChange={handleFormChange} 
                   placeholder="https://example.com/logo.png" 
-                  required
                 />
+                <p className="text-xs text-muted-foreground">Optional. URL zu einem Bild des Sponsor-Logos.</p>
               </div>
               
               <div className="space-y-2">
