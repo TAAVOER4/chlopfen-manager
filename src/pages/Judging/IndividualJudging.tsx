@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -6,20 +7,22 @@ import {
   UserCheck, 
   Award, 
   Clock, 
-  ClipboardCheck 
+  ClipboardCheck,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { mockParticipants } from '@/data/mockData';
 import { mockIndividualScores } from '@/data/mockData';
-import { Participant, IndividualScore, Judge } from '@/types';
-import type { CriterionKey } from '@/types';
+import { Participant, IndividualScore, Judge, Category, CriterionKey } from '@/types';
+import { getCategoryRequiredStrikes, getCategoryDisplay } from '@/utils/categoryUtils';
+import { Separator } from '@/components/ui/separator';
 import { useUser } from '@/contexts/UserContext';
 
 const IndividualJudging = () => {
-  const { category = '' } = useParams<{ category: Category }>();
+  const { category = '' } = useParams<{ category: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser, isAdmin } = useUser();
