@@ -1,4 +1,3 @@
-
 import { IndividualScore, GroupScore, Participant, Category } from '../types';
 
 export const calculateIndividualTotal = (scores: IndividualScore[]): number => {
@@ -95,4 +94,16 @@ export const sortParticipantsByScore = (
     
     return bRhythm - aRhythm;
   });
+};
+
+// New function to reorder participants by moving one from the old index to the new index
+export const reorderParticipants = (
+  participants: Participant[],
+  oldIndex: number,
+  newIndex: number
+): Participant[] => {
+  const result = Array.from(participants);
+  const [removed] = result.splice(oldIndex, 1);
+  result.splice(newIndex, 0, removed);
+  return result;
 };
