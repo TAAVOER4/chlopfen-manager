@@ -1,7 +1,7 @@
 
 import { Judge } from '@/types';
 
-export const mockJudges: Judge[] = [
+export let mockJudges: Judge[] = [
   {
     id: 'judge_1',
     name: 'Hans Müller',
@@ -66,3 +66,8 @@ export const mockJudges: Judge[] = [
     }
   }
 ];
+
+// Function to update the mockJudges array
+export const updateMockJudges = (updatedJudges: Judge[]) => {
+  mockJudges = updatedJudges;
+};

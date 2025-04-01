@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -7,7 +6,8 @@ import {
   Save,
   UserPlus, 
   UserCheck,
-  User
+  User,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,12 +45,15 @@ import { Label } from '@/components/ui/label';
 import { mockJudges } from '@/data/mockJudges';
 import { Judge, CriterionKey, GroupCriterionKey } from '@/types';
 import { useUser } from '@/contexts/UserContext';
+import DeleteJudgeDialog from '@/components/Admin/DeleteJudgeDialog';
 
 const JudgesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [judges, setJudges] = useState<Judge[]>(mockJudges);
   const [editingJudge, setEditingJudge] = useState<Judge | null>(null);
+  const [judgeToDelete, setJudgeToDelete] = useState<Judge | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { impersonate } = useUser();
   
   // Available criteria for assignment
@@ -74,7 +77,6 @@ const JudgesPage = () => {
     if (judge) {
       impersonate(judge);
       
-      // Redirect to the judging page if they're a judge
       if (judge.role === 'judge') {
         navigate('/judging');
       } else {
@@ -116,6 +118,20 @@ const JudgesPage = () => {
     toast({
       title: "Neuer Richter",
       description: "Bitte vervollständigen Sie die Daten des neuen Richters."
+    });
+  };
+
+  const handleDeleteClick = (judge: Judge) => {
+    setJudgeToDelete(judge);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteJudge = (judgeId: string) => {
+    setJudges(judges.filter(j => j.id !== judgeId));
+    
+    toast({
+      title: "Richter gelöscht",
+      description: "Der Richter wurde erfolgreich gelöscht."
     });
   };
 
@@ -297,6 +313,13 @@ const JudgesPage = () => {
                       >
                         Als Benutzer anmelden
                       </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => handleDeleteClick(judge)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -310,6 +333,13 @@ const JudgesPage = () => {
           </Button>
         </CardFooter>
       </Card>
+      
+      <DeleteJudgeDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        judge={judgeToDelete}
+        onDelete={handleDeleteJudge}
+      />
     </div>
   );
 };
