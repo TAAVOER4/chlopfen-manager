@@ -14,6 +14,14 @@ export interface Participant {
   groupSize?: GroupSize;
 }
 
+export interface Group {
+  id: string;
+  name: string;
+  size: GroupSize;
+  category: Category;
+  participantIds: string[];
+}
+
 export interface IndividualScore {
   participantId: string;
   judgeId: string;

@@ -1,5 +1,4 @@
-
-import { Participant, IndividualScore, GroupScore, Judge, Sponsor } from '../types';
+import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
 // Mock Participants
@@ -51,6 +50,24 @@ export const mockParticipants: Participant[] = [
     location: 'Bern',
     birthYear: 1995,
     category: 'active'
+  }
+];
+
+// Mock Groups
+export const mockGroups: Group[] = [
+  {
+    id: 'g1',
+    name: 'Berner Jungs',
+    size: 'three',
+    category: 'kids',
+    participantIds: ['1', '2']
+  },
+  {
+    id: 'g2',
+    name: 'Zürcher Junioren',
+    size: 'four',
+    category: 'juniors',
+    participantIds: ['3', '4']
   }
 ];
 
