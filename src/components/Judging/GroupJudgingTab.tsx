@@ -19,9 +19,47 @@ const GroupJudgingTab = () => {
       four: { kids: [], juniors: [], active: [] }
     };
     
-    mockGroups.forEach(group => {
-      initialGroups[group.size][group.category].push(group);
+    // First check if we have any stored orders in session storage
+    const sizes: GroupSize[] = ['three', 'four'];
+    const categories: Category[] = ['kids', 'juniors', 'active'];
+    
+    // Try to load groups from session storage first
+    let hasLoadedFromStorage = false;
+    
+    sizes.forEach(size => {
+      categories.forEach(category => {
+        const storageKey = `reorderedGroups-${size}-${category}`;
+        const storedGroups = sessionStorage.getItem(storageKey);
+        
+        if (storedGroups) {
+          try {
+            const parsedGroups: Group[] = JSON.parse(storedGroups);
+            initialGroups[size][category] = parsedGroups;
+            hasLoadedFromStorage = true;
+          } catch (error) {
+            console.error(`Error parsing stored groups for ${size}-${category}:`, error);
+          }
+        }
+      });
     });
+    
+    // If nothing was loaded from storage, use the mockGroups
+    if (!hasLoadedFromStorage) {
+      mockGroups.forEach(group => {
+        initialGroups[group.size][group.category].push(group);
+      });
+    } else {
+      // Find any mockGroups that might not be in any category yet
+      // (for example, new groups added after storage was saved)
+      mockGroups.forEach(group => {
+        const isAlreadyIncluded = initialGroups[group.size][group.category]
+          .some(g => g.id === group.id);
+          
+        if (!isAlreadyIncluded) {
+          initialGroups[group.size][group.category].push(group);
+        }
+      });
+    }
     
     return initialGroups;
   });
