@@ -50,14 +50,14 @@ const ParticipantsPage = () => {
       
       const searchLower = searchText.toLowerCase();
       
-      // Search across all text fields
+      // Search across all text fields EXCEPT groups column
       return (
         participant.firstName.toLowerCase().includes(searchLower) ||
         participant.lastName.toLowerCase().includes(searchLower) ||
         participant.location.toLowerCase().includes(searchLower) ||
         participant.birthYear.toString().includes(searchLower) ||
-        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower) ||
-        getParticipantGroups(participant.id).toLowerCase().includes(searchLower)
+        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower)
+        // removed getParticipantGroups(participant.id).toLowerCase().includes(searchLower)
       );
     });
 
