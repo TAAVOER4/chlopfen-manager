@@ -42,7 +42,6 @@ import { Participant, Category, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { generateGroupName, isDuplicateGroup } from '../../utils/groupUtils';
 
-// Schema for group registration form
 const groupSchema = z.object({
   name: z.string().min(2, { message: "Name muss mindestens 2 Zeichen lang sein" }),
   category: z.enum(['kids', 'juniors', 'active']),
@@ -341,9 +340,9 @@ const EditGroup = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="kids">Kids</SelectItem>
-                            <SelectItem value="juniors">Junioren</SelectItem>
-                            <SelectItem value="active">Aktive</SelectItem>
+                            <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
+                            <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
+                            <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
