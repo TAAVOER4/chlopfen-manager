@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, Users, Award, BarChart, Settings, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, User, Users, Award, BarChart, Settings, LogOut, LogIn } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { currentUser, isImpersonating, stopImpersonating } = useUser();
+  const navigate = useNavigate();
+  const { currentUser, isImpersonating, stopImpersonating, logout } = useUser();
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: <BarChart className="w-5 h-5" /> },
@@ -20,6 +21,15 @@ const Navbar: React.FC = () => {
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   const userRoleDisplay = currentUser?.role === 'admin' ? 'Administrator' : 'Richter';
@@ -58,24 +68,46 @@ const Navbar: React.FC = () => {
           </div>
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-medium text-white flex gap-2 items-center bg-blue-800 px-3 py-1.5 rounded-full">
-                  <User className="h-4 w-4" />
-                  <span>{currentUser?.name} ({userRoleDisplay})</span>
-                </div>
-                
-                {isImpersonating && (
+              {currentUser ? (
+                <div className="flex items-center gap-3">
+                  <div className="text-sm font-medium text-white flex gap-2 items-center bg-blue-800 px-3 py-1.5 rounded-full">
+                    <User className="h-4 w-4" />
+                    <span>{currentUser.name} ({userRoleDisplay})</span>
+                  </div>
+                  
+                  {isImpersonating && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={stopImpersonating}
+                      className="flex gap-2 items-center"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Zurück zu Admin
+                    </Button>
+                  )}
+                  
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
-                    onClick={stopImpersonating}
-                    className="flex gap-2 items-center"
+                    onClick={handleLogout}
+                    className="flex gap-2 items-center text-white hover:text-white hover:bg-blue-800"
                   >
                     <LogOut className="h-3.5 w-3.5" />
-                    Zurück zu Admin
+                    Abmelden
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogin}
+                  className="flex gap-2 items-center text-white hover:text-white hover:bg-blue-800"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  Anmelden
+                </Button>
+              )}
             </div>
           </div>
           <div className="-mr-2 flex md:hidden">
@@ -112,22 +144,52 @@ const Navbar: React.FC = () => {
             ))}
             
             <div className="flex flex-col gap-2 pt-4 pb-2 border-t border-blue-700 mt-4">
-              <div className="px-3 text-sm text-gray-200">
-                Angemeldet als: {currentUser?.name} ({userRoleDisplay})
-              </div>
-              
-              {isImpersonating && (
+              {currentUser ? (
+                <>
+                  <div className="px-3 text-sm text-gray-200">
+                    Angemeldet als: {currentUser.name} ({userRoleDisplay})
+                  </div>
+                  
+                  {isImpersonating && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        stopImpersonating();
+                        setIsOpen(false);
+                      }}
+                      className="mx-2 flex gap-2 items-center"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Zurück zu Admin
+                    </Button>
+                  )}
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="mx-2 flex gap-2 items-center text-white"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Abmelden
+                  </Button>
+                </>
+              ) : (
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
-                    stopImpersonating();
+                    handleLogin();
                     setIsOpen(false);
                   }}
-                  className="mx-2 flex gap-2 items-center"
+                  className="mx-2 flex gap-2 items-center text-white"
                 >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Zurück zu Admin
+                  <LogIn className="h-3.5 w-3.5" />
+                  Anmelden
                 </Button>
               )}
             </div>
