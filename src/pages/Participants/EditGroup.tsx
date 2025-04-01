@@ -341,9 +341,9 @@ const EditGroup = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
-                            <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
-                            <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
+                            <SelectItem value="kids">Kids</SelectItem>
+                            <SelectItem value="juniors">Junioren</SelectItem>
+                            <SelectItem value="active">Aktive</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
