@@ -3,7 +3,6 @@ import React, { useRef } from 'react';
 import { Move } from 'lucide-react';
 import { Category, Group, GroupSize } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
