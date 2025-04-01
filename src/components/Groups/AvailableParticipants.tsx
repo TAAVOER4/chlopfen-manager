@@ -12,6 +12,7 @@ interface AvailableParticipantsProps {
   addParticipant: (participant: Participant) => void;
   mockGroups: Group[];
   selectedParticipants: Participant[];
+  currentGroupId?: number;
 }
 
 const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
@@ -19,7 +20,8 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
   selectedCategory,
   addParticipant,
   mockGroups,
-  selectedParticipants
+  selectedParticipants,
+  currentGroupId
 }) => {
   return (
     <Card>
@@ -36,6 +38,7 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
             {availableParticipants.map((participant) => {
               // Show existing group memberships
               const existingGroups = participant.groupIds?.map(gId => {
+                if (currentGroupId && gId === currentGroupId) return null;
                 const group = mockGroups.find(g => g.id === gId);
                 return group?.name || '';
               }).filter(Boolean).join(', ');
