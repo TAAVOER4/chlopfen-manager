@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Save, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,6 +12,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { mockGroups } from '../../data/mockData';
 import { Group, GroupScore, GroupSize, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
@@ -52,10 +53,10 @@ const GroupJudging: React.FC = () => {
     }
 
     // Check if user has the right assignedCriterion for group judging
-    const validGroupCriteria = ['whipStrikes', 'rhythm', 'tempo', 'time'];
+    const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo', 'time'];
     if (currentUser.role !== 'admin' && 
         (!currentUser.assignedCriterion || 
-         !validGroupCriteria.includes(currentUser.assignedCriterion))) {
+         !validGroupCriteria.includes(currentUser.assignedCriterion as GroupCriterionKey))) {
       navigate('/judging');
       toast({
         title: "Zugriff verweigert",
@@ -82,7 +83,7 @@ const GroupJudging: React.FC = () => {
         whipStrikes: 0,
         rhythm: 0,
         tempo: 0,
-        time: 0
+        time: false // Initialize time as false (not correctly timed)
       };
     });
     setScores(initialScores);
@@ -97,7 +98,7 @@ const GroupJudging: React.FC = () => {
     return currentUser?.assignedCriterion === criterion;
   };
 
-  const handleScoreChange = (groupId: string, criterion: keyof GroupScore, value: number) => {
+  const handleScoreChange = (groupId: string, criterion: keyof Omit<GroupScore, 'groupId' | 'judgeId' | 'time'>, value: number) => {
     // Clamp value between 1 and 10
     const clampedValue = Math.max(1, Math.min(10, value));
     
@@ -106,6 +107,16 @@ const GroupJudging: React.FC = () => {
       [groupId]: {
         ...prev[groupId],
         [criterion]: clampedValue
+      }
+    }));
+  };
+
+  const handleTimeChange = (groupId: string, value: boolean) => {
+    setScores(prev => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        time: value
       }
     }));
   };
@@ -176,7 +187,7 @@ const GroupJudging: React.FC = () => {
         <CardContent>
           <div className="space-y-6">
             <div>
-              <h3 className="font-medium mb-2">Schläge (Note 1-10)</h3>
+              <h3 className="font-medium mb-2">1. Schläge (Note 1-10)</h3>
               <div>
                 <label className="text-sm font-medium">Schläge Bewertung</label>
                 <Input 
@@ -202,9 +213,12 @@ const GroupJudging: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Rhythmus (Note 1-10)</h3>
+              <h3 className="font-medium mb-2">2. Rhythmus (Note 1-10)</h3>
               <div>
                 <label className="text-sm font-medium">Rhythmus Bewertung</label>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Anfang bis Ende, gleich schnell und laut
+                </p>
                 <Input 
                   type="number" 
                   className="w-full mt-1"
@@ -228,9 +242,12 @@ const GroupJudging: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Takt (Note 1-10)</h3>
+              <h3 className="font-medium mb-2">3. Takt (Note 1-10)</h3>
               <div>
                 <label className="text-sm font-medium">Takt Bewertung</label>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Gleiche Taktgeschwindigkeit vom Anfang bis zum Schluss
+                </p>
                 <Input 
                   type="number" 
                   className="w-full mt-1"
@@ -254,25 +271,28 @@ const GroupJudging: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Zeit (Note 1-10)</h3>
-              <div>
-                <label className="text-sm font-medium">Zeit Bewertung</label>
-                <Input 
-                  type="number" 
-                  className="w-full mt-1"
-                  min="1"
-                  max="10"
-                  step="0.1"
-                  value={scores[currentGroup.id]?.time || 1}
-                  onChange={(e) => handleScoreChange(
-                    currentGroup.id, 
-                    'time', 
-                    Number(e.target.value)
-                  )}
+              <h3 className="font-medium mb-2">Zeit</h3>
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch
+                  checked={scores[currentGroup.id]?.time || false}
+                  onCheckedChange={(checked) => handleTimeChange(currentGroup.id, checked)}
                   disabled={!canEditCriterion('time')}
                 />
+                <span className="text-sm">
+                  {scores[currentGroup.id]?.time ? (
+                    <span className="flex items-center text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Zeit eingehalten
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-red-600">
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Zeit nicht eingehalten
+                    </span>
+                  )}
+                </span>
                 {!canEditCriterion('time') && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground ml-2">
                     Sie können dieses Kriterium nicht bewerten
                   </p>
                 )}

@@ -58,7 +58,10 @@ export const calculateGroupTotal = (scores: GroupScore[]): number => {
   if (scores.length === 0) return 0;
   
   return scores.reduce((total, score) => {
-    return total + score.whipStrikes + score.rhythm1 + score.rhythm2 + score.tempo1 + score.tempo2;
+    // Sum up only numeric scores
+    let scoreTotal = score.whipStrikes + score.rhythm + score.tempo;
+    // Time is not added to the score since it's a boolean value
+    return total + scoreTotal;
   }, 0);
 };
 
@@ -66,10 +69,10 @@ export const calculateGroupAverageRhythm = (scores: GroupScore[]): number => {
   if (scores.length === 0) return 0;
   
   const rhythmTotal = scores.reduce((total, score) => {
-    return total + score.rhythm1 + score.rhythm2;
+    return total + score.rhythm;
   }, 0);
   
-  return rhythmTotal / (scores.length * 2);
+  return rhythmTotal / scores.length;
 };
 
 export const sortParticipantsByScore = (

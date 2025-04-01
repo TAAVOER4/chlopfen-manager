@@ -40,7 +40,7 @@ export interface GroupScore {
   whipStrikes: number;
   rhythm: number;
   tempo: number;
-  time: number;
+  time?: boolean; // Changed to boolean - either timed correctly (true) or not (false)
 }
 
 export interface Judge {
