@@ -3,19 +3,21 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Users, Pencil, Trash, Filter } from 'lucide-react';
+import { PlusCircle, Users, Pencil, Trash, Filter, Search } from 'lucide-react';
 import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
 import { Participant, Category } from '../../types';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const ParticipantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
+  const [searchText, setSearchText] = useState('');
 
   const handleDeleteParticipant = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -38,10 +40,26 @@ const ParticipantsPage = () => {
     return groupsForParticipant.map(g => g.name).join(', ');
   };
   
-  // Filter participants based on selected category
-  const filteredParticipants = mockParticipants.filter(participant => 
-    categoryFilter === 'all' || participant.category === categoryFilter
-  );
+  // Filter participants based on selected category and search text
+  const filteredParticipants = mockParticipants
+    .filter(participant => 
+      categoryFilter === 'all' || participant.category === categoryFilter
+    )
+    .filter(participant => {
+      if (!searchText.trim()) return true;
+      
+      const searchLower = searchText.toLowerCase();
+      
+      // Search across all text fields
+      return (
+        participant.firstName.toLowerCase().includes(searchLower) ||
+        participant.lastName.toLowerCase().includes(searchLower) ||
+        participant.location.toLowerCase().includes(searchLower) ||
+        participant.birthYear.toString().includes(searchLower) ||
+        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower) ||
+        getParticipantGroups(participant.id).toLowerCase().includes(searchLower)
+      );
+    });
 
   // Force update when needed
   React.useEffect(() => {
@@ -73,22 +91,37 @@ const ParticipantsPage = () => {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold">Einzelteilnehmer</h2>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select
-                value={categoryFilter}
-                onValueChange={(value) => setCategoryFilter(value as Category | 'all')}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Kategorie wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Kategorien</SelectItem>
-                  <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
-                  <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
-                  <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4">
+              {/* Search input */}
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Teilnehmer suchen..."
+                  className="pl-8"
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                />
+              </div>
+
+              {/* Category filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select
+                  value={categoryFilter}
+                  onValueChange={(value) => setCategoryFilter(value as Category | 'all')}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Kategorie wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Kategorien</SelectItem>
+                    <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
+                    <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
+                    <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <Table>
