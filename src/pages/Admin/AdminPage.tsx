@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -40,7 +41,8 @@ const AdminPage = () => {
       <h1 className="text-3xl font-bold text-swiss-blue mb-6">Administration</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
+        {/* Each card has fixed min-height to ensure consistent button positioning */}
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="h-5 w-5 mr-2" />
@@ -50,12 +52,12 @@ const AdminPage = () => {
               Verwaltung der Teilnehmer und Gruppenzuweisung
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Verwalten Sie alle Teilnehmer, weisen Sie Gruppen zu und exportieren Sie Teilnehmerlisten.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/participants">
                 Zur Teilnehmerverwaltung
@@ -65,7 +67,7 @@ const AdminPage = () => {
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Award className="h-5 w-5 mr-2" />
@@ -75,12 +77,12 @@ const AdminPage = () => {
               Verwaltung der Benutzer und Zugriffsrechte
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Verwalten Sie die Benutzer, vergeben Sie Zugriffsrechte und weisen Sie Kategorien zu.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/admin/users">
                 Zur Benutzerverwaltung
@@ -90,7 +92,7 @@ const AdminPage = () => {
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Database className="h-5 w-5 mr-2" />
@@ -100,12 +102,12 @@ const AdminPage = () => {
               Verwaltung der Sponsoren und Zuordnung zu Kategorien
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Verwalten Sie die Sponsoren und ordnen Sie diese den Kategorien und Rängen zu.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/admin/sponsors">
                 Zur Sponsorenverwaltung
@@ -115,7 +117,7 @@ const AdminPage = () => {
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Settings className="h-5 w-5 mr-2" />
@@ -125,12 +127,12 @@ const AdminPage = () => {
               Konfiguration des aktuellen Turniers
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Legen Sie den Turniernamen, das Datum und andere Einstellungen fest.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/admin/tournament">
                 Zu den Turniereinstellungen
@@ -140,7 +142,7 @@ const AdminPage = () => {
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="h-5 w-5 mr-2" />
@@ -150,12 +152,12 @@ const AdminPage = () => {
               Verwaltung des Turnier-Zeitplans
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Erstellen und bearbeiten Sie den Zeitplan für das Turnier.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/admin/schedule">
                 Zum Zeitplan
@@ -165,7 +167,7 @@ const AdminPage = () => {
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Printer className="h-5 w-5 mr-2" />
@@ -175,12 +177,12 @@ const AdminPage = () => {
               Generierung von Berichten und Exporten
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
               Erstellen Sie Berichte, Ranglisten und exportieren Sie Daten in verschiedenen Formaten.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="mt-auto">
             <Button asChild className="w-full">
               <Link to="/admin/reports">
                 Zu den Berichten
