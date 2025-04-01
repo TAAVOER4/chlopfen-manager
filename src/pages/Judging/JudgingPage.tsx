@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   User, 
@@ -54,6 +54,9 @@ const JudgingPage = () => {
   });
   const [draggingCategory, setDraggingCategory] = useState<Category | null>(null);
   const [activeReorderCategory, setActiveReorderCategory] = useState<Category | null>(null);
+  
+  // Use refs to store references to position input elements
+  const positionInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   
   const { toast } = useToast();
   const { isAdmin } = useUser();
@@ -116,6 +119,14 @@ const JudgingPage = () => {
           [category]: updatedParticipants
         }));
 
+        // Update position input values to reflect the new order
+        updatedParticipants.forEach((participant, idx) => {
+          const inputRef = positionInputRefs.current.get(participant.id);
+          if (inputRef) {
+            inputRef.value = (idx + 1).toString();
+          }
+        });
+
         toast({
           title: "Reihenfolge aktualisiert",
           description: "Die Reihenfolge der Teilnehmer wurde erfolgreich geändert."
@@ -154,6 +165,14 @@ const JudgingPage = () => {
       ...prev,
       [category]: updatedParticipants
     }));
+
+    // Update position input values to reflect the new order
+    updatedParticipants.forEach((participant, idx) => {
+      const inputRef = positionInputRefs.current.get(participant.id);
+      if (inputRef) {
+        inputRef.value = (idx + 1).toString();
+      }
+    });
 
     toast({
       title: "Reihenfolge aktualisiert",
@@ -336,6 +355,9 @@ const JudgingPage = () => {
                     max={participantsByCategory[activeReorderCategory].length}
                     defaultValue={index + 1}
                     className="w-16 h-8 text-center border rounded-md"
+                    ref={(el) => {
+                      if (el) positionInputRefs.current.set(participant.id, el);
+                    }}
                     onBlur={(e) => {
                       const val = parseInt(e.target.value);
                       if (!isNaN(val)) {
