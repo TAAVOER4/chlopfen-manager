@@ -21,7 +21,7 @@ import { Download, Medal, TrendingUp } from 'lucide-react';
 import { mockParticipants, mockIndividualScores, mockSponsors } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { Category, ParticipantResult } from '../../types';
-import { calculateIndividualBestRound } from '../../utils/scoreUtils';
+import { calculateBothRoundsTotal } from '../../utils/scoreUtils';
 
 const ResultsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('kids');
@@ -43,14 +43,14 @@ const ResultsPage = () => {
     return filteredParticipants.map(participant => {
       const participantScores = scoresByParticipant[participant.id] || [];
       
-      const bestRoundScore = calculateIndividualBestRound(participantScores);
+      const totalScore = calculateBothRoundsTotal(participantScores);
       
       const totalCriteria = participantScores.length * 5;
-      const averageScore = totalCriteria > 0 ? bestRoundScore / (participantScores.length || 1) : 0;
+      const averageScore = totalCriteria > 0 ? totalScore / totalCriteria : 0;
       
       return {
         participant,
-        totalScore: bestRoundScore,
+        totalScore,
         averageScore,
         rank: 0
       };
@@ -112,7 +112,7 @@ const ResultsPage = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Wohnort</TableHead>
                     <TableHead className="text-right">Jahrgang</TableHead>
-                    <TableHead className="text-right">Punkte</TableHead>
+                    <TableHead className="text-right">Punkte (beide Durchgänge)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

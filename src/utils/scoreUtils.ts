@@ -1,3 +1,4 @@
+
 import { IndividualScore, GroupScore, Participant, Category } from '../types';
 
 export const calculateIndividualTotal = (scores: IndividualScore[]): number => {
@@ -35,6 +36,25 @@ export const calculateIndividualBestRound = (scores: IndividualScore[]): number 
   return Math.max(...Object.values(roundScores));
 };
 
+// New function to calculate the sum of both rounds
+export const calculateBothRoundsTotal = (scores: IndividualScore[]): number => {
+  if (scores.length === 0) return 0;
+  
+  // Group scores by round
+  const roundScores: Record<number, number> = {};
+  
+  scores.forEach(score => {
+    const roundTotal = score.whipStrikes + score.rhythm + score.stance + score.posture + score.whipControl;
+    if (!roundScores[score.round]) {
+      roundScores[score.round] = 0;
+    }
+    roundScores[score.round] += roundTotal;
+  });
+  
+  // Sum up all rounds (in case there are more than 2)
+  return Object.values(roundScores).reduce((sum, roundScore) => sum + roundScore, 0);
+};
+
 export const calculateGroupTotal = (scores: GroupScore[]): number => {
   if (scores.length === 0) return 0;
   
@@ -61,12 +81,12 @@ export const sortParticipantsByScore = (
     const aScores = scoresByParticipant[a.id] || [];
     const bScores = scoresByParticipant[b.id] || [];
     
-    // Use best round for each participant
-    const aBestRound = calculateIndividualBestRound(aScores);
-    const bBestRound = calculateIndividualBestRound(bScores);
+    // Use the sum of both rounds (instead of just best round)
+    const aTotalScore = calculateBothRoundsTotal(aScores);
+    const bTotalScore = calculateBothRoundsTotal(bScores);
     
-    if (bBestRound !== aBestRound) {
-      return bBestRound - aBestRound; // Higher score first
+    if (bTotalScore !== aTotalScore) {
+      return bTotalScore - aTotalScore; // Higher score first
     }
     
     // Tiebreaker: Check rhythm scores
