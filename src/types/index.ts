@@ -5,6 +5,7 @@ export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
 export type UserRole = 'admin' | 'judge';
+export type SponsorType = 'prize' | 'donor' | 'banner';
 
 export interface Participant {
   id: number;
@@ -64,8 +65,10 @@ export interface Sponsor {
   id: number;
   name: string;
   logo: string;
-  category: Category;
-  rank: 1 | 2 | 3;
+  category: Category | GroupCategory;
+  rank?: 1 | 2 | 3;
+  type: SponsorType;
+  websiteUrl?: string;
 }
 
 export interface ParticipantResult {

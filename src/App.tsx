@@ -17,6 +17,7 @@ import GroupJudging from "./pages/Judging/GroupJudging";
 import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
 import UsersPage from "./pages/Admin/UsersPage";
+import SponsorsPage from "./pages/Admin/SponsorsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Auth/LoginPage";
 import { UserProvider } from "./contexts/UserContext";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/sponsors" element={<SponsorsPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
