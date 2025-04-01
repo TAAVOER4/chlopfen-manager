@@ -3,17 +3,19 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Users, Pencil, Trash } from 'lucide-react';
+import { PlusCircle, Users, Pencil, Trash, Filter } from 'lucide-react';
 import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
-import { Participant } from '../../types';
+import { Participant, Category } from '../../types';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ParticipantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
 
   const handleDeleteParticipant = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -36,6 +38,11 @@ const ParticipantsPage = () => {
     return groupsForParticipant.map(g => g.name).join(', ');
   };
   
+  // Filter participants based on selected category
+  const filteredParticipants = mockParticipants.filter(participant => 
+    categoryFilter === 'all' || participant.category === categoryFilter
+  );
+
   // Force update when needed
   React.useEffect(() => {
     // This effect ensures the component updates when refreshKey changes
@@ -64,7 +71,26 @@ const ParticipantsPage = () => {
       <div className="space-y-10">
         {/* Individual Participants Section */}
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Einzelteilnehmer</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Einzelteilnehmer</h2>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={categoryFilter}
+                onValueChange={(value) => setCategoryFilter(value as Category | 'all')}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Kategorie wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Kategorien</SelectItem>
+                  <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
+                  <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
+                  <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <Table>
             <TableCaption>Alle registrierten Teilnehmer</TableCaption>
             <TableHeader>
@@ -79,7 +105,7 @@ const ParticipantsPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockParticipants.map((participant) => (
+              {filteredParticipants.map((participant) => (
                 <TableRow key={participant.id}>
                   <TableCell className="font-medium">
                     {participant.firstName} {participant.lastName}
@@ -117,7 +143,7 @@ const ParticipantsPage = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {mockParticipants.length === 0 && (
+              {filteredParticipants.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Keine Teilnehmer vorhanden

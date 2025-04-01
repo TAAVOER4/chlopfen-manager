@@ -5,7 +5,9 @@ import {
   Users, 
   Award, 
   BarChart, 
-  Calendar 
+  Calendar,
+  User,
+  UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,18 +15,39 @@ import { mockParticipants } from '../data/mockData';
 import { getCategoryDisplay, getCategoryClass } from '../utils/categoryUtils';
 
 const Index = () => {
+  // Group participants by category
   const participantsByCategory = mockParticipants.reduce(
     (acc, participant) => {
       if (!acc[participant.category]) {
-        acc[participant.category] = [];
+        acc[participant.category] = {
+          all: [],
+          individual: [],
+          groupOnly: []
+        };
       }
-      acc[participant.category].push(participant);
+      
+      // Add to all participants
+      acc[participant.category].all.push(participant);
+      
+      // Sort by participation type
+      if (participant.isGroupOnly) {
+        acc[participant.category].groupOnly.push(participant);
+      } else {
+        acc[participant.category].individual.push(participant);
+      }
+      
       return acc;
     },
-    {} as Record<string, typeof mockParticipants>
+    {} as Record<string, { 
+      all: typeof mockParticipants,
+      individual: typeof mockParticipants,
+      groupOnly: typeof mockParticipants
+    }>
   );
 
   const totalParticipants = mockParticipants.length;
+  const individualParticipants = mockParticipants.filter(p => !p.isGroupOnly).length;
+  const groupOnlyParticipants = mockParticipants.filter(p => p.isGroupOnly).length;
 
   return (
     <div className="animate-fade-in">
@@ -63,11 +86,12 @@ const Index = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Overview Cards - Total Participants */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Teilnehmer
+              Teilnehmer Total
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -81,15 +105,13 @@ const Index = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Kids
+              Einzelwertung
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {participantsByCategory['kids']?.length || 0}
-              </div>
-              <div className="h-5 w-5 rounded-full bg-green-500" />
+              <div className="text-2xl font-bold">{individualParticipants}</div>
+              <User className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -97,31 +119,88 @@ const Index = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Junioren
+              Nur Gruppe
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {participantsByCategory['juniors']?.length || 0}
-              </div>
-              <div className="h-5 w-5 rounded-full bg-blue-500" />
+              <div className="text-2xl font-bold">{groupOnlyParticipants}</div>
+              <UsersRound className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Category Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Kids Category */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <span>{getCategoryDisplay('kids')}</span>
+              <div className="h-4 w-4 rounded-full bg-green-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Total:</div>
+              <div className="font-medium">{participantsByCategory['kids']?.all.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Einzelwertung:</div>
+              <div className="font-medium">{participantsByCategory['kids']?.individual.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
+              <div className="font-medium">{participantsByCategory['kids']?.groupOnly.length || 0}</div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Juniors Category */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aktive
+            <CardTitle className="flex items-center justify-between">
+              <span>{getCategoryDisplay('juniors')}</span>
+              <div className="h-4 w-4 rounded-full bg-blue-500" />
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {participantsByCategory['active']?.length || 0}
-              </div>
-              <div className="h-5 w-5 rounded-full bg-red-500" />
+              <div className="text-sm text-muted-foreground">Total:</div>
+              <div className="font-medium">{participantsByCategory['juniors']?.all.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Einzelwertung:</div>
+              <div className="font-medium">{participantsByCategory['juniors']?.individual.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
+              <div className="font-medium">{participantsByCategory['juniors']?.groupOnly.length || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Category */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <span>{getCategoryDisplay('active')}</span>
+              <div className="h-4 w-4 rounded-full bg-red-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Total:</div>
+              <div className="font-medium">{participantsByCategory['active']?.all.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Einzelwertung:</div>
+              <div className="font-medium">{participantsByCategory['active']?.individual.length || 0}</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
+              <div className="font-medium">{participantsByCategory['active']?.groupOnly.length || 0}</div>
             </div>
           </CardContent>
         </Card>
