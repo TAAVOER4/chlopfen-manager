@@ -113,6 +113,11 @@ const GroupJudgingTab = () => {
                 <CardContent className="pt-0 flex flex-col justify-between h-full">
                   <p className="text-sm text-muted-foreground mb-2">
                     {groupsBySizeAndCategory[config.size][config.category].length} Gruppen
+                    {groupsBySizeAndCategory[config.size][config.category].length > 1 && isAdmin && (
+                      <span className="ml-2 text-xs text-primary">
+                        (Reihenfolge anpassbar)
+                      </span>
+                    )}
                   </p>
                   <Button 
                     asChild 
