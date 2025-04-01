@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Move } from 'lucide-react';
+import { ArrowRight, Move, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,11 +27,26 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   participants,
   openReorderDialog
 }) => {
+  // Get required strikes based on category
+  const getRequiredStrikes = (cat: Category): string => {
+    switch (cat) {
+      case 'kids':
+        return '17 Schläge';
+      case 'juniors':
+        return '23 Schläge';
+      case 'active':
+        return '33 Schläge';
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex justify-between items-center">
-          {getCategoryDisplay(category)}
+          <div className="flex items-center">
+            <User className="mr-2 h-5 w-5" />
+            {getCategoryDisplay(category)}
+          </div>
           {isAdmin && (
             <Button 
               variant="outline" 
@@ -47,14 +62,13 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           {participants.length} Teilnehmer
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-2 space-y-4">
+      <CardContent className="pb-2">
         <p className="text-sm text-muted-foreground">
-          {category === 'kids' ? '17 Schläge' : 
-           category === 'juniors' ? '23 Schläge' : '33 Schläge'}
+          {getRequiredStrikes(category)}
         </p>
       </CardContent>
       <CardFooter>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full" disabled={participants.length === 0}>
           <Link to={`/judging/individual/${category}`}>
             Bewerten
             <ArrowRight className="ml-2 h-4 w-4" />

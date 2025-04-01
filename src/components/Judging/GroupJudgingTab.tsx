@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,8 +11,24 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
+import { mockGroups } from '../../data/mockData';
+import { Group, GroupSize } from '../../types';
 
 const GroupJudgingTab: React.FC = () => {
+  const [groupCounts, setGroupCounts] = useState<Record<GroupSize, number>>({
+    three: 0,
+    four: 0
+  });
+  
+  // Count groups by size
+  useEffect(() => {
+    const counts: Record<GroupSize, number> = { three: 0, four: 0 };
+    mockGroups.forEach(group => {
+      counts[group.size]++;
+    });
+    setGroupCounts(counts);
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -36,13 +52,21 @@ const GroupJudgingTab: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Dreiergruppen</CardTitle>
+              <CardTitle className="flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                Dreiergruppen
+              </CardTitle>
               <CardDescription>
-                Bewertung der Dreiergruppen
+                {groupCounts.three} Gruppen
               </CardDescription>
             </CardHeader>
+            <CardContent className="pb-2">
+              <p className="text-sm text-muted-foreground">
+                Drei Teilnehmer pro Gruppe
+              </p>
+            </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full" disabled={groupCounts.three === 0}>
                 <Link to="/judging/group/three">
                   Bewerten
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -53,13 +77,21 @@ const GroupJudgingTab: React.FC = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Vierergruppen</CardTitle>
+              <CardTitle className="flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                Vierergruppen
+              </CardTitle>
               <CardDescription>
-                Bewertung der Vierergruppen
+                {groupCounts.four} Gruppen
               </CardDescription>
             </CardHeader>
+            <CardContent className="pb-2">
+              <p className="text-sm text-muted-foreground">
+                Vier Teilnehmer pro Gruppe
+              </p>
+            </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full" disabled={groupCounts.four === 0}>
                 <Link to="/judging/group/four">
                   Bewerten
                   <ArrowRight className="ml-2 h-4 w-4" />

@@ -13,6 +13,7 @@ import EditParticipant from "./pages/Participants/EditParticipant";
 import EditGroup from "./pages/Participants/EditGroup";
 import JudgingPage from "./pages/Judging/JudgingPage";
 import IndividualJudging from "./pages/Judging/IndividualJudging";
+import GroupJudging from "./pages/Judging/GroupJudging";
 import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
 import JudgesPage from "./pages/Admin/JudgesPage";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/participants/edit-group/:id" element={<EditGroup />} />
               <Route path="/judging" element={<JudgingPage />} />
               <Route path="/judging/individual/:category" element={<IndividualJudging />} />
+              <Route path="/judging/group/:size" element={<GroupJudging />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/judges" element={<JudgesPage />} />
