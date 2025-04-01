@@ -1,46 +1,47 @@
+
 import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
 // Mock Participants
 export const mockParticipants: Participant[] = [
   {
-    id: '1',
+    id: 1,
     firstName: 'Max',
     lastName: 'Muster',
     location: 'Bern',
     birthYear: 2011,
     category: 'kids',
-    groupIds: ['g1']
+    groupIds: [1]
   },
   {
-    id: '2',
+    id: 2,
     firstName: 'Anna',
     lastName: 'Schmidt',
     location: 'Zürich',
     birthYear: 2010,
     category: 'kids',
-    groupIds: ['g1']
+    groupIds: [1]
   },
   {
-    id: '3',
+    id: 3,
     firstName: 'Tim',
     lastName: 'Meier',
     location: 'Luzern',
     birthYear: 2007,
     category: 'juniors',
-    groupIds: ['g2']
+    groupIds: [2]
   },
   {
-    id: '4',
+    id: 4,
     firstName: 'Sarah',
     lastName: 'Huber',
     location: 'Basel',
     birthYear: 2008,
     category: 'juniors',
-    groupIds: ['g2']
+    groupIds: [2]
   },
   {
-    id: '5',
+    id: 5,
     firstName: 'Michael',
     lastName: 'Weber',
     location: 'St. Gallen',
@@ -48,7 +49,7 @@ export const mockParticipants: Participant[] = [
     category: 'active'
   },
   {
-    id: '6',
+    id: 6,
     firstName: 'Laura',
     lastName: 'Müller',
     location: 'Bern',
@@ -60,18 +61,18 @@ export const mockParticipants: Participant[] = [
 // Mock Groups
 export const mockGroups: Group[] = [
   {
-    id: 'g1',
+    id: 1,
     name: 'Berner Jungs',
     size: 'three',
     category: 'kids',
-    participantIds: ['1', '2']
+    participantIds: [1, 2]
   },
   {
-    id: 'g2',
+    id: 2,
     name: 'Zürcher Junioren',
     size: 'four',
     category: 'juniors',
-    participantIds: ['3', '4']
+    participantIds: [3, 4]
   }
 ];
 
@@ -81,7 +82,7 @@ const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3E
 // Mock Judges
 export const mockJudges: Judge[] = [
   { 
-    id: 'j1', 
+    id: 1, 
     name: 'Hans Fischer', 
     username: 'hans', 
     role: 'admin',
@@ -91,7 +92,7 @@ export const mockJudges: Judge[] = [
     }
   },
   { 
-    id: 'j2', 
+    id: 2, 
     name: 'Maria Gerber', 
     username: 'maria', 
     role: 'judge',
@@ -101,7 +102,7 @@ export const mockJudges: Judge[] = [
     }
   },
   { 
-    id: 'j3', 
+    id: 3, 
     name: 'Peter Keller', 
     username: 'peter', 
     role: 'judge',
@@ -111,7 +112,7 @@ export const mockJudges: Judge[] = [
     }
   },
   { 
-    id: 'j4', 
+    id: 4, 
     name: 'Christine Wagner', 
     username: 'christine', 
     role: 'judge',
@@ -121,7 +122,7 @@ export const mockJudges: Judge[] = [
     }
   },
   { 
-    id: 'j5', 
+    id: 5, 
     name: 'Thomas Schneider', 
     username: 'thomas', 
     role: 'judge',
@@ -135,8 +136,8 @@ export const mockJudges: Judge[] = [
 // Mock Individual Scores
 export const mockIndividualScores: IndividualScore[] = [
   {
-    participantId: '1',
-    judgeId: 'j1',
+    participantId: 1,
+    judgeId: 1,
     round: 1,
     whipStrikes: 8,
     rhythm: 7,
@@ -145,8 +146,8 @@ export const mockIndividualScores: IndividualScore[] = [
     whipControl: 8
   },
   {
-    participantId: '1',
-    judgeId: 'j2',
+    participantId: 1,
+    judgeId: 2,
     round: 1,
     whipStrikes: 7,
     rhythm: 8,
@@ -159,8 +160,8 @@ export const mockIndividualScores: IndividualScore[] = [
 // Mock Group Scores
 export const mockGroupScores: GroupScore[] = [
   {
-    groupId: 'g1',
-    judgeId: 'j1',
+    groupId: 1,
+    judgeId: 1,
     whipStrikes: 8,
     rhythm: 7,
     tempo: 8,
@@ -171,21 +172,21 @@ export const mockGroupScores: GroupScore[] = [
 // Mock Sponsors
 export const mockSponsors: Sponsor[] = [
   {
-    id: 's1',
+    id: 1,
     name: 'Swiss Traditions AG',
     category: 'kids',
     rank: 1,
     logo: '/lovable-uploads/a5d2c313-c136-4233-8b7b-e1347138b272.png'
   },
   {
-    id: 's2',
+    id: 2,
     name: 'Schweizer Folklore GmbH',
     category: 'juniors',
     rank: 1,
     logo: '/lovable-uploads/d96b84f9-8847-4e45-bd71-c44b3fb53513.png'
   },
   {
-    id: 's3',
+    id: 3,
     name: 'Alpen Traditions',
     category: 'active',
     rank: 1,

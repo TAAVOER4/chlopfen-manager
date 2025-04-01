@@ -7,7 +7,7 @@ const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3E
 
 export let mockJudges: User[] = [
   {
-    id: 'judge_1',
+    id: 1,
     name: 'Hans Müller',
     username: 'hans.mueller',
     role: 'admin',
@@ -15,7 +15,7 @@ export let mockJudges: User[] = [
     assignedCriteria: undefined
   },
   {
-    id: 'judge_8',
+    id: 8,
     name: 'Erwin Vogel',
     username: 'erwin.vogel',
     role: 'admin',
@@ -23,7 +23,7 @@ export let mockJudges: User[] = [
     assignedCriteria: undefined
   },
   {
-    id: 'judge_2',
+    id: 2,
     name: 'Maria Schmidt',
     username: 'maria.schmidt',
     role: 'judge',
@@ -34,7 +34,7 @@ export let mockJudges: User[] = [
     }
   },
   {
-    id: 'judge_3',
+    id: 3,
     name: 'Peter Meier',
     username: 'peter.meier',
     role: 'judge',
@@ -45,7 +45,7 @@ export let mockJudges: User[] = [
     }
   },
   {
-    id: 'judge_4',
+    id: 4,
     name: 'Anna Weber',
     username: 'anna.weber',
     role: 'judge',
@@ -55,7 +55,7 @@ export let mockJudges: User[] = [
     }
   },
   {
-    id: 'judge_5',
+    id: 5,
     name: 'Stefan Keller',
     username: 'stefan.keller',
     role: 'judge',
@@ -65,7 +65,7 @@ export let mockJudges: User[] = [
     }
   },
   {
-    id: 'judge_6',
+    id: 6,
     name: 'Lisa Schmid',
     username: 'lisa.schmid',
     role: 'judge',
@@ -75,7 +75,7 @@ export let mockJudges: User[] = [
     }
   },
   {
-    id: 'judge_7',
+    id: 7,
     name: 'Thomas Brunner',
     username: 'thomas.brunner',
     role: 'judge',

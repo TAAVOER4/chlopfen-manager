@@ -6,27 +6,27 @@ export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
 export type UserRole = 'admin' | 'judge';
 
 export interface Participant {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   location: string;
   birthYear: number;
   category: Category;
-  groupIds?: string[];
+  groupIds?: number[];
   isGroupOnly?: boolean; // New flag to indicate participant is only in groups, not individual competition
 }
 
 export interface Group {
-  id: string;
+  id: number;
   name: string;
   size: GroupSize;
   category: Category;
-  participantIds: string[];
+  participantIds: number[];
 }
 
 export interface IndividualScore {
-  participantId: string;
-  judgeId: string;
+  participantId: number;
+  judgeId: number;
   round: 1 | 2;
   whipStrikes: number; // Now allows decimal values like 9.1
   rhythm: number;
@@ -36,8 +36,8 @@ export interface IndividualScore {
 }
 
 export interface GroupScore {
-  groupId: string;
-  judgeId: string;
+  groupId: number;
+  judgeId: number;
   whipStrikes: number;
   rhythm: number;
   tempo: number;
@@ -45,7 +45,7 @@ export interface GroupScore {
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   username: string;
   role: UserRole;
@@ -60,7 +60,7 @@ export interface User {
 export type Judge = User;
 
 export interface Sponsor {
-  id: string;
+  id: number;
   name: string;
   logo: string;
   category: Category;
@@ -75,7 +75,7 @@ export interface ParticipantResult {
 }
 
 export interface GroupResult {
-  groupId: string;
+  groupId: number;
   category: Category;
   groupSize: GroupSize;
   members: Participant[];

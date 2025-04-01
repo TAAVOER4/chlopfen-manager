@@ -25,7 +25,7 @@ const GroupJudging: React.FC = () => {
   
   // State for groups and scores
   const [groups, setGroups] = useState<Group[]>([]);
-  const [scores, setScores] = useState<Record<string, Partial<GroupScore>>>({});
+  const [scores, setScores] = useState<Record<number, Partial<GroupScore>>>({});
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
 
   // Validate size parameter and check if user is authorized
@@ -74,7 +74,7 @@ const GroupJudging: React.FC = () => {
     setGroups(filteredGroups);
     
     // Initialize scores for each group
-    const initialScores: Record<string, Partial<GroupScore>> = {};
+    const initialScores: Record<number, Partial<GroupScore>> = {};
     filteredGroups.forEach(group => {
       initialScores[group.id] = {
         groupId: group.id,
@@ -96,7 +96,7 @@ const GroupJudging: React.FC = () => {
     return currentUser?.assignedCriteria?.group === criterion;
   };
 
-  const handleScoreChange = (groupId: string, criterion: keyof Omit<GroupScore, 'groupId' | 'judgeId' | 'time'>, value: number) => {
+  const handleScoreChange = (groupId: number, criterion: keyof Omit<GroupScore, 'groupId' | 'judgeId' | 'time'>, value: number) => {
     // Clamp value between 1 and 10
     const clampedValue = Math.max(1, Math.min(10, value));
     

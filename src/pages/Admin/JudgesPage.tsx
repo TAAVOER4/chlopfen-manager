@@ -42,7 +42,7 @@ const UsersPage = () => {
     { value: 'tempo', label: 'Takt (Gruppe)' },
   ];
 
-  const handleImpersonate = (userId: string) => {
+  const handleImpersonate = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
       impersonate(user);
@@ -63,7 +63,7 @@ const UsersPage = () => {
     setEditingUser(updatedUser);
   };
 
-  const handlePasswordChange = (userId: string, newPassword: string) => {
+  const handlePasswordChange = (userId: number, newPassword: string) => {
     setUsers(prevUsers => {
       return prevUsers.map(user => {
         if (user.id === userId) {
@@ -111,8 +111,11 @@ const UsersPage = () => {
     // Default password is "password"
     const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
     
+    // Generate a new ID (highest existing ID + 1)
+    const newId = Math.max(...users.map(user => user.id), 0) + 1;
+    
     const newUser: User = {
-      id: `user_${Date.now()}`,
+      id: newId,
       name: 'Neuer Benutzer',
       username: 'neuer.benutzer',
       role: 'judge' as UserRole,
@@ -139,7 +142,7 @@ const UsersPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = (userId: number) => {
     const updatedUsers = users.filter(u => u.id !== userId);
     setUsers(updatedUsers);
     // Update the mockJudges in the data file
