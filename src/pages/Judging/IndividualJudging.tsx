@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Save, Check } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { mockParticipants } from '../../data/mockData';
 import { getCategoryDisplay, getCategoryRequiredStrikes } from '../../utils/categoryUtils';
-import { Participant, Category, IndividualScore } from '../../types';
+import { Category } from '../../types';
 
 const IndividualJudging = () => {
   const { category = '' } = useParams<{ category: Category }>();
@@ -39,17 +39,6 @@ const IndividualJudging = () => {
 
   const currentParticipant = categoryParticipants[currentIndex];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);
-
-  const scoreOptions = [
-    1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 
-    5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0
-  ];
-
-  const handleScoreChange = (field: string, value: number) => {
-    // Ensure score is between 1 and 10 with one decimal place
-    const score = Math.max(1, Math.min(10, Math.round(value * 10) / 10));
-    setScores({ ...scores, [field]: score });
-  };
 
   const handleScoreInput = (field: string, value: string) => {
     let numValue = parseFloat(value);
@@ -128,24 +117,7 @@ const IndividualJudging = () => {
           <span className="text-sm text-muted-foreground">Note: {scores[field] || '-'}/10</span>
         </div>
         
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {scoreOptions.map((score) => (
-            <button
-              key={`${field}-${score}`}
-              className={`px-2 py-1.5 rounded border-2 flex items-center justify-center transition-all min-w-10 text-sm ${
-                scores[field] === score
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-input hover:border-primary'
-              }`}
-              onClick={() => handleScoreChange(field, score)}
-            >
-              {score % 1 === 0 ? score.toFixed(0) : score.toFixed(1)}
-            </button>
-          ))}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Manuelle Eingabe:</span>
+        <div className="flex items-center">
           <Input
             type="number"
             min="1"
@@ -153,7 +125,8 @@ const IndividualJudging = () => {
             step="0.1"
             value={scores[field] || ''}
             onChange={(e) => handleScoreInput(field, e.target.value)}
-            className="w-20"
+            className="w-full"
+            placeholder="1.0 - 10.0"
           />
         </div>
       </div>

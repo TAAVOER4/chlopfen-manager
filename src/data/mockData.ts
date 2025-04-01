@@ -107,18 +107,21 @@ export const mockSponsors: Sponsor[] = [
     id: 's1',
     name: 'Swiss Traditions AG',
     category: 'kids',
-    rank: 1
+    rank: 1,
+    logo: '/lovable-uploads/a5d2c313-c136-4233-8b7b-e1347138b272.png'
   },
   {
     id: 's2',
     name: 'Schweizer Folklore GmbH',
     category: 'juniors',
-    rank: 1
+    rank: 1,
+    logo: '/lovable-uploads/d96b84f9-8847-4e45-bd71-c44b3fb53513.png'
   },
   {
     id: 's3',
     name: 'Alpen Traditions',
     category: 'active',
-    rank: 1
+    rank: 1,
+    logo: '/lovable-uploads/4ea13025-c283-4b04-91f7-8176d706ccf7.png'
   }
 ];
