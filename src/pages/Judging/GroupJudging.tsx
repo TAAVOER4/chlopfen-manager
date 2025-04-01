@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Category, GroupSize } from '../../types';
+import { GroupCategory, GroupSize } from '../../types';
 import { getCategoryDisplay } from '@/utils/categoryUtils';
 import { useGroupJudging } from '@/hooks/useGroupJudging';
 import GroupJudgingHeader from '@/components/Judging/GroupJudgingHeader';
@@ -36,7 +36,7 @@ const GroupJudging: React.FC = () => {
     return (
       <EmptyGroupState 
         size={size as GroupSize} 
-        categoryParam={categoryParam as Category | null}
+        categoryParam={categoryParam as GroupCategory | null}
         handleBackClick={handleBackClick}
       />
     );
@@ -44,7 +44,7 @@ const GroupJudging: React.FC = () => {
 
   const currentGroup = groups[currentGroupIndex];
   const categoryName = categoryParam ? 
-    getCategoryDisplay(categoryParam as Category) : 
+    getCategoryDisplay(categoryParam as GroupCategory) : 
     getCategoryDisplay(currentGroup.category);
 
   return (

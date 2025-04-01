@@ -10,16 +10,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ArrowRight, MoveVertical, User } from 'lucide-react';
-import { Category, GroupSize, Group } from '../../types';
+import { GroupCategory, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 
 interface CategoryGroupCardProps {
   categoryLabel: string;
   size: GroupSize;
-  category: Category;
+  category: GroupCategory;
   isAdmin: boolean;
   groups: Group[];
-  openReorderDialog: (size: GroupSize, category: Category) => void;
+  openReorderDialog: (size: GroupSize, category: GroupCategory) => void;
 }
 
 const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({

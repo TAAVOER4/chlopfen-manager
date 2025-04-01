@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { GroupSize, Category, Group } from '../../types';
+import { GroupSize, GroupCategory, Group } from '../../types';
 import { useUser } from '@/contexts/UserContext';
 import { mockGroups } from '@/data/mockData';
 import { useGroupReordering } from '@/hooks/useGroupReordering';
@@ -13,15 +13,15 @@ const GroupJudgingTab = () => {
   const { isAdmin } = useUser();
   
   // State for groups organized by size and category
-  const [groupsBySizeAndCategory, setGroupsBySizeAndCategory] = useState<Record<GroupSize, Record<Category, Group[]>>>(() => {
-    const initialGroups: Record<GroupSize, Record<Category, Group[]>> = {
-      three: { kids: [], juniors: [], active: [] },
-      four: { kids: [], juniors: [], active: [] }
+  const [groupsBySizeAndCategory, setGroupsBySizeAndCategory] = useState<Record<GroupSize, Record<GroupCategory, Group[]>>>(() => {
+    const initialGroups: Record<GroupSize, Record<GroupCategory, Group[]>> = {
+      three: { kids_juniors: [], active: [] },
+      four: { kids_juniors: [], active: [] }
     };
     
     // First check if we have any stored orders in session storage
     const sizes: GroupSize[] = ['three', 'four'];
-    const categories: Category[] = ['kids', 'juniors', 'active'];
+    const categories: GroupCategory[] = ['kids_juniors', 'active'];
     
     // Try to load groups from session storage first
     let hasLoadedFromStorage = false;
@@ -84,7 +84,7 @@ const GroupJudgingTab = () => {
     Object.keys(groupsBySizeAndCategory).forEach((size) => {
       const sizeKey = size as GroupSize;
       Object.keys(groupsBySizeAndCategory[sizeKey]).forEach((category) => {
-        const categoryKey = category as Category;
+        const categoryKey = category as GroupCategory;
         const groups = groupsBySizeAndCategory[sizeKey][categoryKey];
         
         // Only store if there are groups in this category
@@ -100,10 +100,10 @@ const GroupJudgingTab = () => {
 
   // Create an array of card configurations based on the requested layout
   const cardConfigs = [
-    { categoryLabel: 'Kids/Junioren', size: 'three' as GroupSize, category: 'kids' as Category },
-    { categoryLabel: 'Kids/Junioren', size: 'four' as GroupSize, category: 'juniors' as Category },
-    { categoryLabel: 'Aktive', size: 'three' as GroupSize, category: 'active' as Category },
-    { categoryLabel: 'Aktive', size: 'four' as GroupSize, category: 'active' as Category }
+    { categoryLabel: 'Kids/Junioren', size: 'three' as GroupSize, category: 'kids_juniors' as GroupCategory },
+    { categoryLabel: 'Kids/Junioren', size: 'four' as GroupSize, category: 'kids_juniors' as GroupCategory },
+    { categoryLabel: 'Aktive', size: 'three' as GroupSize, category: 'active' as GroupCategory },
+    { categoryLabel: 'Aktive', size: 'four' as GroupSize, category: 'active' as GroupCategory }
   ];
 
   return (

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Group, GroupScore, GroupSize, GroupCriterionKey, Category } from '../types';
+import { Group, GroupScore, GroupSize, GroupCriterionKey, GroupCategory } from '../types';
 import { mockGroups } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -29,7 +29,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     }
 
     // Validate category parameter
-    if (!['kids', 'juniors', 'active'].includes(categoryParam || '')) {
+    if (!['kids_juniors', 'active'].includes(categoryParam || '')) {
       toast({
         title: "Hinweis",
         description: "Keine Kategorie ausgewählt, alle Kategorien werden angezeigt"
@@ -107,9 +107,9 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     let filtered = mockGroups.filter(group => group.size === groupSize);
     
     // Filter by category if provided
-    if (categoryParam && ['kids', 'juniors', 'active'].includes(categoryParam)) {
+    if (categoryParam && ['kids_juniors', 'active'].includes(categoryParam)) {
       filtered = filtered.filter(
-        group => group.category === categoryParam as Category
+        group => group.category === categoryParam as GroupCategory
       );
     }
     
