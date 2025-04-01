@@ -13,12 +13,22 @@ import {
 } from '@/components/ui/card';
 import { mockGroups } from '../../data/mockData';
 import { Group, GroupSize } from '../../types';
+import { useUser } from '../../contexts/UserContext';
 
 const GroupJudgingTab: React.FC = () => {
   const [groupCounts, setGroupCounts] = useState<Record<GroupSize, number>>({
     three: 0,
     four: 0
   });
+  
+  const { currentUser } = useUser();
+  const isAdmin = currentUser?.role === 'admin';
+  
+  // Check if judge can score groups
+  const canJudgeGroups = isAdmin || (
+    currentUser?.assignedCriterion && 
+    ['whipStrikes', 'rhythm', 'tempo', 'time'].includes(currentUser.assignedCriterion)
+  );
   
   // Count groups by size
   useEffect(() => {
@@ -42,10 +52,20 @@ const GroupJudgingTab: React.FC = () => {
           Bei der Gruppenbewertung werden folgende Kriterien bewertet:
         </p>
         <ul className="list-disc pl-5 mb-6 space-y-1">
-          <li>Schläge (Zeitlimit 45 Sekunden)</li>
-          <li>Rhythmus (2 Noten)</li>
-          <li>Takt (2 Noten)</li>
+          <li>Schläge (Note 1-10)</li>
+          <li>Rhythmus (Note 1-10)</li>
+          <li>Takt (Note 1-10)</li>
+          <li>Zeit (Note 1-10)</li>
         </ul>
+        
+        {!canJudgeGroups && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-800">
+              Sie sind nicht berechtigt, Gruppen zu bewerten. 
+              Nur Richter mit den Kriterien Schläge, Rhythmus, Takt oder Zeit können Gruppen bewerten.
+            </p>
+          </div>
+        )}
         
         <p className="mb-4">Wählen Sie eine Gruppenkategorie für die Bewertung:</p>
         
@@ -66,7 +86,11 @@ const GroupJudgingTab: React.FC = () => {
               </p>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full" disabled={groupCounts.three === 0}>
+              <Button 
+                asChild 
+                className="w-full" 
+                disabled={groupCounts.three === 0 || !canJudgeGroups}
+              >
                 <Link to="/judging/group/three">
                   Bewerten
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -91,7 +115,11 @@ const GroupJudgingTab: React.FC = () => {
               </p>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full" disabled={groupCounts.four === 0}>
+              <Button 
+                asChild 
+                className="w-full" 
+                disabled={groupCounts.four === 0 || !canJudgeGroups}
+              >
                 <Link to="/judging/group/four">
                   Bewerten
                   <ArrowRight className="ml-2 h-4 w-4" />

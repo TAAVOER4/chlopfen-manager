@@ -44,12 +44,14 @@ const JudgesPage = () => {
   const { impersonate } = useUser();
   
   // Available criteria for assignment
-  const availableCriteria: { value: CriterionKey; label: string }[] = [
+  const availableCriteria: { value: string; label: string }[] = [
     { value: 'whipStrikes', label: 'Schläge' },
     { value: 'rhythm', label: 'Rhythmus' },
     { value: 'stance', label: 'Stand' },
     { value: 'posture', label: 'Körperhaltung' },
     { value: 'whipControl', label: 'Geiselführung' },
+    { value: 'tempo', label: 'Takt (Gruppe)' },
+    { value: 'time', label: 'Zeit (Gruppe)' },
   ];
 
   const handleImpersonate = (judgeId: string) => {

@@ -1,6 +1,8 @@
+
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
+export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo' | 'time';
 
 export interface Participant {
   id: string;
@@ -36,11 +38,9 @@ export interface GroupScore {
   groupId: string;
   judgeId: string;
   whipStrikes: number;
-  rhythm1: number;
-  rhythm2: number;
-  tempo1: number;
-  tempo2: number;
-  timeSeconds: number;
+  rhythm: number;
+  tempo: number;
+  time: number;
 }
 
 export interface Judge {
@@ -48,7 +48,7 @@ export interface Judge {
   name: string;
   username: string;
   role: 'admin' | 'judge';
-  assignedCriterion?: CriterionKey;
+  assignedCriterion?: CriterionKey | GroupCriterionKey;
 }
 
 export interface Sponsor {

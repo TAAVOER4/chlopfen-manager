@@ -11,21 +11,24 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { mockGroups } from '../../data/mockData';
-import { Group, GroupScore, GroupSize } from '../../types';
+import { Group, GroupScore, GroupSize, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentUser } = useUser();
   
   // State for groups and scores
   const [groups, setGroups] = useState<Group[]>([]);
   const [scores, setScores] = useState<Record<string, Partial<GroupScore>>>({});
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
 
-  // Validate size parameter
+  // Validate size parameter and check if user is authorized
   useEffect(() => {
     if (size !== 'three' && size !== 'four') {
       navigate('/judging');
@@ -34,11 +37,38 @@ const GroupJudging: React.FC = () => {
         description: "Ungültige Gruppengröße",
         variant: "destructive"
       });
+      return;
     }
-  }, [size, navigate, toast]);
+
+    // Check if user is authorized to judge
+    if (!currentUser) {
+      navigate('/judging');
+      toast({
+        title: "Fehler",
+        description: "Sie sind nicht angemeldet",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if user has the right assignedCriterion for group judging
+    const validGroupCriteria = ['whipStrikes', 'rhythm', 'tempo', 'time'];
+    if (currentUser.role !== 'admin' && 
+        (!currentUser.assignedCriterion || 
+         !validGroupCriteria.includes(currentUser.assignedCriterion))) {
+      navigate('/judging');
+      toast({
+        title: "Zugriff verweigert",
+        description: "Sie sind nicht berechtigt, Gruppen zu bewerten",
+        variant: "destructive"
+      });
+    }
+  }, [size, navigate, toast, currentUser]);
 
   // Filter groups based on size
   useEffect(() => {
+    if (!size) return;
+    
     const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
     const filteredGroups = mockGroups.filter(group => group.size === groupSize);
     setGroups(filteredGroups);
@@ -48,23 +78,34 @@ const GroupJudging: React.FC = () => {
     filteredGroups.forEach(group => {
       initialScores[group.id] = {
         groupId: group.id,
+        judgeId: currentUser?.id,
         whipStrikes: 0,
-        rhythm1: 0,
-        rhythm2: 0,
-        tempo1: 0,
-        tempo2: 0,
-        timeSeconds: 0
+        rhythm: 0,
+        tempo: 0,
+        time: 0
       };
     });
     setScores(initialScores);
-  }, [size]);
+  }, [size, currentUser]);
+
+  // Determine if current user can edit a specific criterion
+  const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
+    // Admins can edit all criteria
+    if (currentUser?.role === 'admin') return true;
+    
+    // Judges can only edit their assigned criterion
+    return currentUser?.assignedCriterion === criterion;
+  };
 
   const handleScoreChange = (groupId: string, criterion: keyof GroupScore, value: number) => {
+    // Clamp value between 1 and 10
+    const clampedValue = Math.max(1, Math.min(10, value));
+    
     setScores(prev => ({
       ...prev,
       [groupId]: {
         ...prev[groupId],
-        [criterion]: value
+        [criterion]: clampedValue
       }
     }));
   };
@@ -135,110 +176,106 @@ const GroupJudging: React.FC = () => {
         <CardContent>
           <div className="space-y-6">
             <div>
-              <h3 className="font-medium mb-2">Schläge (Zeitlimit 45 Sekunden)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Anzahl Schläge</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    value={scores[currentGroup.id]?.whipStrikes || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'whipStrikes', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Zeit (Sekunden)</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    value={scores[currentGroup.id]?.timeSeconds || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'timeSeconds', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
+              <h3 className="font-medium mb-2">Schläge (Note 1-10)</h3>
+              <div>
+                <label className="text-sm font-medium">Schläge Bewertung</label>
+                <Input 
+                  type="number" 
+                  className="w-full mt-1"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={scores[currentGroup.id]?.whipStrikes || 1}
+                  onChange={(e) => handleScoreChange(
+                    currentGroup.id, 
+                    'whipStrikes', 
+                    Number(e.target.value)
+                  )}
+                  disabled={!canEditCriterion('whipStrikes')}
+                />
+                {!canEditCriterion('whipStrikes') && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sie können dieses Kriterium nicht bewerten
+                  </p>
+                )}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Rhythmus (2 Noten)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Rhythmus Note 1</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={scores[currentGroup.id]?.rhythm1 || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'rhythm1', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Rhythmus Note 2</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={scores[currentGroup.id]?.rhythm2 || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'rhythm2', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
+              <h3 className="font-medium mb-2">Rhythmus (Note 1-10)</h3>
+              <div>
+                <label className="text-sm font-medium">Rhythmus Bewertung</label>
+                <Input 
+                  type="number" 
+                  className="w-full mt-1"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={scores[currentGroup.id]?.rhythm || 1}
+                  onChange={(e) => handleScoreChange(
+                    currentGroup.id, 
+                    'rhythm', 
+                    Number(e.target.value)
+                  )}
+                  disabled={!canEditCriterion('rhythm')}
+                />
+                {!canEditCriterion('rhythm') && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sie können dieses Kriterium nicht bewerten
+                  </p>
+                )}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">Takt (2 Noten)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Takt Note 1</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={scores[currentGroup.id]?.tempo1 || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'tempo1', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Takt Note 2</label>
-                  <input 
-                    type="number" 
-                    className="w-full mt-1 border rounded-md p-2"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={scores[currentGroup.id]?.tempo2 || 0}
-                    onChange={(e) => handleScoreChange(
-                      currentGroup.id, 
-                      'tempo2', 
-                      Number(e.target.value)
-                    )}
-                  />
-                </div>
+              <h3 className="font-medium mb-2">Takt (Note 1-10)</h3>
+              <div>
+                <label className="text-sm font-medium">Takt Bewertung</label>
+                <Input 
+                  type="number" 
+                  className="w-full mt-1"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={scores[currentGroup.id]?.tempo || 1}
+                  onChange={(e) => handleScoreChange(
+                    currentGroup.id, 
+                    'tempo', 
+                    Number(e.target.value)
+                  )}
+                  disabled={!canEditCriterion('tempo')}
+                />
+                {!canEditCriterion('tempo') && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sie können dieses Kriterium nicht bewerten
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium mb-2">Zeit (Note 1-10)</h3>
+              <div>
+                <label className="text-sm font-medium">Zeit Bewertung</label>
+                <Input 
+                  type="number" 
+                  className="w-full mt-1"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={scores[currentGroup.id]?.time || 1}
+                  onChange={(e) => handleScoreChange(
+                    currentGroup.id, 
+                    'time', 
+                    Number(e.target.value)
+                  )}
+                  disabled={!canEditCriterion('time')}
+                />
+                {!canEditCriterion('time') && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sie können dieses Kriterium nicht bewerten
+                  </p>
+                )}
               </div>
             </div>
           </div>

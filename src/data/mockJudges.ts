@@ -36,5 +36,19 @@ export const mockJudges: Judge[] = [
     username: 'stefan.keller',
     role: 'judge',
     assignedCriterion: 'posture'
+  },
+  {
+    id: 'judge_6',
+    name: 'Lisa Schmid',
+    username: 'lisa.schmid',
+    role: 'judge',
+    assignedCriterion: 'tempo'
+  },
+  {
+    id: 'judge_7',
+    name: 'Thomas Brunner',
+    username: 'thomas.brunner',
+    role: 'judge',
+    assignedCriterion: 'time'
   }
 ];
