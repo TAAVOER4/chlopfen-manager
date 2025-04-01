@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,12 +13,15 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { mockGroups } from '../../data/mockData';
-import { Group, GroupScore, GroupSize, GroupCriterionKey } from '../../types';
+import { Group, GroupScore, GroupSize, GroupCriterionKey, Category } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
+import { getCategoryDisplay } from '@/utils/categoryUtils';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useUser();
@@ -38,6 +41,14 @@ const GroupJudging: React.FC = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Validate category parameter
+    if (!['kids', 'juniors', 'active'].includes(categoryParam || '')) {
+      toast({
+        title: "Hinweis",
+        description: "Keine Kategorie ausgewählt, alle Kategorien werden angezeigt"
+      });
     }
 
     // Check if user is authorized to judge
@@ -63,14 +74,22 @@ const GroupJudging: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [size, navigate, toast, currentUser]);
+  }, [size, categoryParam, navigate, toast, currentUser]);
 
-  // Filter groups based on size
+  // Filter groups based on size and category
   useEffect(() => {
     if (!size) return;
     
     const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
-    const filteredGroups = mockGroups.filter(group => group.size === groupSize);
+    let filteredGroups = mockGroups.filter(group => group.size === groupSize);
+    
+    // Filter by category if provided
+    if (categoryParam && ['kids', 'juniors', 'active'].includes(categoryParam)) {
+      filteredGroups = filteredGroups.filter(
+        group => group.category === categoryParam as Category
+      );
+    }
+    
     setGroups(filteredGroups);
     
     // Initialize scores for each group
@@ -85,7 +104,7 @@ const GroupJudging: React.FC = () => {
       };
     });
     setScores(initialScores);
-  }, [size, currentUser]);
+  }, [size, categoryParam, currentUser]);
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
@@ -141,7 +160,8 @@ const GroupJudging: React.FC = () => {
           <CardHeader>
             <CardTitle>Keine Gruppen gefunden</CardTitle>
             <CardDescription>
-              Es wurden keine {size === 'three' ? 'Dreier' : 'Vierer'}gruppen gefunden
+              Es wurden keine {size === 'three' ? 'Dreier' : 'Vierer'}gruppen 
+              {categoryParam ? ` in der Kategorie ${getCategoryDisplay(categoryParam as Category)}` : ''} gefunden
             </CardDescription>
           </CardHeader>
         </Card>
@@ -150,12 +170,15 @@ const GroupJudging: React.FC = () => {
   }
 
   const currentGroup = groups[currentGroupIndex];
+  const categoryName = categoryParam ? 
+    getCategoryDisplay(categoryParam as Category) : 
+    getCategoryDisplay(currentGroup.category);
 
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-swiss-blue">
-          {size === 'three' ? 'Dreiergruppen' : 'Vierergruppen'} Bewertung
+          {categoryName} - {size === 'three' ? 'Dreiergruppen' : 'Vierergruppen'} Bewertung
         </h1>
         <Button 
           variant="outline" 
