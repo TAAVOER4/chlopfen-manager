@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Users } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import {
   Tabs,
   TabsContent,
@@ -16,7 +17,20 @@ import ParticipantReorderDialog from '@/components/Judging/ParticipantReorderDia
 import { useParticipantReordering } from '@/hooks/useParticipantReordering';
 
 const JudgingPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('individual');
+  const location = useLocation();
+  // Initialize defaultTab based on the URL path or retrieved from sessionStorage
+  const getInitialTab = (): string => {
+    // Check if we're coming back from a group judging page
+    if (location.pathname.includes('/judging') && location.state?.from === 'groupJudging') {
+      return 'group';
+    }
+    
+    // Try to get from session storage
+    const savedTab = sessionStorage.getItem('judgingActiveTab');
+    return savedTab || 'individual';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getInitialTab);
   const [participantsByCategory, setParticipantsByCategory] = useState<Record<string, Participant[]>>(() => {
     const individualParticipants = mockParticipants.filter(p => !p.isGroupOnly);
     
@@ -68,11 +82,16 @@ const JudgingPage: React.FC = () => {
     }
   }, [participantsByCategory]);
 
+  // Save active tab to session storage when it changes
+  useEffect(() => {
+    sessionStorage.setItem('judgingActiveTab', activeTab);
+  }, [activeTab]);
+
   return (
     <div className="animate-fade-in">
       <h1 className="text-3xl font-bold text-swiss-blue mb-6">Bewertung</h1>
       
-      <Tabs defaultValue="individual" className="mb-6" onValueChange={setActiveTab}>
+      <Tabs defaultValue={activeTab} value={activeTab} className="mb-6" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="individual">
             <User className="mr-2 h-4 w-4" />

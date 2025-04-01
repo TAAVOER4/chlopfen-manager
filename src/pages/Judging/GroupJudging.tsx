@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ChevronLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,11 +24,19 @@ const GroupJudging: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser } = useUser();
+  const location = useLocation();
   
   // State for groups and scores
   const [groups, setGroups] = useState<Group[]>([]);
   const [scores, setScores] = useState<Record<number, Partial<GroupScore>>>({});
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+
+  // Navigate back to judging page with group tab selected
+  const handleBackClick = () => {
+    navigate('/judging', { 
+      state: { from: 'groupJudging' } 
+    });
+  };
 
   // Validate size parameter and check if user is authorized
   useEffect(() => {
@@ -151,7 +158,7 @@ const GroupJudging: React.FC = () => {
       <div className="animate-fade-in">
         <Button 
           variant="outline" 
-          onClick={() => navigate('/judging')} 
+          onClick={handleBackClick} 
           className="mb-4"
         >
           <ChevronLeft className="mr-2 h-4 w-4" /> Zurück
@@ -182,7 +189,7 @@ const GroupJudging: React.FC = () => {
         </h1>
         <Button 
           variant="outline" 
-          onClick={() => navigate('/judging')} 
+          onClick={handleBackClick} 
         >
           <ChevronLeft className="mr-2 h-4 w-4" /> Zurück
         </Button>
