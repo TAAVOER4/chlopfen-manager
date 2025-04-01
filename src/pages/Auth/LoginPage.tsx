@@ -13,9 +13,12 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-center text-swiss-blue mb-6">Wettchlöpfen Manager</h1>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-center text-swiss-blue mb-2">Wettchlöpfen Manager</h1>
+          <p className="text-center text-gray-600 mb-8">Melden Sie sich an, um das System zu verwalten</p>
+        </div>
         <LoginForm />
       </div>
     </div>
