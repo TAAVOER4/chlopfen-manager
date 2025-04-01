@@ -56,11 +56,41 @@ export const mockParticipants: Participant[] = [
 
 // Mock Judges
 export const mockJudges: Judge[] = [
-  { id: 'j1', name: 'Hans Fischer', username: 'hans' },
-  { id: 'j2', name: 'Maria Gerber', username: 'maria' },
-  { id: 'j3', name: 'Peter Keller', username: 'peter' },
-  { id: 'j4', name: 'Christine Wagner', username: 'christine' },
-  { id: 'j5', name: 'Thomas Schneider', username: 'thomas' }
+  { 
+    id: 'j1', 
+    name: 'Hans Fischer', 
+    username: 'hans', 
+    role: 'admin',
+    assignedCriterion: 'whipStrikes'
+  },
+  { 
+    id: 'j2', 
+    name: 'Maria Gerber', 
+    username: 'maria', 
+    role: 'judge',
+    assignedCriterion: 'rhythm'
+  },
+  { 
+    id: 'j3', 
+    name: 'Peter Keller', 
+    username: 'peter', 
+    role: 'judge',
+    assignedCriterion: 'stance'
+  },
+  { 
+    id: 'j4', 
+    name: 'Christine Wagner', 
+    username: 'christine', 
+    role: 'judge',
+    assignedCriterion: 'posture'
+  },
+  { 
+    id: 'j5', 
+    name: 'Thomas Schneider', 
+    username: 'thomas', 
+    role: 'judge',
+    assignedCriterion: 'whipControl'
+  }
 ];
 
 // Mock Individual Scores

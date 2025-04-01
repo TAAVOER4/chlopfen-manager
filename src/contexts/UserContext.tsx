@@ -59,7 +59,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const impersonate = (judge: Judge) => {
     // Store the admin state to return to later
-    if (currentUser?.role === 'admin' && !originalAdmin) {
+    if (!originalAdmin && currentUser?.role === 'admin') {
       setOriginalAdmin(currentUser);
       localStorage.setItem('adminMode', 'true');
     }

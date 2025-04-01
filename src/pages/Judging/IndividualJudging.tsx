@@ -1,25 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Save, 
+  UserCheck, 
+  Award, 
+  Clock, 
+  ClipboardCheck 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { mockParticipants } from '@/data/mockData';
+import { mockIndividualScores } from '@/data/mockData';
+import { Participant, IndividualScore, Judge } from '@/types';
+import type { CriterionKey } from '@/types';
 import { useUser } from '@/contexts/UserContext';
-import { mockParticipants } from '../../data/mockData';
-import { getCategoryDisplay, getCategoryRequiredStrikes } from '../../utils/categoryUtils';
-import { Category, CriterionKey } from '../../types';
-
-// Types for the criteria
-type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 
 const IndividualJudging = () => {
   const { category = '' } = useParams<{ category: Category }>();
@@ -41,7 +38,6 @@ const IndividualJudging = () => {
     whipControl: 0,
   });
 
-  // Get the criterion assigned to this judge
   const assignedCriterion = currentUser?.assignedCriterion || 'rhythm';
 
   const currentParticipant = categoryParticipants[currentIndex];
@@ -53,7 +49,6 @@ const IndividualJudging = () => {
     if (isNaN(numValue)) {
       numValue = 0;
     } else {
-      // Limit to 1 decimal place and range 1-10
       numValue = Math.max(1, Math.min(10, Math.round(numValue * 10) / 10));
     }
     
@@ -61,13 +56,11 @@ const IndividualJudging = () => {
   };
 
   const handleSave = () => {
-    // In a real application, this would save to the database
     toast({
       title: "Bewertung gespeichert",
       description: `Bewertung für ${currentParticipant.firstName} ${currentParticipant.lastName} gespeichert.`
     });
 
-    // Reset scores for the next participant or round
     const resetScores = {
       whipStrikes: 0,
       rhythm: 0,
@@ -77,7 +70,6 @@ const IndividualJudging = () => {
     };
     setScores(resetScores);
 
-    // Move to the next participant or round
     if (currentIndex < categoryParticipants.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else if (round === 1) {
@@ -88,7 +80,6 @@ const IndividualJudging = () => {
         description: "Starten Sie nun mit der zweiten Runde."
       });
     } else {
-      // End of judging
       toast({
         title: "Bewertung abgeschlossen",
         description: "Alle Teilnehmer wurden bewertet."
@@ -97,7 +88,6 @@ const IndividualJudging = () => {
     }
   };
 
-  // For regular judges, they only need their assigned criterion to be scored
   const isFormValid = () => {
     if (isAdmin) {
       return scores.whipStrikes > 0 && 
@@ -107,7 +97,6 @@ const IndividualJudging = () => {
              scores.whipControl > 0;
     }
     
-    // For regular judges, only check their assigned criterion
     return scores[assignedCriterion] > 0;
   };
 
@@ -123,7 +112,6 @@ const IndividualJudging = () => {
     );
   }
 
-  // Helper function to get criterion display name
   const getCriterionDisplayName = (key: CriterionKey): string => {
     switch (key) {
       case 'whipStrikes':
@@ -202,25 +190,14 @@ const IndividualJudging = () => {
         <CardContent>
           <div className="space-y-8">
             {isAdmin ? (
-              // Admin sees all criteria
               <>
-                {/* Whip Strikes */}
                 {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
-                
-                {/* Rhythm */}
                 {renderScoreInput('rhythm', 'Rhythmus')}
-                
-                {/* Stance */}
                 {renderScoreInput('stance', 'Stand')}
-                
-                {/* Posture */}
                 {renderScoreInput('posture', 'Körperhaltung')}
-                
-                {/* Whip Control */}
                 {renderScoreInput('whipControl', 'Geiselführung')}
               </>
             ) : (
-              // Regular judge only sees their assigned criterion
               <div className="space-y-2">
                 {renderScoreInput(
                   assignedCriterion, 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -35,12 +34,14 @@ import {
 } from "@/components/ui/select";
 import { mockJudges } from '@/data/mockJudges';
 import { Judge, CriterionKey } from '@/types';
+import { useUser } from '@/contexts/UserContext';
 
 const JudgesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [judges, setJudges] = useState<Judge[]>(mockJudges);
   const [editingJudge, setEditingJudge] = useState<Judge | null>(null);
+  const { impersonate } = useUser();
   
   // Available criteria for assignment
   const availableCriteria: { value: CriterionKey; label: string }[] = [
@@ -54,15 +55,7 @@ const JudgesPage = () => {
   const handleImpersonate = (judgeId: string) => {
     const judge = judges.find(j => j.id === judgeId);
     if (judge) {
-      // Store the admin state to return to later
-      localStorage.setItem('adminMode', 'true');
-      // Store the current impersonated user
-      localStorage.setItem('impersonatedUser', JSON.stringify(judge));
-      
-      toast({
-        title: "Benutzer wechseln",
-        description: `Sie agieren jetzt als ${judge.name} (${judge.role}).`
-      });
+      impersonate(judge);
       
       // Redirect to the judging page if they're a judge
       if (judge.role === 'judge') {
