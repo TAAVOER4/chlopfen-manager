@@ -18,9 +18,13 @@ import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
 import UsersPage from "./pages/Admin/UsersPage";
 import SponsorsPage from "./pages/Admin/SponsorsPage";
+import TournamentPage from "./pages/Admin/TournamentPage";
+import TournamentParticipantsPage from "./pages/Admin/TournamentParticipantsPage";
+import TournamentJudgesPage from "./pages/Admin/TournamentJudgesPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Auth/LoginPage";
 import { UserProvider } from "./contexts/UserContext";
+import { TournamentProvider } from "./contexts/TournamentContext";
 
 const queryClient = new QueryClient();
 
@@ -28,29 +32,34 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <UserProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/participants" element={<ParticipantsPage />} />
-              <Route path="/participants/register" element={<RegisterParticipant />} />
-              <Route path="/participants/register-group" element={<RegisterGroup />} />
-              <Route path="/participants/edit/:id" element={<EditParticipant />} />
-              <Route path="/participants/edit-group/:id" element={<EditGroup />} />
-              <Route path="/judging" element={<JudgingPage />} />
-              <Route path="/judging/individual/:category" element={<IndividualJudging />} />
-              <Route path="/judging/group/:size" element={<GroupJudging />} />
-              <Route path="/results" element={<ResultsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/admin/users" element={<UsersPage />} />
-              <Route path="/admin/sponsors" element={<SponsorsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <TournamentProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/participants" element={<ParticipantsPage />} />
+                <Route path="/participants/register" element={<RegisterParticipant />} />
+                <Route path="/participants/register-group" element={<RegisterGroup />} />
+                <Route path="/participants/edit/:id" element={<EditParticipant />} />
+                <Route path="/participants/edit-group/:id" element={<EditGroup />} />
+                <Route path="/judging" element={<JudgingPage />} />
+                <Route path="/judging/individual/:category" element={<IndividualJudging />} />
+                <Route path="/judging/group/:size" element={<GroupJudging />} />
+                <Route path="/results" element={<ResultsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/users" element={<UsersPage />} />
+                <Route path="/admin/sponsors" element={<SponsorsPage />} />
+                <Route path="/admin/tournament" element={<TournamentPage />} />
+                <Route path="/admin/tournament/:tournamentId/participants" element={<TournamentParticipantsPage />} />
+                <Route path="/admin/tournament/:tournamentId/judges" element={<TournamentJudgesPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </TournamentProvider>
       </UserProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -9,7 +9,8 @@ import {
   Calendar,
   Printer,
   ArrowRight,
-  Flag
+  Flag,
+  Trophy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -121,7 +122,7 @@ const AdminPage = () => {
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Settings className="h-5 w-5 mr-2" />
+              <Trophy className="h-5 w-5 mr-2" />
               Turniereinstellungen
             </CardTitle>
             <CardDescription>
@@ -130,7 +131,7 @@ const AdminPage = () => {
           </CardHeader>
           <CardContent className="flex-grow">
             <p className="text-sm text-muted-foreground">
-              Legen Sie den Turniernamen, das Datum und andere Einstellungen fest.
+              Legen Sie den Turniernamen, das Datum und andere Einstellungen fest. Weisen Sie dem Turnier Teilnehmer und Richter zu.
             </p>
           </CardContent>
           <CardFooter className="mt-auto">

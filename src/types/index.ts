@@ -16,6 +16,7 @@ export interface Participant {
   category: Category;
   groupIds?: number[];
   isGroupOnly?: boolean; // New flag to indicate participant is only in groups, not individual competition
+  tournamentId?: number; // Reference to which tournament this participant belongs to
 }
 
 export interface Group {
@@ -24,6 +25,7 @@ export interface Group {
   size: GroupSize;
   category: GroupCategory; // Changed from Category to GroupCategory
   participantIds: number[];
+  tournamentId?: number; // Reference to which tournament this group belongs to
 }
 
 export interface IndividualScore {
@@ -35,6 +37,7 @@ export interface IndividualScore {
   stance: number;
   posture: number;
   whipControl: number;
+  tournamentId?: number; // Reference to tournament
 }
 
 export interface GroupScore {
@@ -44,6 +47,7 @@ export interface GroupScore {
   rhythm: number;
   tempo: number;
   time?: boolean; // Changed to boolean - either timed correctly (true) or not (false)
+  tournamentId?: number; // Reference to tournament
 }
 
 export interface User {
@@ -56,6 +60,7 @@ export interface User {
     individual?: CriterionKey;
     group?: GroupCriterionKey;
   };
+  tournamentIds?: number[]; // Reference to tournaments this judge is assigned to
 }
 
 // For backward compatibility - Judge is now an alias to User
@@ -69,6 +74,7 @@ export interface Sponsor {
   rank?: 1 | 2 | 3;
   type: SponsorType;
   websiteUrl?: string;
+  tournamentId?: number; // Reference to tournament
 }
 
 export interface ParticipantResult {
@@ -86,4 +92,14 @@ export interface GroupResult {
   totalScore: number;
   averageRhythm: number;
   rank: number;
+}
+
+// New tournament interface
+export interface Tournament {
+  id: number;
+  name: string;
+  date: string; // ISO date string format
+  location: string;
+  year: number; // The year of the tournament
+  isActive: boolean; // Flag to mark the currently active tournament
 }
