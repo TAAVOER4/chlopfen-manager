@@ -42,7 +42,7 @@ const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({
             <User className="mr-2 h-5 w-5" />
             {categoryLabel} - {getGroupSizeDisplay(size)}
           </div>
-          {isAdmin && groups.length > 1 && (
+          {isAdmin && (
             <Button 
               variant="ghost" 
               size="sm"
@@ -61,11 +61,6 @@ const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({
       <CardContent className="pt-0 flex flex-col justify-between h-full">
         <p className="text-sm text-muted-foreground mb-2">
           {groups.length} Gruppen
-          {groups.length > 1 && isAdmin && (
-            <span className="ml-2 text-xs text-primary">
-              (Reihenfolge anpassbar)
-            </span>
-          )}
         </p>
         <Button 
           asChild 
