@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,6 +17,25 @@ import { useToast } from '@/hooks/use-toast';
 import { mockParticipants } from '../../data/mockData';
 import { getCategoryDisplay, getCategoryRequiredStrikes } from '../../utils/categoryUtils';
 import { Category } from '../../types';
+
+// Types for the criteria
+type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
+
+// Mock function to get the assigned criterion for the current judge
+// In a real application, this would come from authentication and database
+const getJudgeAssignedCriterion = (): CriterionKey => {
+  // For demo purposes, we'll return a fixed value
+  // In a real app, this would be based on the logged-in judge's ID
+  return 'rhythm';
+};
+
+// Mock function to check if the current user is an admin
+// In a real application, this would come from authentication
+const isAdminUser = (): boolean => {
+  // For demo purposes, return false
+  // In a real app, this would be based on the logged-in user's role
+  return false;
+};
 
 const IndividualJudging = () => {
   const { category = '' } = useParams<{ category: Category }>();
@@ -36,6 +55,10 @@ const IndividualJudging = () => {
     posture: 0,
     whipControl: 0,
   });
+
+  // Get the criterion assigned to this judge
+  const assignedCriterion = getJudgeAssignedCriterion();
+  const isAdmin = isAdminUser();
 
   const currentParticipant = categoryParticipants[currentIndex];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);
@@ -61,13 +84,14 @@ const IndividualJudging = () => {
     });
 
     // Reset scores for the next participant or round
-    setScores({
+    const resetScores = {
       whipStrikes: 0,
       rhythm: 0,
       stance: 0,
       posture: 0,
       whipControl: 0,
-    });
+    };
+    setScores(resetScores);
 
     // Move to the next participant or round
     if (currentIndex < categoryParticipants.length - 1) {
@@ -89,12 +113,18 @@ const IndividualJudging = () => {
     }
   };
 
+  // For regular judges, they only need their assigned criterion to be scored
   const isFormValid = () => {
-    return scores.whipStrikes > 0 && 
-           scores.rhythm > 0 && 
-           scores.stance > 0 && 
-           scores.posture > 0 && 
-           scores.whipControl > 0;
+    if (isAdmin) {
+      return scores.whipStrikes > 0 && 
+             scores.rhythm > 0 && 
+             scores.stance > 0 && 
+             scores.posture > 0 && 
+             scores.whipControl > 0;
+    }
+    
+    // For regular judges, only check their assigned criterion
+    return scores[assignedCriterion] > 0;
   };
 
   if (!currentParticipant) {
@@ -109,7 +139,25 @@ const IndividualJudging = () => {
     );
   }
 
-  const renderScoreInput = (field: string, label: string) => {
+  // Helper function to get criterion display name
+  const getCriterionDisplayName = (key: CriterionKey): string => {
+    switch (key) {
+      case 'whipStrikes':
+        return `Schläge (${requiredStrikes})`;
+      case 'rhythm':
+        return 'Rhythmus';
+      case 'stance':
+        return 'Stand';
+      case 'posture':
+        return 'Körperhaltung';
+      case 'whipControl':
+        return 'Geiselführung';
+      default:
+        return key;
+    }
+  };
+
+  const renderScoreInput = (field: CriterionKey, label: string) => {
     return (
       <div className="space-y-2">
         <div className="flex justify-between">
@@ -169,32 +217,59 @@ const IndividualJudging = () => {
         
         <CardContent>
           <div className="space-y-8">
-            {/* Whip Strikes */}
-            {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
-            
-            {/* Rhythm */}
-            {renderScoreInput('rhythm', 'Rhythmus')}
-            
-            {/* Stance */}
-            {renderScoreInput('stance', 'Stand')}
-            
-            {/* Posture */}
-            {renderScoreInput('posture', 'Körperhaltung')}
-            
-            {/* Whip Control */}
-            {renderScoreInput('whipControl', 'Geiselführung')}
-            
-            <Separator />
-            
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-medium">Gesamtpunkte</h3>
-                <p className="text-sm text-muted-foreground">Summe aller Kategorien</p>
+            {isAdmin ? (
+              // Admin sees all criteria
+              <>
+                {/* Whip Strikes */}
+                {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
+                
+                {/* Rhythm */}
+                {renderScoreInput('rhythm', 'Rhythmus')}
+                
+                {/* Stance */}
+                {renderScoreInput('stance', 'Stand')}
+                
+                {/* Posture */}
+                {renderScoreInput('posture', 'Körperhaltung')}
+                
+                {/* Whip Control */}
+                {renderScoreInput('whipControl', 'Geiselführung')}
+              </>
+            ) : (
+              // Regular judge only sees their assigned criterion
+              <div className="space-y-2">
+                {renderScoreInput(
+                  assignedCriterion, 
+                  getCriterionDisplayName(assignedCriterion)
+                )}
+                <p className="text-sm text-muted-foreground mt-4">
+                  Sie sind berechtigt, nur {getCriterionDisplayName(assignedCriterion)} zu bewerten.
+                </p>
               </div>
-              <div className="text-4xl font-bold">
-                {Object.values(scores).reduce((sum, score) => sum + score, 0).toFixed(1)}
+            )}
+            
+            {isAdmin && <Separator />}
+            
+            {isAdmin && (
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-medium">Gesamtpunkte</h3>
+                  <p className="text-sm text-muted-foreground">Summe aller Kategorien</p>
+                </div>
+                <div className="text-4xl font-bold">
+                  {Object.values(scores).reduce((sum, score) => sum + score, 0).toFixed(1)}
+                </div>
               </div>
-            </div>
+            )}
+
+            {!isAdmin && (
+              <div className="flex items-center mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <Lock className="h-4 w-4 text-blue-600 mr-2" />
+                <p className="text-sm text-blue-800">
+                  Die Gesamtübersicht ist nur für Administratoren verfügbar.
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
         
