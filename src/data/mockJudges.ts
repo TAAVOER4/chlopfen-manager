@@ -15,6 +15,14 @@ export let mockJudges: User[] = [
     assignedCriteria: undefined
   },
   {
+    id: 'judge_8',
+    name: 'Erwin Vogel',
+    username: 'erwin.vogel',
+    role: 'admin',
+    passwordHash: defaultPasswordHash,
+    assignedCriteria: undefined
+  },
+  {
     id: 'judge_2',
     name: 'Maria Schmidt',
     username: 'maria.schmidt',
