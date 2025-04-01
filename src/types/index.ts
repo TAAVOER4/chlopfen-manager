@@ -1,6 +1,7 @@
 
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupSize = 'three' | 'four';
+export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 
 export interface Participant {
   id: string;
@@ -39,6 +40,8 @@ export interface Judge {
   id: string;
   name: string;
   username: string;
+  role: 'admin' | 'judge';
+  assignedCriterion?: CriterionKey;
 }
 
 export interface Sponsor {

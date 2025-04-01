@@ -12,29 +12,34 @@ import JudgingPage from "./pages/Judging/JudgingPage";
 import IndividualJudging from "./pages/Judging/IndividualJudging";
 import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
+import JudgesPage from "./pages/Admin/JudgesPage";
 import NotFound from "./pages/NotFound";
+import { UserProvider } from "./contexts/UserContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/participants" element={<ParticipantsPage />} />
-            <Route path="/participants/register" element={<RegisterParticipant />} />
-            <Route path="/judging" element={<JudgingPage />} />
-            <Route path="/judging/individual/:category" element={<IndividualJudging />} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <UserProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/participants" element={<ParticipantsPage />} />
+              <Route path="/participants/register" element={<RegisterParticipant />} />
+              <Route path="/judging" element={<JudgingPage />} />
+              <Route path="/judging/individual/:category" element={<IndividualJudging />} />
+              <Route path="/results" element={<ResultsPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/judges" element={<JudgesPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </UserProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

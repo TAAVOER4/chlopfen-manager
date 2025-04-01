@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Lock } from 'lucide-react';
@@ -14,33 +13,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
 import { mockParticipants } from '../../data/mockData';
 import { getCategoryDisplay, getCategoryRequiredStrikes } from '../../utils/categoryUtils';
-import { Category } from '../../types';
+import { Category, CriterionKey } from '../../types';
 
 // Types for the criteria
 type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
-
-// Mock function to get the assigned criterion for the current judge
-// In a real application, this would come from authentication and database
-const getJudgeAssignedCriterion = (): CriterionKey => {
-  // For demo purposes, we'll return a fixed value
-  // In a real app, this would be based on the logged-in judge's ID
-  return 'rhythm';
-};
-
-// Mock function to check if the current user is an admin
-// In a real application, this would come from authentication
-const isAdminUser = (): boolean => {
-  // For demo purposes, return false
-  // In a real app, this would be based on the logged-in user's role
-  return false;
-};
 
 const IndividualJudging = () => {
   const { category = '' } = useParams<{ category: Category }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentUser, isAdmin } = useUser();
 
   const categoryParticipants = mockParticipants.filter(
     (p) => p.category === category
@@ -57,8 +42,7 @@ const IndividualJudging = () => {
   });
 
   // Get the criterion assigned to this judge
-  const assignedCriterion = getJudgeAssignedCriterion();
-  const isAdmin = isAdminUser();
+  const assignedCriterion = currentUser?.assignedCriterion || 'rhythm';
 
   const currentParticipant = categoryParticipants[currentIndex];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);

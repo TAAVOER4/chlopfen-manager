@@ -19,8 +19,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useUser } from '@/contexts/UserContext';
 
 const AdminPage = () => {
+  const { isAdmin } = useUser();
+  
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h2 className="text-2xl font-bold mb-4">Zugriff verweigert</h2>
+        <p className="text-muted-foreground mb-4">Sie haben keine Berechtigung, diese Seite zu sehen.</p>
+        <Button asChild>
+          <Link to="/">Zurück zur Startseite</Link>
+        </Button>
+      </div>
+    );
+  }
+  
   return (
     <div className="animate-fade-in">
       <h1 className="text-3xl font-bold text-swiss-blue mb-6">Administration</h1>
