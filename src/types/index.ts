@@ -44,7 +44,7 @@ export interface Judge {
 export interface Sponsor {
   id: string;
   name: string;
-  logo?: string;
+  logo: string;
   category: Category;
   rank: 1 | 2 | 3;
 }

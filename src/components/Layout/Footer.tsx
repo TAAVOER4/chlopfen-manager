@@ -11,21 +11,21 @@ const Footer: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 bg-white p-4 rounded-lg w-full max-w-4xl">
             <div className="flex justify-center items-center">
               <img 
-                src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
+                src="/lovable-uploads/a5d2c313-c136-4233-8b7b-e1347138b272.png" 
                 alt="Geislechlöpfer Ohmstal" 
                 className="h-24 object-contain"
               />
             </div>
             <div className="flex justify-center items-center">
               <img 
-                src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
+                src="/lovable-uploads/d96b84f9-8847-4e45-bd71-c44b3fb53513.png" 
                 alt="Geislechlöpfer Buttisholz" 
                 className="h-24 object-contain"
               />
             </div>
             <div className="flex justify-center items-center">
               <img 
-                src="/lovable-uploads/aec4ee0f-4bc1-4368-8572-903436876874.png" 
+                src="/lovable-uploads/4ea13025-c283-4b04-91f7-8176d706ccf7.png" 
                 alt="Chlaus-chlöpfer Hergiswil" 
                 className="h-24 object-contain"
               />
