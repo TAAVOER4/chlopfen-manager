@@ -12,7 +12,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { mockGroups } from '../../data/mockData';
-import { Group, GroupSize } from '../../types';
+import { Group, GroupSize, GroupCriterionKey } from '../../types';
 import { useUser } from '../../contexts/UserContext';
 
 const GroupJudgingTab: React.FC = () => {
@@ -26,8 +26,8 @@ const GroupJudgingTab: React.FC = () => {
   
   // Check if judge can score groups
   const canJudgeGroups = isAdmin || (
-    currentUser?.assignedCriterion && 
-    ['whipStrikes', 'rhythm', 'tempo', 'time'].includes(currentUser.assignedCriterion)
+    currentUser?.assignedCriteria?.group && 
+    ['whipStrikes', 'rhythm', 'tempo', 'time'].includes(currentUser.assignedCriteria.group)
   );
   
   // Count groups by size

@@ -40,7 +40,7 @@ const IndividualJudging = () => {
     whipControl: 0,
   });
 
-  const assignedCriterion = currentUser?.assignedCriterion || 'rhythm';
+  const assignedCriterion = currentUser?.assignedCriteria?.individual || 'rhythm';
 
   const currentParticipant = categoryParticipants[currentIndex];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);

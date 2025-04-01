@@ -52,11 +52,11 @@ const GroupJudging: React.FC = () => {
       return;
     }
 
-    // Check if user has the right assignedCriterion for group judging
+    // Check if user has the right assignedCriteria for group judging
     const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo', 'time'];
     if (currentUser.role !== 'admin' && 
-        (!currentUser.assignedCriterion || 
-         !validGroupCriteria.includes(currentUser.assignedCriterion as GroupCriterionKey))) {
+        (!currentUser.assignedCriteria?.group || 
+         !validGroupCriteria.includes(currentUser.assignedCriteria.group))) {
       navigate('/judging');
       toast({
         title: "Zugriff verweigert",
@@ -95,7 +95,7 @@ const GroupJudging: React.FC = () => {
     if (currentUser?.role === 'admin') return true;
     
     // Judges can only edit their assigned criterion
-    return currentUser?.assignedCriterion === criterion;
+    return currentUser?.assignedCriteria?.group === criterion;
   };
 
   const handleScoreChange = (groupId: string, criterion: keyof Omit<GroupScore, 'groupId' | 'judgeId' | 'time'>, value: number) => {
