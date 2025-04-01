@@ -1,7 +1,9 @@
+
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
+export type UserRole = 'admin' | 'judge';
 
 export interface Participant {
   id: string;
@@ -42,16 +44,20 @@ export interface GroupScore {
   time?: boolean; // Changed to boolean - either timed correctly (true) or not (false)
 }
 
-export interface Judge {
+export interface User {
   id: string;
   name: string;
   username: string;
-  role: 'admin' | 'judge';
+  role: UserRole;
+  passwordHash: string; // Hashed password for authentication
   assignedCriteria?: {
     individual?: CriterionKey;
     group?: GroupCriterionKey;
   };
 }
+
+// For backward compatibility - Judge is now an alias to User
+export type Judge = User;
 
 export interface Sponsor {
   id: string;

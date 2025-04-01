@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, User } from 'lucide-react';
+import { ArrowLeft, UserPlus, Users, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,17 +12,18 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { mockJudges, updateMockJudges } from '@/data/mockJudges';
-import { Judge, CriterionKey, GroupCriterionKey } from '@/types';
+import { User, CriterionKey, GroupCriterionKey, UserRole } from '@/types';
 import { useUser } from '@/contexts/UserContext';
 import DeleteJudgeDialog from '@/components/Admin/DeleteJudgeDialog';
-import JudgeTable from '@/components/Admin/JudgeTable';
+import UserTable from '@/components/Admin/UserTable';
+import { hashPassword } from '@/utils/authUtils';
 
-const JudgesPage = () => {
+const UsersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [judges, setJudges] = useState<Judge[]>(mockJudges);
-  const [editingJudge, setEditingJudge] = useState<Judge | null>(null);
-  const [judgeToDelete, setJudgeToDelete] = useState<Judge | null>(null);
+  const [users, setUsers] = useState<User[]>(mockJudges);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { impersonate } = useUser();
   
@@ -40,12 +42,12 @@ const JudgesPage = () => {
     { value: 'tempo', label: 'Takt (Gruppe)' },
   ];
 
-  const handleImpersonate = (judgeId: string) => {
-    const judge = judges.find(j => j.id === judgeId);
-    if (judge) {
-      impersonate(judge);
+  const handleImpersonate = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      impersonate(user);
       
-      if (judge.role === 'judge') {
+      if (user.role === 'judge') {
         navigate('/judging');
       } else {
         navigate('/');
@@ -53,69 +55,99 @@ const JudgesPage = () => {
     }
   };
 
-  const handleEdit = (judge: Judge) => {
-    setEditingJudge({ ...judge });
+  const handleEdit = (user: User) => {
+    setEditingUser({ ...user });
   };
 
-  const handleJudgeChange = (updatedJudge: Judge) => {
-    setEditingJudge(updatedJudge);
+  const handleUserChange = (updatedUser: User) => {
+    setEditingUser(updatedUser);
+  };
+
+  const handlePasswordChange = (userId: string, newPassword: string) => {
+    setUsers(prevUsers => {
+      return prevUsers.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            passwordHash: hashPassword(newPassword)
+          };
+        }
+        return user;
+      });
+    });
+
+    if (editingUser && editingUser.id === userId) {
+      setEditingUser({
+        ...editingUser,
+        passwordHash: hashPassword(newPassword)
+      });
+    }
+    
+    toast({
+      title: "Passwort geändert",
+      description: "Das Passwort wurde erfolgreich geändert."
+    });
   };
 
   const handleSave = () => {
-    if (editingJudge) {
-      const updatedJudges = judges.map(j => 
-        j.id === editingJudge.id ? editingJudge : j
+    if (editingUser) {
+      const updatedUsers = users.map(u => 
+        u.id === editingUser.id ? editingUser : u
       );
       
-      setJudges(updatedJudges);
+      setUsers(updatedUsers);
       // Update the mockJudges in the data file
-      updateMockJudges(updatedJudges);
-      setEditingJudge(null);
+      updateMockJudges(updatedUsers);
+      setEditingUser(null);
       
       toast({
-        title: "Richter aktualisiert",
-        description: `Daten für ${editingJudge.name} wurden gespeichert.`
+        title: "Benutzer aktualisiert",
+        description: `Daten für ${editingUser.name} wurden gespeichert.`
       });
     }
   };
 
-  const handleAddJudge = () => {
-    const newJudge: Judge = {
-      id: `judge_${Date.now()}`,
-      name: 'Neuer Richter',
-      username: 'neuer.richter',
-      role: 'judge',
+  const handleAddUser = () => {
+    // Default password is "password"
+    const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+    
+    const newUser: User = {
+      id: `user_${Date.now()}`,
+      name: 'Neuer Benutzer',
+      username: 'neuer.benutzer',
+      role: 'judge' as UserRole,
+      passwordHash: defaultPasswordHash,
       assignedCriteria: {
         individual: 'rhythm'
       }
     };
     
-    const updatedJudges = [...judges, newJudge];
-    setJudges(updatedJudges);
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
     // Update the mockJudges in the data file
-    updateMockJudges(updatedJudges);
-    setEditingJudge(newJudge);
+    updateMockJudges(updatedUsers);
+    setEditingUser(newUser);
     
     toast({
-      title: "Neuer Richter",
-      description: "Bitte vervollständigen Sie die Daten des neuen Richters."
+      title: "Neuer Benutzer",
+      description: "Bitte vervollständigen Sie die Daten des neuen Benutzers."
     });
   };
 
-  const handleDeleteClick = (judge: Judge) => {
-    setJudgeToDelete(judge);
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteJudge = (judgeId: string) => {
-    const updatedJudges = judges.filter(j => j.id !== judgeId);
-    setJudges(updatedJudges);
+  const handleDeleteUser = (userId: string) => {
+    const updatedUsers = users.filter(u => u.id !== userId);
+    setUsers(updatedUsers);
     // Update the mockJudges in the data file
-    updateMockJudges(updatedJudges);
+    updateMockJudges(updatedUsers);
     
     toast({
-      title: "Richter gelöscht",
-      description: "Der Richter wurde erfolgreich gelöscht."
+      title: "Benutzer gelöscht",
+      description: "Der Benutzer wurde erfolgreich gelöscht."
     });
   };
 
@@ -127,30 +159,31 @@ const JudgesPage = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück
           </Button>
-          <h1 className="text-3xl font-bold text-swiss-blue">Richterverwaltung</h1>
+          <h1 className="text-3xl font-bold text-swiss-blue">Benutzerverwaltung</h1>
         </div>
-        <Button onClick={handleAddJudge}>
+        <Button onClick={handleAddUser}>
           <UserPlus className="h-4 w-4 mr-2" />
-          Neuer Richter
+          Neuer Benutzer
         </Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <User className="h-5 w-5 mr-2" />
-            Richter und Berechtigungen
+            <Users className="h-5 w-5 mr-2" />
+            Benutzer und Berechtigungen
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <JudgeTable
-            judges={judges}
-            editingJudge={editingJudge}
+          <UserTable
+            users={users}
+            editingUser={editingUser}
             onEdit={handleEdit}
             onSave={handleSave}
             onImpersonate={handleImpersonate}
             onDeleteClick={handleDeleteClick}
-            onJudgeChange={handleJudgeChange}
+            onUserChange={handleUserChange}
+            onPasswordChange={handlePasswordChange}
             individualCriteria={individualCriteria}
             groupCriteria={groupCriteria}
           />
@@ -165,11 +198,11 @@ const JudgesPage = () => {
       <DeleteJudgeDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        judge={judgeToDelete}
-        onDelete={handleDeleteJudge}
+        judge={userToDelete}
+        onDelete={handleDeleteUser}
       />
     </div>
   );
 };
 
-export default JudgesPage;
+export default UsersPage;

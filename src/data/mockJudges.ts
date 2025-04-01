@@ -1,12 +1,17 @@
 
-import { Judge } from '@/types';
+import { User } from '@/types';
+import { hashPassword } from '@/utils/authUtils';
 
-export let mockJudges: Judge[] = [
+// Initial default password is "password"
+const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+
+export let mockJudges: User[] = [
   {
     id: 'judge_1',
     name: 'Hans Müller',
     username: 'hans.mueller',
     role: 'admin',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: undefined
   },
   {
@@ -14,6 +19,7 @@ export let mockJudges: Judge[] = [
     name: 'Maria Schmidt',
     username: 'maria.schmidt',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'rhythm',
       group: 'rhythm'
@@ -24,6 +30,7 @@ export let mockJudges: Judge[] = [
     name: 'Peter Meier',
     username: 'peter.meier',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipStrikes',
       group: 'whipStrikes'
@@ -34,6 +41,7 @@ export let mockJudges: Judge[] = [
     name: 'Anna Weber',
     username: 'anna.weber',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'stance'
     }
@@ -43,6 +51,7 @@ export let mockJudges: Judge[] = [
     name: 'Stefan Keller',
     username: 'stefan.keller',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'posture'
     }
@@ -52,6 +61,7 @@ export let mockJudges: Judge[] = [
     name: 'Lisa Schmid',
     username: 'lisa.schmid',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       group: 'tempo'
     }
@@ -61,6 +71,7 @@ export let mockJudges: Judge[] = [
     name: 'Thomas Brunner',
     username: 'thomas.brunner',
     role: 'judge',
+    passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipControl'
     }
@@ -68,6 +79,6 @@ export let mockJudges: Judge[] = [
 ];
 
 // Function to update the mockJudges array
-export const updateMockJudges = (updatedJudges: Judge[]) => {
+export const updateMockJudges = (updatedJudges: User[]) => {
   mockJudges = updatedJudges;
 };
