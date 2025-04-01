@@ -66,13 +66,24 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     if (!size) return;
     
     const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
-    let filteredGroups = mockGroups.filter(group => group.size === groupSize);
     
-    // Filter by category if provided
-    if (categoryParam && ['kids', 'juniors', 'active'].includes(categoryParam)) {
-      filteredGroups = filteredGroups.filter(
-        group => group.category === categoryParam as Category
-      );
+    // Get the reordered groups from session storage if available
+    const storedGroups = sessionStorage.getItem(`reorderedGroups-${groupSize}-${categoryParam || 'all'}`);
+    let filteredGroups: Group[] = [];
+    
+    if (storedGroups) {
+      try {
+        // Use the reordered groups from session storage
+        const parsedGroups: Group[] = JSON.parse(storedGroups);
+        filteredGroups = parsedGroups;
+      } catch (error) {
+        console.error('Error parsing stored groups:', error);
+        // Fallback to default filtering
+        filteredGroups = getFilteredGroups(groupSize, categoryParam);
+      }
+    } else {
+      // No stored order, use default filtering
+      filteredGroups = getFilteredGroups(groupSize, categoryParam);
     }
     
     setGroups(filteredGroups);
@@ -90,6 +101,20 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     });
     setScores(initialScores);
   }, [size, categoryParam, currentUser]);
+
+  // Helper function to get filtered groups by size and category
+  const getFilteredGroups = (groupSize: GroupSize, categoryParam: string | null): Group[] => {
+    let filtered = mockGroups.filter(group => group.size === groupSize);
+    
+    // Filter by category if provided
+    if (categoryParam && ['kids', 'juniors', 'active'].includes(categoryParam)) {
+      filtered = filtered.filter(
+        group => group.category === categoryParam as Category
+      );
+    }
+    
+    return filtered;
+  };
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {

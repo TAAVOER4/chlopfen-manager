@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { GroupSize, Category, Group } from '../../types';
 import { useUser } from '@/contexts/UserContext';
@@ -40,6 +40,25 @@ const GroupJudgingTab = () => {
     openReorderDialog,
     closeReorderDialog,
   } = useGroupReordering(groupsBySizeAndCategory, setGroupsBySizeAndCategory);
+
+  // Store reordered groups in session storage whenever they change
+  useEffect(() => {
+    Object.keys(groupsBySizeAndCategory).forEach((size) => {
+      const sizeKey = size as GroupSize;
+      Object.keys(groupsBySizeAndCategory[sizeKey]).forEach((category) => {
+        const categoryKey = category as Category;
+        const groups = groupsBySizeAndCategory[sizeKey][categoryKey];
+        
+        // Only store if there are groups in this category
+        if (groups.length > 0) {
+          sessionStorage.setItem(
+            `reorderedGroups-${sizeKey}-${categoryKey}`, 
+            JSON.stringify(groups)
+          );
+        }
+      });
+    });
+  }, [groupsBySizeAndCategory]);
 
   // Create an array of card configurations based on the requested layout
   const cardConfigs = [
