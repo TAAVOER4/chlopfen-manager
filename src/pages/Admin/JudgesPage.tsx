@@ -1,14 +1,7 @@
+
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Save,
-  UserPlus, 
-  UserCheck,
-  User,
-  Trash2
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, UserPlus, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,35 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { mockJudges } from '@/data/mockJudges';
+import { mockJudges, updateMockJudges } from '@/data/mockJudges';
 import { Judge, CriterionKey, GroupCriterionKey } from '@/types';
 import { useUser } from '@/contexts/UserContext';
 import DeleteJudgeDialog from '@/components/Admin/DeleteJudgeDialog';
+import JudgeTable from '@/components/Admin/JudgeTable';
 
 const JudgesPage = () => {
   const navigate = useNavigate();
@@ -89,9 +59,19 @@ const JudgesPage = () => {
     setEditingJudge({ ...judge });
   };
 
+  const handleJudgeChange = (updatedJudge: Judge) => {
+    setEditingJudge(updatedJudge);
+  };
+
   const handleSave = () => {
     if (editingJudge) {
-      setJudges(judges.map(j => j.id === editingJudge.id ? editingJudge : j));
+      const updatedJudges = judges.map(j => 
+        j.id === editingJudge.id ? editingJudge : j
+      );
+      
+      setJudges(updatedJudges);
+      // Update the mockJudges in the data file
+      updateMockJudges(updatedJudges);
       setEditingJudge(null);
       
       toast({
@@ -112,7 +92,10 @@ const JudgesPage = () => {
       }
     };
     
-    setJudges([...judges, newJudge]);
+    const updatedJudges = [...judges, newJudge];
+    setJudges(updatedJudges);
+    // Update the mockJudges in the data file
+    updateMockJudges(updatedJudges);
     setEditingJudge(newJudge);
     
     toast({
@@ -127,7 +110,10 @@ const JudgesPage = () => {
   };
 
   const handleDeleteJudge = (judgeId: string) => {
-    setJudges(judges.filter(j => j.id !== judgeId));
+    const updatedJudges = judges.filter(j => j.id !== judgeId);
+    setJudges(updatedJudges);
+    // Update the mockJudges in the data file
+    updateMockJudges(updatedJudges);
     
     toast({
       title: "Richter gelöscht",
@@ -159,173 +145,17 @@ const JudgesPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Benutzername</TableHead>
-                <TableHead>Rolle</TableHead>
-                <TableHead>Zugewiesene Kriterien</TableHead>
-                <TableHead className="text-right">Aktionen</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {judges.map(judge => (
-                <TableRow key={judge.id}>
-                  <TableCell>
-                    {editingJudge?.id === judge.id ? (
-                      <Input 
-                        value={editingJudge.name}
-                        onChange={(e) => setEditingJudge({...editingJudge, name: e.target.value})}
-                      />
-                    ) : (
-                      judge.name
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingJudge?.id === judge.id ? (
-                      <Input 
-                        value={editingJudge.username}
-                        onChange={(e) => setEditingJudge({...editingJudge, username: e.target.value})}
-                      />
-                    ) : (
-                      judge.username
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingJudge?.id === judge.id ? (
-                      <Select 
-                        value={editingJudge.role}
-                        onValueChange={(value) => setEditingJudge({...editingJudge, role: value as 'admin' | 'judge'})}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Rolle auswählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Administrator</SelectItem>
-                          <SelectItem value="judge">Richter</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      judge.role === 'admin' ? 'Administrator' : 'Richter'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingJudge?.id === judge.id && editingJudge.role === 'judge' ? (
-                      <div className="space-y-2">
-                        <div>
-                          <Label htmlFor="individual-criterion">Einzelwertung</Label>
-                          <Select 
-                            value={editingJudge.assignedCriteria?.individual || ''}
-                            onValueChange={(value) => {
-                              const updatedCriteria = {
-                                ...(editingJudge.assignedCriteria || {}),
-                                individual: value as CriterionKey
-                              };
-                              setEditingJudge({
-                                ...editingJudge, 
-                                assignedCriteria: updatedCriteria
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Kriterium auswählen" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {individualCriteria.map((criterion) => (
-                                <SelectItem key={criterion.value} value={criterion.value}>
-                                  {criterion.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="group-criterion">Gruppenwertung</Label>
-                          <Select 
-                            value={editingJudge.assignedCriteria?.group || ''}
-                            onValueChange={(value) => {
-                              const updatedCriteria = {
-                                ...(editingJudge.assignedCriteria || {}),
-                                group: value as GroupCriterionKey
-                              };
-                              setEditingJudge({
-                                ...editingJudge, 
-                                assignedCriteria: updatedCriteria
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Kriterium auswählen" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {groupCriteria.map((criterion) => (
-                                <SelectItem key={criterion.value} value={criterion.value}>
-                                  {criterion.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {judge.role === 'admin' ? (
-                          'Alle Kriterien'
-                        ) : (
-                          <>
-                            {judge.assignedCriteria?.individual && (
-                              <div className="text-sm">
-                                <span className="font-medium">Einzel:</span> {' '}
-                                {individualCriteria.find(c => c.value === judge.assignedCriteria?.individual)?.label || 'Keine'}
-                              </div>
-                            )}
-                            {judge.assignedCriteria?.group && (
-                              <div className="text-sm">
-                                <span className="font-medium">Gruppe:</span> {' '}
-                                {groupCriteria.find(c => c.value === judge.assignedCriteria?.group)?.label || 'Keine'}
-                              </div>
-                            )}
-                            {!judge.assignedCriteria?.individual && !judge.assignedCriteria?.group && 'Keine Kriterien zugewiesen'}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {editingJudge?.id === judge.id ? (
-                        <Button size="sm" onClick={handleSave}>
-                          <Save className="h-4 w-4 mr-2" />
-                          Speichern
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(judge)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Bearbeiten
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        onClick={() => handleImpersonate(judge.id)}
-                      >
-                        Als Benutzer anmelden
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        onClick={() => handleDeleteClick(judge)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <JudgeTable
+            judges={judges}
+            editingJudge={editingJudge}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onImpersonate={handleImpersonate}
+            onDeleteClick={handleDeleteClick}
+            onJudgeChange={handleJudgeChange}
+            individualCriteria={individualCriteria}
+            groupCriteria={groupCriteria}
+          />
         </CardContent>
         <CardFooter className="justify-between">
           <Button variant="outline" onClick={() => navigate('/admin')}>
