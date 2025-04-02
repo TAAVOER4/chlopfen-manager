@@ -1,7 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -9,21 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { generateResultsPDF } from '@/utils/pdf/pdfExportUtils';
 import { Tournament, GroupSize, GroupCategory } from '@/types';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { mockGroups } from '@/data/mockData';
+import { FilterControls } from './FilterControls';
+import { GroupFilterPanel } from './GroupFilterPanel';
+import { ResultsTable } from './ResultsTable';
 
 interface ResultsTabProps {
   allIndividualResults: {
@@ -101,7 +92,6 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
   
   // Filter group results based on selected size and category
   const filteredGroupResults = useMemo(() => {
-    // For group results, we need to filter by the selected group size and category
     if (!groupResults || groupResults.length === 0) {
       return [];
     }
@@ -165,120 +155,30 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="w-full md:w-1/3">
-              <label className="text-sm font-medium mb-2 block">Export-Typ</label>
-              <Select
-                value={selectedExportType}
-                onValueChange={setSelectedExportType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Export-Typ wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Einzelwertung</SelectItem>
-                  <SelectItem value="group">Gruppenwertung</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {selectedExportType === 'individual' ? (
-              <div className="w-full md:w-1/3">
-                <label className="text-sm font-medium mb-2 block">Kategorie</label>
-                <Select
-                  value={selectedCategory}
-                  onValueChange={setSelectedCategory}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kategorie wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kids">Kinder</SelectItem>
-                    <SelectItem value="juniors">Junioren</SelectItem>
-                    <SelectItem value="active">Aktive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="w-full md:w-2/3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Gruppengrösse</label>
-                    <RadioGroup 
-                      value={selectedGroupSize}
-                      onValueChange={(value) => setSelectedGroupSize(value as GroupSize)}
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="three" id="option-three" />
-                        <Label htmlFor="option-three">3er Gruppen</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="four" id="option-four" />
-                        <Label htmlFor="option-four">4er Gruppen</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Kategorie</label>
-                    <RadioGroup 
-                      value={selectedGroupCategory}
-                      onValueChange={(value) => setSelectedGroupCategory(value as GroupCategory)}
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="kids_juniors" id="option-kids_juniors" />
-                        <Label htmlFor="option-kids_juniors">Kids/Junioren</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="active" id="option-active" />
-                        <Label htmlFor="option-active">Aktive</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="w-full md:w-1/3 flex items-end">
-              <Button onClick={handleGenerateResults} className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                PDF generieren
-              </Button>
-            </div>
-          </div>
+          {selectedExportType === 'individual' ? (
+            <FilterControls
+              exportType={selectedExportType}
+              onExportTypeChange={setSelectedExportType}
+              category={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              onGeneratePDF={handleGenerateResults}
+              showCategorySelect={true}
+            />
+          ) : (
+            <GroupFilterPanel
+              exportType={selectedExportType}
+              onExportTypeChange={setSelectedExportType}
+              groupSize={selectedGroupSize}
+              onGroupSizeChange={setSelectedGroupSize}
+              groupCategory={selectedGroupCategory}
+              onGroupCategoryChange={setSelectedGroupCategory}
+              onGeneratePDF={handleGenerateResults}
+            />
+          )}
           
           <Separator className="my-6" />
           
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rang</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Ort</TableHead>
-                <TableHead className="text-right">Punkte</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentResults.length > 0 ? (
-                currentResults.map((result, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{result.rank}</TableCell>
-                    <TableCell>{result.name}</TableCell>
-                    <TableCell>{result.location}</TableCell>
-                    <TableCell className="text-right">{result.score}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
-                    Keine Ergebnisse gefunden.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <ResultsTable results={currentResults} />
         </CardContent>
       </Card>
     </div>
