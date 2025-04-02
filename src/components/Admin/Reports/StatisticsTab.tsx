@@ -12,7 +12,7 @@ import {
 import { BarChart2, FileText } from 'lucide-react';
 import { Participant, Group, IndividualScore, GroupScore } from '@/types';
 import { ChartContainer } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface StatisticsTabProps {
   participants: Participant[];
@@ -109,8 +109,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                   radius={[4, 4, 0, 0]} 
                   maxBarSize={80}
                   fillOpacity={0.9}
-                  fill={(data) => data.color}
-                />
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
