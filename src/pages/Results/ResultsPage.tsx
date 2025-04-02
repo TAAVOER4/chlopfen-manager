@@ -1,129 +1,36 @@
+
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Download, Medal, TrendingUp, FilePdf } from 'lucide-react';
 import { mockParticipants, mockIndividualScores, mockSponsors, mockGroups, mockGroupScores } from '../../data/mockData';
-import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { Category, ParticipantResult, GroupResult, Group } from '../../types';
-import { calculateBothRoundsTotal } from '../../utils/scoreUtils';
+import { Category, ParticipantResult } from '../../types';
 import { generateResultsPDF } from '../../utils/pdfUtils';
+
+// Import new components
+import ResultsList from '../../components/Results/ResultsList';
+import PodiumView from '../../components/Results/PodiumView';
+import StatisticsCard from '../../components/Results/StatisticsCard';
+import ResultsControls from '../../components/Results/ResultsControls';
+import { generateResults, generateGroupResults } from '../../services/ResultsService';
 
 const ResultsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('kids');
   const [selectedView, setSelectedView] = useState<string>('list');
 
-  const generateResults = (category: Category): ParticipantResult[] => {
-    const filteredParticipants = mockParticipants.filter(p => 
-      p.category === category && !p.isGroupOnly
-    );
-    
-    const scoresByParticipant: Record<string, typeof mockIndividualScores> = {};
-    
-    mockIndividualScores.forEach(score => {
-      const participantId = score.participantId;
-      if (!scoresByParticipant[participantId]) {
-        scoresByParticipant[participantId] = [];
-      }
-      scoresByParticipant[participantId].push(score);
-    });
-    
-    return filteredParticipants.map(participant => {
-      const participantScores = scoresByParticipant[participant.id] || [];
-      
-      const totalScore = calculateBothRoundsTotal(participantScores);
-      
-      const totalCriteria = participantScores.length * 5;
-      const averageScore = totalCriteria > 0 ? totalScore / totalCriteria : 0;
-      
-      return {
-        participant,
-        totalScore,
-        averageScore,
-        rank: 0
-      };
-    }).sort((a, b) => b.totalScore - a.totalScore)
-      .map((result, index) => ({
-        ...result,
-        rank: index + 1
-      }));
-  };
-
-  const generateGroupResults = (): Record<string, GroupResult[]> => {
-    const results: Record<string, GroupResult[]> = {};
-    
-    const sizes = ['three', 'four'];
-    const categories = ['kids_juniors', 'active'];
-    
-    sizes.forEach(size => {
-      categories.forEach(category => {
-        const key = `${size}_${category}`;
-        
-        const filteredGroups = mockGroups.filter(g => 
-          g.size === size && g.category === category
-        );
-        
-        const groupResults = filteredGroups.map(group => {
-          const groupScores = mockGroupScores.filter(s => s.groupId === group.id);
-          
-          const totalScore = groupScores.reduce((sum, score) => {
-            return sum + score.whipStrikes + score.rhythm + score.tempo;
-          }, 0);
-          
-          const averageRhythm = groupScores.length > 0 
-            ? groupScores.reduce((sum, s) => sum + s.rhythm, 0) / groupScores.length 
-            : 0;
-          
-          const members = group.participantIds.map(id => 
-            mockParticipants.find(p => p.id === id)
-          ).filter(p => p !== undefined) as typeof mockParticipants;
-          
-          return {
-            groupId: group.id,
-            category: group.category,
-            groupSize: group.size,
-            members,
-            totalScore,
-            averageRhythm,
-            rank: 0
-          };
-        }).sort((a, b) => b.totalScore - a.totalScore)
-          .map((result, index) => ({
-            ...result,
-            rank: index + 1
-          }));
-        
-        results[key] = groupResults;
-      });
-    });
-    
-    return results;
-  };
-
-  const results = generateResults(selectedCategory);
+  // Generate results using the imported service
+  const results = generateResults(selectedCategory, mockParticipants, mockIndividualScores);
+  
+  // Generate all individual results for all categories
   const allIndividualResults: Record<Category, ParticipantResult[]> = {
-    'kids': generateResults('kids'),
-    'juniors': generateResults('juniors'),
-    'active': generateResults('active')
+    'kids': generateResults('kids', mockParticipants, mockIndividualScores),
+    'juniors': generateResults('juniors', mockParticipants, mockIndividualScores),
+    'active': generateResults('active', mockParticipants, mockIndividualScores)
   };
-  const groupResults = generateGroupResults();
+  
+  // Generate group results
+  const groupResults = generateGroupResults(mockGroups, mockParticipants, mockGroupScores);
   const sponsor = mockSponsors.find(s => s.category === selectedCategory && s.rank === 1);
 
+  // Handle PDF export
   const handleExportPDF = () => {
     generateResultsPDF(
       allIndividualResults,
@@ -140,181 +47,35 @@ const ResultsPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3">
-            <CardTitle>Rangliste {getCategoryDisplay(selectedCategory)}</CardTitle>
+            <CardTitle>Rangliste {selectedCategory}</CardTitle>
             <CardDescription>
               Zeigen Sie die Ranglisten für verschiedene Kategorien an
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-              <div className="mb-4 sm:mb-0">
-                <Tabs defaultValue="kids" className="w-full" onValueChange={(value) => setSelectedCategory(value as Category)}>
-                  <TabsList>
-                    <TabsTrigger value="kids">Kids</TabsTrigger>
-                    <TabsTrigger value="juniors">Junioren</TabsTrigger>
-                    <TabsTrigger value="active">Aktive</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-              <div className="flex gap-4">
-                <Select defaultValue="list" onValueChange={setSelectedView}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Ansicht wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="list">Listenansicht</SelectItem>
-                    <SelectItem value="podium">Podium</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" className="gap-2" onClick={handleExportPDF}>
-                  <FilePdf className="h-4 w-4" /> 
-                  PDF
-                </Button>
-              </div>
-            </div>
+            {/* Results controls component */}
+            <ResultsControls
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedView={selectedView}
+              onViewChange={setSelectedView}
+              onExportPDF={handleExportPDF}
+            />
 
+            {/* Conditionally render list or podium view */}
             {selectedView === 'list' ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Rang</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Wohnort</TableHead>
-                    <TableHead className="text-right">Jahrgang</TableHead>
-                    <TableHead className="text-right">Punkte (beide Durchgänge)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {results.map((result) => (
-                    <TableRow key={result.participant.id}>
-                      <TableCell className="font-bold">
-                        {result.rank <= 3 ? (
-                          <div className="flex items-center">
-                            <Medal className={`h-5 w-5 mr-1 ${
-                              result.rank === 1 ? 'text-yellow-500' : 
-                              result.rank === 2 ? 'text-gray-400' : 'text-amber-700'
-                            }`} />
-                            {result.rank}
-                          </div>
-                        ) : result.rank}
-                      </TableCell>
-                      <TableCell>
-                        {result.participant.firstName} {result.participant.lastName}
-                      </TableCell>
-                      <TableCell>{result.participant.location}</TableCell>
-                      <TableCell className="text-right">{result.participant.birthYear}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {Math.round(result.totalScore * 10) / 10}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ResultsList results={results} />
             ) : (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="flex items-end mb-12 space-x-8">
-                  {results.length >= 2 && (
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                        <div className="text-center">
-                          <Medal className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <span className="font-bold text-xl">#2</span>
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold">{results[1].participant.firstName} {results[1].participant.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{Math.round(results[1].totalScore * 10) / 10} Punkte</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {results.length >= 1 && (
-                    <div className="flex flex-col items-center">
-                      <div className="w-36 h-40 bg-yellow-100 rounded-lg flex items-center justify-center mb-4 border-2 border-yellow-500">
-                        <div className="text-center">
-                          <Medal className="h-10 w-10 text-yellow-500 mx-auto mb-2" />
-                          <span className="font-bold text-2xl">#1</span>
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold">{results[0].participant.firstName} {results[0].participant.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{Math.round(results[0].totalScore * 10) / 10} Punkte</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {results.length >= 3 && (
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-28 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
-                        <div className="text-center">
-                          <Medal className="h-8 w-8 text-amber-700 mx-auto mb-2" />
-                          <span className="font-bold text-xl">#3</span>
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold">{results[2].participant.firstName} {results[2].participant.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{Math.round(results[2].totalScore * 10) / 10} Punkte</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {sponsor && (
-                  <div className="text-center mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">Sponsor</p>
-                    <p className="font-medium text-lg">{sponsor.name}</p>
-                  </div>
-                )}
-              </div>
+              <PodiumView results={results} sponsor={sponsor} />
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2" />
-              Statistiken
-            </CardTitle>
-            <CardDescription>
-              Allgemeine Statistiken zum Wettkampf
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Teilnehmer gesamt</p>
-                <p className="text-2xl font-bold">{mockParticipants.length}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Kids</p>
-                <p className="text-2xl font-bold">
-                  {mockParticipants.filter(p => p.category === 'kids').length}
-                </p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Junioren</p>
-                <p className="text-2xl font-bold">
-                  {mockParticipants.filter(p => p.category === 'juniors').length}
-                </p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Aktive</p>
-                <p className="text-2xl font-bold">
-                  {mockParticipants.filter(p => p.category === 'active').length}
-                </p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Bewertungen</p>
-                <p className="text-2xl font-bold">{mockIndividualScores.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Statistics card component */}
+        <StatisticsCard 
+          participants={mockParticipants} 
+          individualScoresCount={mockIndividualScores.length} 
+        />
       </div>
     </div>
   );
