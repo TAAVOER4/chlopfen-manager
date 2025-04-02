@@ -8,7 +8,8 @@ import {
   Award, 
   Clock, 
   ClipboardCheck,
-  Lock
+  Lock,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import { Participant, IndividualScore, Judge, Category, CriterionKey } from '@/t
 import { getCategoryRequiredStrikes, getCategoryDisplay } from '@/utils/categoryUtils';
 import { Separator } from '@/components/ui/separator';
 import { useUser } from '@/contexts/UserContext';
+import NextParticipantPreview from '@/components/Judging/NextParticipantPreview';
 
 const IndividualJudging = () => {
   const { category = '' } = useParams<{ category: string }>();
@@ -43,6 +45,7 @@ const IndividualJudging = () => {
   const assignedCriterion = currentUser?.assignedCriteria?.individual || 'rhythm';
 
   const currentParticipant = categoryParticipants[currentIndex];
+  const nextParticipant = categoryParticipants[currentIndex + 1];
   const requiredStrikes = getCategoryRequiredStrikes(category as Category);
 
   const handleScoreInput = (field: string, value: string) => {
@@ -233,88 +236,101 @@ const IndividualJudging = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-2xl">
-                {currentParticipant.firstName} {currentParticipant.lastName}
-              </CardTitle>
-              <CardDescription>
-                {currentParticipant.location} | Jahrgang {currentParticipant.birthYear}
-              </CardDescription>
-            </div>
-            <div className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
-              {currentIndex + 1}/{categoryParticipants.length}
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="space-y-8">
-            {isAdmin ? (
-              <>
-                {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
-                {renderScoreInput('rhythm', 'Rhythmus')}
-                {renderScoreInput('stance', 'Stand')}
-                {renderScoreInput('posture', 'Körperhaltung')}
-                {renderScoreInput('whipControl', 'Geiselführung')}
-              </>
-            ) : (
-              <div className="space-y-2">
-                {renderScoreInput(
-                  assignedCriterion, 
-                  getCriterionDisplayName(assignedCriterion)
-                )}
-                <p className="text-sm text-muted-foreground mt-4">
-                  Sie sind berechtigt, nur {getCriterionDisplayName(assignedCriterion)} zu bewerten.
-                </p>
-              </div>
-            )}
-            
-            {isAdmin && <Separator />}
-            
-            {isAdmin && (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="col-span-3">
+          <Card>
+            <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-medium">Gesamtpunkte</h3>
-                  <p className="text-sm text-muted-foreground">Summe aller Kategorien</p>
+                  <CardTitle className="text-2xl">
+                    {currentParticipant.firstName} {currentParticipant.lastName}
+                  </CardTitle>
+                  <CardDescription>
+                    {currentParticipant.location} | Jahrgang {currentParticipant.birthYear}
+                  </CardDescription>
                 </div>
-                <div className="text-4xl font-bold">
-                  {Object.values(scores).reduce((sum, score) => sum + score, 0).toFixed(1)}
+                <div className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                  {currentIndex + 1}/{categoryParticipants.length}
                 </div>
               </div>
-            )}
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-8">
+                {isAdmin ? (
+                  <>
+                    {renderScoreInput('whipStrikes', `Schläge (${requiredStrikes})`)}
+                    {renderScoreInput('rhythm', 'Rhythmus')}
+                    {renderScoreInput('stance', 'Stand')}
+                    {renderScoreInput('posture', 'Körperhaltung')}
+                    {renderScoreInput('whipControl', 'Geiselführung')}
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    {renderScoreInput(
+                      assignedCriterion, 
+                      getCriterionDisplayName(assignedCriterion)
+                    )}
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Sie sind berechtigt, nur {getCriterionDisplayName(assignedCriterion)} zu bewerten.
+                    </p>
+                  </div>
+                )}
+                
+                {isAdmin && <Separator />}
+                
+                {isAdmin && (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium">Gesamtpunkte</h3>
+                      <p className="text-sm text-muted-foreground">Summe aller Kategorien</p>
+                    </div>
+                    <div className="text-4xl font-bold">
+                      {Object.values(scores).reduce((sum, score) => sum + score, 0).toFixed(1)}
+                    </div>
+                  </div>
+                )}
 
-            {!isAdmin && (
-              <div className="flex items-center mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <Lock className="h-4 w-4 text-blue-600 mr-2" />
-                <p className="text-sm text-blue-800">
-                  Die Gesamtübersicht ist nur für Administratoren verfügbar.
-                </p>
+                {!isAdmin && (
+                  <div className="flex items-center mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <Lock className="h-4 w-4 text-blue-600 mr-2" />
+                    <p className="text-sm text-blue-800">
+                      Die Gesamtübersicht ist nur für Administratoren verfügbar.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </CardContent>
+            </CardContent>
+            
+            <CardFooter className="flex justify-between">
+              <div>
+                <Button variant="outline" onClick={() => navigate('/judging')}>
+                  Abbrechen
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={!isFormValid()}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Speichern und weiter
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
         
-        <CardFooter className="flex justify-between">
-          <div>
-            <Button variant="outline" onClick={() => navigate('/judging')}>
-              Abbrechen
-            </Button>
+        {nextParticipant && (
+          <div className="col-span-1">
+            <NextParticipantPreview 
+              nextParticipant={nextParticipant}
+              label="Nächster Teilnehmer"
+            />
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSave}
-              disabled={!isFormValid()}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Speichern und weiter
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };

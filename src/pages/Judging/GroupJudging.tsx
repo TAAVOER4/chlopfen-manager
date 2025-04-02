@@ -7,6 +7,7 @@ import { useGroupJudging } from '@/hooks/useGroupJudging';
 import GroupJudgingHeader from '@/components/Judging/GroupJudgingHeader';
 import GroupJudgingForm from '@/components/Judging/GroupJudgingForm';
 import EmptyGroupState from '@/components/Judging/EmptyGroupState';
+import NextParticipantPreview from '@/components/Judging/NextParticipantPreview';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
@@ -43,6 +44,8 @@ const GroupJudging: React.FC = () => {
   }
 
   const currentGroup = groups[currentGroupIndex];
+  const nextGroup = currentGroupIndex < groups.length - 1 ? groups[currentGroupIndex + 1] : undefined;
+  
   const categoryName = categoryParam ? 
     getCategoryDisplay(categoryParam as GroupCategory) : 
     getCategoryDisplay(currentGroup.category);
@@ -58,15 +61,26 @@ const GroupJudging: React.FC = () => {
         currentGroupName={currentGroup.name}
       />
 
-      <GroupJudgingForm 
-        currentGroup={currentGroup}
-        scores={scores}
-        handleScoreChange={handleScoreChange}
-        handleSaveScore={handleSaveScore}
-        canEditCriterion={canEditCriterion}
-        currentGroupIndex={currentGroupIndex}
-        totalGroups={groups.length}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="col-span-3">
+          <GroupJudgingForm 
+            currentGroup={currentGroup}
+            scores={scores}
+            handleScoreChange={handleScoreChange}
+            handleSaveScore={handleSaveScore}
+            canEditCriterion={canEditCriterion}
+            currentGroupIndex={currentGroupIndex}
+            totalGroups={groups.length}
+          />
+        </div>
+        
+        <div className="col-span-1">
+          <NextParticipantPreview 
+            nextGroup={nextGroup}
+            label="Nächste Gruppe"
+          />
+        </div>
+      </div>
     </div>
   );
 };
