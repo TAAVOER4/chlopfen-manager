@@ -109,45 +109,26 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
     console.log("Selected size:", selectedGroupSize);
     console.log("Selected category:", selectedGroupCategory);
     
-    // Since our groupResults don't directly contain size and category information,
-    // we'll use a more lenient approach to match groups
+    // Since our mock data doesn't have clear size and category identifiers,
+    // we'll use a very inclusive approach to show groups for the selected category
     return groupResults.filter(group => {
-      if (!group.name) return false; 
+      // In a real implementation, you would check group.size and group.category properties
+      // But with our mock data, we'll assume all groups match and just filter by display
       
-      const groupName = group.name.toLowerCase();
-      
-      // More lenient size matching to catch more naming patterns
-      let sizeMatches = false;
-      if (selectedGroupSize === 'three') {
-        sizeMatches = groupName.includes('3') || 
-                      groupName.includes('drei') || 
-                      groupName.includes('dreier');
-      } else {
-        sizeMatches = groupName.includes('4') || 
-                      groupName.includes('vier') || 
-                      groupName.includes('vierer');
-      }
-      
-      // More lenient category matching
-      let categoryMatches = false;
+      // For "Kids/Junioren" category, show all groups except those explicitly marked as Active/Aktive
       if (selectedGroupCategory === 'kids_juniors') {
-        categoryMatches = groupName.includes('kid') || 
-                          groupName.includes('junior') || 
-                          groupName.includes('kinder') ||
-                          groupName.includes('jugend');
-      } else {
-        categoryMatches = groupName.includes('aktiv') || 
-                          groupName.includes('adult') ||
-                          groupName.includes('active');
+        if (group.name && group.name.toLowerCase().includes('aktiv')) {
+          return false; // Skip it if it's explicitly for active category
+        }
+        return true; // Show all other groups for kids/juniors
+      } 
+      // For "Active" category, only show groups with "aktiv" in the name
+      else {
+        return group.name && group.name.toLowerCase().includes('aktiv');
       }
       
-      // If we can't determine the category from the name,
-      // default to showing the group rather than filtering it out
-      if (!categoryMatches && !groupName.includes('aktiv') && !groupName.includes('adult')) {
-        categoryMatches = selectedGroupCategory === 'kids_juniors';
-      }
-      
-      return sizeMatches || categoryMatches; // Use OR for more lenient filtering
+      // In real implementation with proper data, you would use:
+      // return group.size === selectedGroupSize && group.category === selectedGroupCategory;
     });
   }, [groupResults, selectedGroupSize, selectedGroupCategory]);
 
