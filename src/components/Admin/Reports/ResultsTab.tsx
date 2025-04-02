@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import { generateResultsPDF } from '@/utils/pdf/pdfExportUtils';
 import { Tournament, GroupSize, GroupCategory } from '@/types';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface ResultsTabProps {
   allIndividualResults: {
@@ -68,23 +69,41 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
   };
 
   const handleGenerateResults = () => {
-    const exportData = selectedExportType === 'individual' 
-      ? allIndividualResults[selectedCategory]
-      : groupResults;
-    
-    generateResultsPDF({
-      results: exportData,
-      category: selectedExportType === 'individual' ? selectedCategory : `${selectedGroupSize}_${selectedGroupCategory}`,
-      tournament: tournamentObj,
-      sponsors: mockSponsors
-    });
+    try {
+      const exportData = selectedExportType === 'individual' 
+        ? allIndividualResults[selectedCategory]
+        : groupResults;
+      
+      const category = selectedExportType === 'individual' 
+        ? selectedCategory 
+        : `${selectedGroupSize}_${selectedGroupCategory}`;
+      
+      console.log("Exporting data:", exportData);
+      console.log("Category:", category);
+      
+      generateResultsPDF({
+        results: exportData,
+        category: category,
+        tournament: tournamentObj,
+        sponsors: mockSponsors
+      });
+      
+      toast.success("PDF generiert");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast.error("Fehler bei der PDF-Generierung");
+    }
   };
   
   const currentResults = useMemo(() => {
-    return selectedExportType === 'individual'
-      ? allIndividualResults[selectedCategory] || []
-      : groupResults;
-  }, [selectedExportType, selectedCategory, allIndividualResults, groupResults]);
+    if (selectedExportType === 'individual') {
+      return allIndividualResults[selectedCategory] || [];
+    } else {
+      // For group results, we would ideally filter by selected size and category
+      // Since the data structure doesn't support this filtering directly, we return all group results
+      return groupResults;
+    }
+  }, [selectedExportType, selectedCategory, allIndividualResults, groupResults, selectedGroupSize, selectedGroupCategory]);
 
   return (
     <div className="space-y-6">
@@ -136,7 +155,6 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
                   <div>
                     <label className="text-sm font-medium mb-2 block">Gruppengrösse</label>
                     <RadioGroup 
-                      defaultValue="three"
                       value={selectedGroupSize}
                       onValueChange={(value) => setSelectedGroupSize(value as GroupSize)}
                       className="flex gap-4"
@@ -155,7 +173,6 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
                   <div>
                     <label className="text-sm font-medium mb-2 block">Kategorie</label>
                     <RadioGroup 
-                      defaultValue="kids_juniors"
                       value={selectedGroupCategory}
                       onValueChange={(value) => setSelectedGroupCategory(value as GroupCategory)}
                       className="flex gap-4"

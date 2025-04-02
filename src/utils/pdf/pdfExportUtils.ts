@@ -1,5 +1,5 @@
 
-import { ScheduleItem, Sponsor, Tournament, Category, GroupCategory, GroupSize } from '@/types';
+import { ScheduleItem, Sponsor, Tournament, Category, GroupCategory, GroupSize, ParticipantResult, GroupResult } from '@/types';
 import { jsPDF } from 'jspdf';
 import { generateScheduleHTMLContent } from './scheduleUtils';
 import { generateResultsHTMLContent } from './htmlGeneratorUtils';
@@ -76,6 +76,51 @@ const parseGroupCategoryString = (categoryString: string): { size: GroupSize, ca
   return null;
 };
 
+// Helper function to format results for PDF generation
+const formatResultsForPDF = (results: any[]): any[] => {
+  if (!results || !Array.isArray(results)) {
+    console.warn('Results is not an array or is undefined', results);
+    return [];
+  }
+  
+  return results.map(result => {
+    if (!result) return null;
+    
+    // Check if the result already has the expected format (from admin panel)
+    if (result.name && result.location !== undefined) {
+      return result;
+    }
+    
+    // For results from the result service with participant objects
+    if (result.participant) {
+      return {
+        rank: result.rank,
+        name: `${result.participant.firstName} ${result.participant.lastName}`,
+        location: result.participant.location || '',
+        birthYear: result.participant.birthYear,
+        score: result.totalScore
+      };
+    }
+    
+    // For group results
+    if (result.members && Array.isArray(result.members)) {
+      return {
+        rank: result.rank,
+        groupId: result.groupId,
+        members: result.members.map((m: any) => ({
+          firstName: m.firstName || '',
+          lastName: m.lastName || '',
+          location: m.location || ''
+        })),
+        score: result.totalScore
+      };
+    }
+    
+    // Default case - return the original result if we can't format it
+    return result;
+  }).filter(result => result !== null);
+};
+
 // Function to generate PDF of the results
 export const generateResultsPDF = (options: {
   results: any[],
@@ -89,7 +134,7 @@ export const generateResultsPDF = (options: {
   // Log generation info
   console.log('Generating results PDF');
   console.log('Results category:', category);
-  console.log('Results count:', results.length);
+  console.log('Results count:', results?.length || 0);
   console.log('Sponsors:', sponsors.length);
   
   try {
@@ -100,6 +145,9 @@ export const generateResultsPDF = (options: {
       format: 'a4'
     });
 
+    // Format results to ensure they have the expected structure
+    const formattedResults = formatResultsForPDF(results);
+    
     // Create empty structures for individual and group results
     const individualResults: Record<Category, any[]> = {
       'kids': [],
@@ -111,21 +159,21 @@ export const generateResultsPDF = (options: {
     
     // Populate the correct structure based on the category
     if (category === 'kids' || category === 'juniors' || category === 'active') {
-      individualResults[category as Category] = results;
+      individualResults[category as Category] = formattedResults;
     } else {
       // Handle group categories like "three_kids_juniors"
       const groupInfo = parseGroupCategoryString(category);
       if (groupInfo) {
         const key = `${groupInfo.size}_${groupInfo.category}`;
-        groupResults[key] = results;
+        groupResults[key] = formattedResults;
       } else {
         // Fallback to the old 'group' key if parsing fails
-        groupResults['group'] = results;
+        groupResults['group'] = formattedResults;
       }
     }
     
     // Render results content to PDF
-    renderResultsToPDF(doc, individualResults, groupResults, sponsors, tournament.name);
+    renderResultsToPDF(doc, individualResults, groupResults, tournament.name);
     
     // Save and download the PDF file
     doc.save(`ergebnisse_${tournament.name.toLowerCase().replace(/\s+/g, '-')}.pdf`);
@@ -134,7 +182,9 @@ export const generateResultsPDF = (options: {
   } catch (error) {
     console.error('Error generating PDF:', error);
     
-    // Fallback to HTML if PDF generation fails
+    // Fallback to HTML if PDF generation fails - but first ensure results are formatted
+    const formattedResults = formatResultsForPDF(results);
+    
     const individualResults: Record<Category, any[]> = {
       'kids': [],
       'juniors': [],
@@ -144,14 +194,14 @@ export const generateResultsPDF = (options: {
     const groupResults: Record<string, any[]> = {};
     
     if (category === 'kids' || category === 'juniors' || category === 'active') {
-      individualResults[category as Category] = results;
+      individualResults[category as Category] = formattedResults;
     } else {
       const groupInfo = parseGroupCategoryString(category);
       if (groupInfo) {
         const key = `${groupInfo.size}_${groupInfo.category}`;
-        groupResults[key] = results;
+        groupResults[key] = formattedResults;
       } else {
-        groupResults['group'] = results;
+        groupResults['group'] = formattedResults;
       }
     }
     
