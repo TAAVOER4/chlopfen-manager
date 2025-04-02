@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/card';
 import { BarChart2, FileText } from 'lucide-react';
 import { Participant, Group, IndividualScore, GroupScore } from '@/types';
+import { ChartContainer } from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface StatisticsTabProps {
   participants: Participant[];
@@ -29,21 +31,14 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   const kidCount = participants.filter(p => p.category === 'kids').length;
   const juniorCount = participants.filter(p => p.category === 'juniors').length;
   const activeCount = participants.filter(p => p.category === 'active').length;
-  const maxCount = Math.max(kidCount, juniorCount, activeCount);
   
-  // Calculate bar heights as percentages of the maximum value
-  // Using 140px as max height to leave room for scale markers
-  const barMaxHeight = 140;
-  const kidHeight = maxCount > 0 ? (kidCount / maxCount) * barMaxHeight : 0;
-  const juniorHeight = maxCount > 0 ? (juniorCount / maxCount) * barMaxHeight : 0;
-  const activeHeight = maxCount > 0 ? (activeCount / maxCount) * barMaxHeight : 0;
-
-  // Generate scale markers (25%, 50%, 75%, 100%)
-  const scaleMarkers = [0.25, 0.5, 0.75, 1].map(percentage => ({
-    value: Math.round(maxCount * percentage),
-    position: barMaxHeight * (1 - percentage)
-  }));
-
+  // Create data for the bar chart
+  const chartData = [
+    { name: 'Kinder', count: kidCount, color: '#3b82f6' }, // blue-500
+    { name: 'Junioren', count: juniorCount, color: '#22c55e' }, // green-500
+    { name: 'Aktive', count: activeCount, color: '#ef4444' }, // red-500
+  ];
+  
   return (
     <Card>
       <CardHeader>
@@ -78,40 +73,50 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
         
         <div className="mt-8">
           <h3 className="font-medium mb-4">Teilnehmer pro Kategorie</h3>
-          <div className="h-[200px] w-full bg-muted rounded-md p-4 overflow-hidden relative">
-            {/* Scale markers */}
-            <div className="absolute top-0 left-0 h-full w-full pointer-events-none">
-              {scaleMarkers.map((marker, idx) => (
-                <div key={idx} className="absolute w-full border-t border-dashed border-gray-400/30" 
-                     style={{ top: `${marker.position + 20}px` }}>
-                  <span className="absolute -top-2 -left-1 bg-muted text-xs text-gray-500">
-                    {marker.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-            
-            {/* Bar chart */}
-            <div className="flex items-end justify-around h-full relative pt-6">
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-500 w-16 rounded-t-md" 
-                     style={{ height: `${kidHeight}px` }}></div>
-                <p className="mt-2 text-sm">Kinder</p>
-                <p className="text-muted-foreground text-xs">{kidCount}</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-green-500 w-16 rounded-t-md" 
-                     style={{ height: `${juniorHeight}px` }}></div>
-                <p className="mt-2 text-sm">Junioren</p>
-                <p className="text-muted-foreground text-xs">{juniorCount}</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-red-500 w-16 rounded-t-md" 
-                     style={{ height: `${activeHeight}px` }}></div>
-                <p className="mt-2 text-sm">Aktive</p>
-                <p className="text-muted-foreground text-xs">{activeCount}</p>
-              </div>
-            </div>
+          <div className="h-[300px] w-full bg-muted rounded-md p-4 overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={chartData} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: '#6b7280' }}
+                  tickLine={{ stroke: '#d1d5db' }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <YAxis 
+                  tick={{ fill: '#6b7280' }}
+                  tickLine={{ stroke: '#d1d5db' }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value} Teilnehmer`, '']}
+                  labelStyle={{ color: '#111827' }}
+                  contentStyle={{ 
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.375rem',
+                    boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'
+                  }}
+                />
+                <Bar 
+                  dataKey="count" 
+                  fill="#3b82f6" 
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={80}
+                  fillOpacity={0.9}
+                  name="Anzahl"
+                  isAnimationActive={true}
+                >
+                  {chartData.map((entry, index) => (
+                    <Bar key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </CardContent>
