@@ -17,12 +17,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { FileText, BarChart2, Download, FileExport, FileSpreadsheet } from 'lucide-react';
+import { FileText, BarChart2, Download, FileOutput, FileSpreadsheet } from 'lucide-react';
 import { mockParticipants, mockIndividualScores, mockSponsors, mockGroups, mockGroupScores } from '@/data/mockData';
 import { generateResults, generateGroupResults } from '@/services/ResultsService';
 import { generateSchedulePDF, generateResultsPDF } from '@/utils/pdfUtils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockTournaments } from '@/data/mockTournaments';
+import { ScheduleItem } from '@/types';
 
 const ReportsPage: React.FC = () => {
   const { isAdmin, selectedTournament } = useUser();
@@ -54,30 +55,34 @@ const ReportsPage: React.FC = () => {
     const mainSponsors = mockSponsors.filter(s => s.type === 'main');
     
     // For this example, we'll use mock schedule data
-    const mockSchedule = [
+    const mockSchedule: ScheduleItem[] = [
       {
-        id: '1',
+        id: 1,
+        tournamentId: tournament.id,
         title: 'Anmeldung',
         description: 'Anmeldung und Ausgabe der Startnummern',
         startTime: '08:00',
         endTime: '09:00',
-        category: undefined
+        type: 'other'
       },
       {
-        id: '2',
+        id: 2,
+        tournamentId: tournament.id,
         title: 'Eröffnung',
         description: 'Offizielle Eröffnung des Turniers',
         startTime: '09:15',
         endTime: '09:30',
-        category: undefined
+        type: 'ceremony'
       },
       {
-        id: '3',
+        id: 3,
+        tournamentId: tournament.id,
         title: 'Vorrunde Kinder',
         description: 'Erste Runde der Kinderkategorie',
         startTime: '09:45',
         endTime: '10:30',
-        category: 'kids'
+        category: 'kids',
+        type: 'competition'
       }
     ];
     
@@ -131,7 +136,7 @@ const ReportsPage: React.FC = () => {
             Ergebnisse & Ranglisten
           </TabsTrigger>
           <TabsTrigger value="exports">
-            <FileExport className="h-4 w-4 mr-2" />
+            <FileOutput className="h-4 w-4 mr-2" />
             Datenexporte
           </TabsTrigger>
           <TabsTrigger value="statistics">
