@@ -583,7 +583,8 @@ export const mockJudges: Judge[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipStrikes'
-    }
+    },
+    tournamentIds: [] // Admin can see all tournaments
   },
   { 
     id: 2, 
@@ -593,7 +594,8 @@ export const mockJudges: Judge[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'rhythm'
-    }
+    },
+    tournamentIds: [] // Judge can see all tournaments
   },
   { 
     id: 3, 
@@ -603,7 +605,8 @@ export const mockJudges: Judge[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'stance'
-    }
+    },
+    tournamentIds: [] // Judge can see all tournaments
   },
   { 
     id: 4, 
@@ -613,7 +616,8 @@ export const mockJudges: Judge[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'posture'
-    }
+    },
+    tournamentIds: [] // Judge can see all tournaments
   },
   { 
     id: 5, 
@@ -623,7 +627,8 @@ export const mockJudges: Judge[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipControl'
-    }
+    },
+    tournamentIds: [] // Judge can see all tournaments
   }
 ];
 
