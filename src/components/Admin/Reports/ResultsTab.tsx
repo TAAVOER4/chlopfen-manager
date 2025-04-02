@@ -1,32 +1,45 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { FileText, Download } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Participant, IndividualScore, Sponsor, Group, GroupScore, ScheduleItem } from '@/types';
-import { generateResultsPDF, generateSchedulePDF } from '@/utils/pdfUtils';
-import { generateResults, generateGroupResults } from '@/services/ResultsService';
+import { Separator } from '@/components/ui/separator';
+import { generateResultsPDF } from '@/utils/pdfUtils';
+import { Tournament } from '@/types';
 
 interface ResultsTabProps {
   allIndividualResults: {
-    kids: any[];
-    juniors: any[];
-    active: any[];
+    [key: string]: Array<{
+      rank: number;
+      name: string;
+      location: string;
+      score: number;
+    }>;
   };
-  groupResults: any;
+  groupResults: Array<{
+    rank: number;
+    name: string;
+    location: string;
+    score: number;
+  }>;
   tournamentName: string;
   selectedTournamentId: number;
-  mockSponsors: Sponsor[];
-  mockSchedule: ScheduleItem[];
+  mockSponsors: Array<any>;
+  mockSchedule: Array<any>;
 }
 
 export const ResultsTab: React.FC<ResultsTabProps> = ({
@@ -37,167 +50,122 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
   mockSponsors,
   mockSchedule
 }) => {
-  // Handle PDF export of results
-  const handleExportResultsPDF = () => {
-    generateResultsPDF(
-      allIndividualResults,
-      groupResults,
-      mockSponsors,
-      tournamentName
-    );
-  };
+  const [selectedCategory, setSelectedCategory] = useState<string>('kids');
+  const [selectedExportType, setSelectedExportType] = useState<string>('individual');
   
-  // Handle PDF export of schedule
-  const handleExportSchedulePDF = () => {
-    const mainSponsors = mockSponsors.filter(s => s.type === 'main');
-    const tournament = { id: selectedTournamentId, name: tournamentName };
+  // Format the tournament object to match the expected Tournament type
+  const tournamentObj: Tournament = {
+    id: selectedTournamentId,
+    name: tournamentName,
+    date: new Date().toISOString(), // Default to current date
+    location: "Default Location",
+    year: new Date().getFullYear(),
+    isActive: true
+  };
+
+  const handleGenerateResults = () => {
+    const exportData = selectedExportType === 'individual' 
+      ? allIndividualResults[selectedCategory]
+      : groupResults;
     
-    generateSchedulePDF(mockSchedule, mainSponsors, tournament);
+    generateResultsPDF({
+      results: exportData,
+      category: selectedExportType === 'individual' ? selectedCategory : 'group',
+      tournament: tournamentObj,
+      sponsors: mockSponsors
+    });
   };
   
+  const currentResults = useMemo(() => {
+    return selectedExportType === 'individual'
+      ? allIndividualResults[selectedCategory] || []
+      : groupResults;
+  }, [selectedExportType, selectedCategory, allIndividualResults, groupResults]);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2" />
-            Ranglisten
-          </CardTitle>
+          <CardTitle>Ergebnisse und Ranglisten</CardTitle>
           <CardDescription>
-            Ergebnisse und Ranglisten für verschiedene Kategorien
+            Generieren Sie Ergebnis-PDFs für verschiedene Kategorien
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Einzel-Ranglisten</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Anzahl Teilnehmer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aktion</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Kinder</TableCell>
-                    <TableCell>{allIndividualResults.kids.length}</TableCell>
-                    <TableCell>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium">
-                        Abgeschlossen
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/results">Anzeigen</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Junioren</TableCell>
-                    <TableCell>{allIndividualResults.juniors.length}</TableCell>
-                    <TableCell>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium">
-                        Abgeschlossen
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/results">Anzeigen</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Aktive</TableCell>
-                    <TableCell>{allIndividualResults.active.length}</TableCell>
-                    <TableCell>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium">
-                        Abgeschlossen
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/results">Anzeigen</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="w-full md:w-1/3">
+              <label className="text-sm font-medium mb-2 block">Export-Typ</label>
+              <Select
+                value={selectedExportType}
+                onValueChange={setSelectedExportType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Export-Typ wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Einzelwertung</SelectItem>
+                  <SelectItem value="group">Gruppenwertung</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
-            <div>
-              <h3 className="font-medium mb-2">Gruppen-Ranglisten</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Anzahl Gruppen</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aktion</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>3er Gruppen</TableCell>
-                    <TableCell>{(groupResults.three_kids_juniors?.length || 0) + (groupResults.three_active?.length || 0)}</TableCell>
-                    <TableCell>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium">
-                        Abgeschlossen
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/results">Anzeigen</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>4er Gruppen</TableCell>
-                    <TableCell>{(groupResults.four_kids_juniors?.length || 0) + (groupResults.four_active?.length || 0)}</TableCell>
-                    <TableCell>
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium">
-                        Abgeschlossen
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/results">Anzeigen</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+            {selectedExportType === 'individual' && (
+              <div className="w-full md:w-1/3">
+                <label className="text-sm font-medium mb-2 block">Kategorie</label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Kategorie wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="kids">Kinder</SelectItem>
+                    <SelectItem value="juniors">Junioren</SelectItem>
+                    <SelectItem value="active">Aktive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            <div className="w-full md:w-1/3 flex items-end">
+              <Button onClick={handleGenerateResults} className="w-full">
+                <Download className="h-4 w-4 mr-2" />
+                PDF generieren
+              </Button>
             </div>
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleExportResultsPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Alle Ranglisten als PDF exportieren
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2" />
-            Zeitplan
-          </CardTitle>
-          <CardDescription>
-            Zeitplan für das aktuelle Turnier
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Der aktuelle Turnierplan enthält alle geplanten Aktivitäten und Wettbewerbe.</p>
-          <div className="mt-4">
-            <Button onClick={handleExportSchedulePDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Zeitplan als PDF exportieren
-            </Button>
-          </div>
+          
+          <Separator className="my-6" />
+          
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rang</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Ort</TableHead>
+                <TableHead className="text-right">Punkte</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentResults.length > 0 ? (
+                currentResults.map((result, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{result.rank}</TableCell>
+                    <TableCell>{result.name}</TableCell>
+                    <TableCell>{result.location}</TableCell>
+                    <TableCell className="text-right">{result.score}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4">
+                    Keine Ergebnisse gefunden.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
