@@ -1,3 +1,4 @@
+
 import { Category, GroupCategory, AllCategory } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {
@@ -65,4 +66,26 @@ export const getCategoryClass = (category: Category | GroupCategory | AllCategor
 
 export const mapToGroupCategory = (category: Category): GroupCategory => {
   return category === 'active' ? 'active' : 'kids_juniors';
+};
+
+// New helper function to check if category is AllCategory
+export const isAllCategory = (category: Category | GroupCategory | AllCategory): category is AllCategory => {
+  return category === 'all';
+};
+
+// New helper function to check if a category matches the all-inclusive 'all' category
+export const categoryMatchesAll = (itemCategory: Category | GroupCategory | AllCategory | undefined, filterCategory?: Category | GroupCategory): boolean => {
+  // If the item is specifically marked as "all" category, it matches any filter
+  if (itemCategory === 'all') return true;
+  
+  // If no filter specified, show everything
+  if (!filterCategory) return true;
+  
+  // If filtering by group category 'kids_juniors', show both kids and juniors items
+  if (filterCategory === 'kids_juniors' && (itemCategory === 'kids' || itemCategory === 'juniors')) {
+    return true;
+  }
+  
+  // Direct match
+  return itemCategory === filterCategory;
 };
