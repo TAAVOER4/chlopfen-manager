@@ -22,6 +22,7 @@ import SchedulePage from "./pages/Admin/SchedulePage";
 import TournamentPage from "./pages/Admin/TournamentPage";
 import TournamentParticipantsPage from "./pages/Admin/TournamentParticipantsPage";
 import TournamentJudgesPage from "./pages/Admin/TournamentJudgesPage";
+import ReportsPage from "./pages/Admin/ReportsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Auth/LoginPage";
 import { UserProvider } from "./contexts/UserContext";
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/admin/tournament" element={<TournamentPage />} />
                 <Route path="/admin/tournament/:tournamentId/participants" element={<TournamentParticipantsPage />} />
                 <Route path="/admin/tournament/:tournamentId/judges" element={<TournamentJudgesPage />} />
+                <Route path="/admin/reports" element={<ReportsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

@@ -10,7 +10,8 @@ import {
   Printer,
   ArrowRight,
   Flag,
-  Trophy
+  Trophy,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -172,7 +173,7 @@ const AdminPage = () => {
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Printer className="h-5 w-5 mr-2" />
+              <FileText className="h-5 w-5 mr-2" />
               Berichte & Exporte
             </CardTitle>
             <CardDescription>
