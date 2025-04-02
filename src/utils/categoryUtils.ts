@@ -1,12 +1,15 @@
-
 import { Category, GroupCategory } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {
   const currentYear = new Date().getFullYear();
   
-  if (birthYear >= 2010) {
+  const kidsThresholdYear = currentYear - 12;  // Kids are up to 12 years old
+  const juniorsLowerThresholdYear = currentYear - 16; // Juniors lower bound (16 years old)
+  const juniorsUpperThresholdYear = currentYear - 13; // Juniors upper bound (13 years old)
+  
+  if (birthYear >= kidsThresholdYear) {
     return 'kids';
-  } else if (birthYear >= 2006 && birthYear <= 2009) {
+  } else if (birthYear >= juniorsLowerThresholdYear && birthYear <= juniorsUpperThresholdYear) {
     return 'juniors';
   } else {
     return 'active';
