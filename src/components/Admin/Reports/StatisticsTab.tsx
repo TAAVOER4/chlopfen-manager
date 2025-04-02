@@ -32,11 +32,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   const juniorCount = participants.filter(p => p.category === 'juniors').length;
   const activeCount = participants.filter(p => p.category === 'active').length;
   
-  // Create data for the bar chart
+  // Create data for the bar chart - one entry per category
   const chartData = [
-    { name: 'Kinder', kids: kidCount, color: '#3b82f6' }, // blue-500
-    { name: 'Junioren', juniors: juniorCount, color: '#22c55e' }, // green-500
-    { name: 'Aktive', active: activeCount, color: '#ef4444' }, // red-500
+    { name: 'Kinder', value: kidCount, color: '#3b82f6' }, // blue-500
+    { name: 'Junioren', value: juniorCount, color: '#22c55e' }, // green-500
+    { name: 'Aktive', value: activeCount, color: '#ef4444' }, // red-500
   ];
   
   return (
@@ -78,6 +78,8 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
               <BarChart 
                 data={chartData} 
                 margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+                barCategoryGap="20%"
+                barGap={0}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
@@ -93,14 +95,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                   allowDecimals={false}
                 />
                 <Tooltip 
-                  formatter={(value, name) => {
-                    const displayName = {
-                      'kids': 'Kinder',
-                      'juniors': 'Junioren',
-                      'active': 'Aktive'
-                    }[name] || name;
-                    return [`${value} Teilnehmer`, displayName];
-                  }}
+                  formatter={(value) => [`${value} Teilnehmer`, '']}
                   labelStyle={{ color: '#111827' }}
                   contentStyle={{ 
                     backgroundColor: '#ffffff',
@@ -110,28 +105,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                   }}
                 />
                 <Bar 
-                  dataKey="kids" 
-                  name="kids" 
-                  fill="#3b82f6" 
+                  dataKey="value" 
                   radius={[4, 4, 0, 0]} 
                   maxBarSize={80}
                   fillOpacity={0.9}
-                />
-                <Bar 
-                  dataKey="juniors" 
-                  name="juniors" 
-                  fill="#22c55e" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={80}
-                  fillOpacity={0.9}
-                />
-                <Bar 
-                  dataKey="active" 
-                  name="active" 
-                  fill="#ef4444" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={80}
-                  fillOpacity={0.9} 
+                  fill={(data) => data.color}
                 />
               </BarChart>
             </ResponsiveContainer>
