@@ -109,26 +109,24 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
     console.log("Selected size:", selectedGroupSize);
     console.log("Selected category:", selectedGroupCategory);
     
-    // Since our mock data doesn't have clear size and category identifiers,
-    // we'll use a very inclusive approach to show groups for the selected category
+    // Since we don't have proper size and category in the mock data,
+    // we'll use a simple approach based on group names
     return groupResults.filter(group => {
-      // In a real implementation, you would check group.size and group.category properties
-      // But with our mock data, we'll assume all groups match and just filter by display
+      if (!group || !group.name) return false;
       
-      // For "Kids/Junioren" category, show all groups except those explicitly marked as Active/Aktive
-      if (selectedGroupCategory === 'kids_juniors') {
-        if (group.name && group.name.toLowerCase().includes('aktiv')) {
-          return false; // Skip it if it's explicitly for active category
-        }
-        return true; // Show all other groups for kids/juniors
+      const groupName = group.name.toLowerCase();
+      
+      // For Active category, check if name contains "aktiv" or similar terms
+      if (selectedGroupCategory === 'active') {
+        return groupName.includes('aktiv') || groupName.includes('active');
       } 
-      // For "Active" category, only show groups with "aktiv" in the name
-      else {
-        return group.name && group.name.toLowerCase().includes('aktiv');
+      // For Kids/Junioren category, include groups that don't contain active-related terms
+      else if (selectedGroupCategory === 'kids_juniors') {
+        const isActive = groupName.includes('aktiv') || groupName.includes('active');
+        return !isActive;
       }
       
-      // In real implementation with proper data, you would use:
-      // return group.size === selectedGroupSize && group.category === selectedGroupCategory;
+      return false; // Default case: don't include the group
     });
   }, [groupResults, selectedGroupSize, selectedGroupCategory]);
 
