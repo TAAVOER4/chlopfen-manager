@@ -232,7 +232,7 @@ const SchedulePage: React.FC = () => {
         title: formData.title || '',
         description: formData.description,
         type: formData.type as 'competition' | 'ceremony' | 'break' | 'other',
-        category: formData.type === 'competition' ? formData.category as Category | GroupCategory : undefined
+        category: formData.type === 'competition' ? formData.category as Category | GroupCategory | AllCategory : undefined
       };
       
       setSchedule([...schedule, newItem]);
@@ -553,6 +553,7 @@ const SchedulePage: React.FC = () => {
                     <SelectValue placeholder="Wählen Sie eine Kategorie" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Alle</SelectItem>
                     <SelectItem value="kids">Kids</SelectItem>
                     <SelectItem value="juniors">Junioren</SelectItem>
                     <SelectItem value="active">Aktive</SelectItem>

@@ -1,6 +1,7 @@
 
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupCategory = 'kids_juniors' | 'active';
+export type AllCategory = 'all'; // New type for "all" categories
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
@@ -113,6 +114,6 @@ export interface ScheduleItem {
   endTime: string; // format: "HH:mm"
   title: string;
   description?: string;
-  category?: Category | GroupCategory;
+  category?: Category | GroupCategory | AllCategory; // Updated to include AllCategory
   type: 'competition' | 'ceremony' | 'break' | 'other';
 }

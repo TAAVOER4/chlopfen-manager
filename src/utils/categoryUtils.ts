@@ -1,4 +1,4 @@
-import { Category, GroupCategory } from '../types';
+import { Category, GroupCategory, AllCategory } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {
   const currentYear = new Date().getFullYear();
@@ -29,7 +29,7 @@ export const getCategoryRequiredStrikes = (category: Category): number => {
   }
 };
 
-export const getCategoryDisplay = (category: Category | GroupCategory): string => {
+export const getCategoryDisplay = (category: Category | GroupCategory | AllCategory): string => {
   switch (category) {
     case 'kids':
       return 'Kids';
@@ -39,12 +39,14 @@ export const getCategoryDisplay = (category: Category | GroupCategory): string =
       return 'Aktive';
     case 'kids_juniors':
       return 'Kids/Junioren';
+    case 'all':
+      return 'Alle';
     default:
       return '';
   }
 };
 
-export const getCategoryClass = (category: Category | GroupCategory): string => {
+export const getCategoryClass = (category: Category | GroupCategory | AllCategory): string => {
   switch (category) {
     case 'kids':
       return 'category-kids';
@@ -54,12 +56,13 @@ export const getCategoryClass = (category: Category | GroupCategory): string => 
       return 'category-active';
     case 'kids_juniors':
       return 'category-kids-juniors';
+    case 'all':
+      return 'category-all';
     default:
       return '';
   }
 };
 
-// Helper function to map individual participant category to group category
 export const mapToGroupCategory = (category: Category): GroupCategory => {
   return category === 'active' ? 'active' : 'kids_juniors';
 };
