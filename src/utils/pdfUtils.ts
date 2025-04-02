@@ -190,7 +190,7 @@ const generateHTMLContent = (
   return content;
 };
 
-// New function to generate PDF of the results
+// Function to generate PDF of the results
 export const generateResultsPDF = (
   individualResults: Record<Category, ParticipantResult[]>,
   groupResults: Record<string, GroupResult[]>,
@@ -284,6 +284,11 @@ const generateResultsHTMLContent = (
           margin-bottom: 30px;
           text-align: center;
         }
+        .rank-sponsor {
+          font-style: italic;
+          color: #555;
+          font-size: 0.9em;
+        }
         .sponsor-list {
           margin-top: 50px;
           text-align: center;
@@ -328,10 +333,16 @@ const generateResultsHTMLContent = (
     results.forEach(result => {
       const medalClass = result.rank <= 3 ? ` class="medal-position medal-${result.rank}"` : '';
       
+      // Find sponsor for this rank and category
+      const rankSponsor = sponsors.find(s => s.category === category && s.rank === result.rank);
+      
       content += `
         <tr>
           <td${medalClass}>${result.rank}</td>
-          <td>${result.participant.firstName} ${result.participant.lastName}</td>
+          <td>
+            ${result.participant.firstName} ${result.participant.lastName}
+            ${rankSponsor ? `<div class="rank-sponsor">Sponsor: ${rankSponsor.name}</div>` : ''}
+          </td>
           <td>${result.participant.location}</td>
           <td>${result.participant.birthYear}</td>
           <td>${Math.round(result.totalScore * 10) / 10}</td>
@@ -344,12 +355,12 @@ const generateResultsHTMLContent = (
         </table>
     `;
     
-    // Add sponsor for the first place if available
-    const categorySponsor = sponsors.find(s => s.category === category && s.rank === 1);
+    // Add category sponsor (for the category as a whole) if available
+    const categorySponsor = sponsors.find(s => s.category === category && s.type === 'prize' && !s.rank);
     if (categorySponsor && results.length > 0) {
       content += `
         <div class="sponsor">
-          Sponsor: ${categorySponsor.name}
+          Kategorie-Sponsor: ${categorySponsor.name}
         </div>
       `;
     }
@@ -391,10 +402,16 @@ const generateResultsHTMLContent = (
         const medalClass = result.rank <= 3 ? ` class="medal-position medal-${result.rank}"` : '';
         const members = result.members.map(m => `${m.firstName} ${m.lastName}`).join(', ');
         
+        // Find sponsor for this rank and group category
+        const rankSponsor = sponsors.find(s => s.category === category && s.rank === result.rank);
+        
         content += `
           <tr>
             <td${medalClass}>${result.rank}</td>
-            <td>Gruppe ${result.groupId}</td>
+            <td>
+              Gruppe ${result.groupId}
+              ${rankSponsor ? `<div class="rank-sponsor">Sponsor: ${rankSponsor.name}</div>` : ''}
+            </td>
             <td>${members}</td>
             <td>${Math.round(result.totalScore * 10) / 10}</td>
           </tr>
@@ -407,11 +424,11 @@ const generateResultsHTMLContent = (
       `;
       
       // Add sponsor for group category if available
-      const groupSponsor = sponsors.find(s => s.category === category && s.type === 'prize');
+      const groupSponsor = sponsors.find(s => s.category === category && s.type === 'prize' && !s.rank);
       if (groupSponsor && results.length > 0) {
         content += `
           <div class="sponsor">
-            Sponsor: ${groupSponsor.name}
+            Kategorie-Sponsor: ${groupSponsor.name}
           </div>
         `;
       }
