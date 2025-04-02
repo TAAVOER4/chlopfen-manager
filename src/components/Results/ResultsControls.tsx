@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Download, FilePdf } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -54,7 +54,7 @@ const ResultsControls: React.FC<ResultsControlsProps> = ({
           </SelectContent>
         </Select>
         <Button variant="outline" className="gap-2" onClick={onExportPDF}>
-          <FilePdf className="h-4 w-4" /> 
+          <FileText className="h-4 w-4" /> 
           PDF
         </Button>
       </div>
