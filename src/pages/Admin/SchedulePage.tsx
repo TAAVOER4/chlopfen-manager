@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/tabs';
 import { useUser } from '@/contexts/UserContext';
 import { useTournament } from '@/contexts/TournamentContext';
-import { ScheduleItem, Category, GroupCategory, Sponsor, SponsorType } from '@/types';
+import { ScheduleItem, Category, GroupCategory, AllCategory, Sponsor, SponsorType } from '@/types';
 import { mockSponsors } from '@/data/mockData';
 import { generateSchedulePDF } from '@/utils/pdfUtils';
 import { getCategoryDisplay } from '@/utils/categoryUtils';
