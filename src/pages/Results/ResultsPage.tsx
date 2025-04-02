@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,18 +17,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Download, Medal, TrendingUp } from 'lucide-react';
-import { mockParticipants, mockIndividualScores, mockSponsors } from '../../data/mockData';
+import { Download, Medal, TrendingUp, FilePdf } from 'lucide-react';
+import { mockParticipants, mockIndividualScores, mockSponsors, mockGroups, mockGroupScores } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { Category, ParticipantResult } from '../../types';
+import { Category, ParticipantResult, GroupResult, Group } from '../../types';
 import { calculateBothRoundsTotal } from '../../utils/scoreUtils';
+import { generateResultsPDF } from '../../utils/pdfUtils';
 
 const ResultsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('kids');
   const [selectedView, setSelectedView] = useState<string>('list');
 
   const generateResults = (category: Category): ParticipantResult[] => {
-    // Filter out participants that have isGroupOnly flag set to true
     const filteredParticipants = mockParticipants.filter(p => 
       p.category === category && !p.isGroupOnly
     );
@@ -65,8 +64,74 @@ const ResultsPage = () => {
       }));
   };
 
+  const generateGroupResults = (): Record<string, GroupResult[]> => {
+    const results: Record<string, GroupResult[]> = {};
+    
+    const sizes = ['three', 'four'];
+    const categories = ['kids_juniors', 'active'];
+    
+    sizes.forEach(size => {
+      categories.forEach(category => {
+        const key = `${size}_${category}`;
+        
+        const filteredGroups = mockGroups.filter(g => 
+          g.size === size && g.category === category
+        );
+        
+        const groupResults = filteredGroups.map(group => {
+          const groupScores = mockGroupScores.filter(s => s.groupId === group.id);
+          
+          const totalScore = groupScores.reduce((sum, score) => {
+            return sum + score.whipStrikes + score.rhythm + score.tempo;
+          }, 0);
+          
+          const averageRhythm = groupScores.length > 0 
+            ? groupScores.reduce((sum, s) => sum + s.rhythm, 0) / groupScores.length 
+            : 0;
+          
+          const members = group.participantIds.map(id => 
+            mockParticipants.find(p => p.id === id)
+          ).filter(p => p !== undefined) as typeof mockParticipants;
+          
+          return {
+            groupId: group.id,
+            category: group.category,
+            groupSize: group.size,
+            members,
+            totalScore,
+            averageRhythm,
+            rank: 0
+          };
+        }).sort((a, b) => b.totalScore - a.totalScore)
+          .map((result, index) => ({
+            ...result,
+            rank: index + 1
+          }));
+        
+        results[key] = groupResults;
+      });
+    });
+    
+    return results;
+  };
+
   const results = generateResults(selectedCategory);
+  const allIndividualResults: Record<Category, ParticipantResult[]> = {
+    'kids': generateResults('kids'),
+    'juniors': generateResults('juniors'),
+    'active': generateResults('active')
+  };
+  const groupResults = generateGroupResults();
   const sponsor = mockSponsors.find(s => s.category === selectedCategory && s.rank === 1);
+
+  const handleExportPDF = () => {
+    generateResultsPDF(
+      allIndividualResults,
+      groupResults,
+      mockSponsors,
+      "Schweiz. Peitschenclub Turnier"
+    );
+  };
 
   return (
     <div className="animate-fade-in">
@@ -101,8 +166,8 @@ const ResultsPage = () => {
                     <SelectItem value="podium">Podium</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" /> 
+                <Button variant="outline" className="gap-2" onClick={handleExportPDF}>
+                  <FilePdf className="h-4 w-4" /> 
                   PDF
                 </Button>
               </div>

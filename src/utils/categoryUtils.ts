@@ -1,4 +1,3 @@
-
 import { Category, GroupCategory, AllCategory } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {

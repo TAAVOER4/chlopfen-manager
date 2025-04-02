@@ -1,33 +1,25 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Move, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Category, Participant } from '../../types';
-import { getCategoryDisplay } from '../../utils/categoryUtils';
+import { getCategoryDisplay, getCategoryRequiredStrikes } from '../../utils/categoryUtils';
+
 interface CategoryCardProps {
   category: Category;
   isAdmin: boolean;
   participants: Participant[];
   openReorderDialog: (category: Category) => void;
 }
+
 const CategoryCard: React.FC<CategoryCardProps> = ({
   category,
   isAdmin,
   participants,
   openReorderDialog
 }) => {
-  // Get required strikes based on category
-  const getRequiredStrikes = (cat: Category): string => {
-    switch (cat) {
-      case 'kids':
-        return '17 Schläge';
-      case 'juniors':
-        return '23 Schläge';
-      case 'active':
-        return '33 Schläge';
-    }
-  };
   return <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex justify-between items-center">
@@ -45,7 +37,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
       </CardHeader>
       <CardContent className="pb-2">
         <p className="text-sm text-muted-foreground">
-          {getRequiredStrikes(category)}
+          {getCategoryRequiredStrikes(category)} Schläge
         </p>
       </CardContent>
       <CardFooter>
@@ -58,4 +50,5 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
       </CardFooter>
     </Card>;
 };
+
 export default CategoryCard;
