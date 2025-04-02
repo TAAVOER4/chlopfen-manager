@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { ScheduleItem, Sponsor, Tournament } from '@/types';
 import { getCategoryDisplay } from '@/utils/categoryUtils';
 
@@ -25,6 +25,12 @@ const SchedulePreview: React.FC<SchedulePreviewProps> = ({
         <p className="text-muted-foreground">
           {tournament?.date ? new Date(tournament.date).toLocaleDateString('de-CH') : 'Kein Datum'}
         </p>
+        <div className="mt-4">
+          <Button variant="outline" size="sm" className="gap-2" onClick={onGeneratePDF}>
+            <FileText className="h-4 w-4" />
+            PDF Exportieren
+          </Button>
+        </div>
       </div>
       
       {mainSponsors.length > 0 && (
