@@ -36,6 +36,38 @@ const ReportsPage: React.FC = () => {
     return <AccessDenied />;
   }
   
+  // Transform the data to match the expected types for ResultsTab
+  const formattedIndividualResults = {
+    kids: allIndividualResults.kids.map(result => ({
+      rank: result.rank,
+      name: `${result.participant.firstName} ${result.participant.lastName}`,
+      location: result.participant.location,
+      score: result.totalScore
+    })),
+    juniors: allIndividualResults.juniors.map(result => ({
+      rank: result.rank,
+      name: `${result.participant.firstName} ${result.participant.lastName}`,
+      location: result.participant.location,
+      score: result.totalScore
+    })),
+    active: allIndividualResults.active.map(result => ({
+      rank: result.rank,
+      name: `${result.participant.firstName} ${result.participant.lastName}`,
+      location: result.participant.location,
+      score: result.totalScore
+    }))
+  };
+
+  // Transform group results to the expected format
+  const formattedGroupResults = Object.values(groupResults)
+    .flat()
+    .map(group => ({
+      rank: group.rank,
+      name: `Group ${group.groupId}`,
+      location: group.members.map(m => m.location).join(', '),
+      score: group.totalScore
+    }));
+  
   return (
     <div className="animate-fade-in">
       <h1 className="text-3xl font-bold text-swiss-blue mb-6">Berichte & Exporte</h1>
@@ -62,8 +94,8 @@ const ReportsPage: React.FC = () => {
         {/* Results & Rankings Tab */}
         <TabsContent value="results">
           <ResultsTab 
-            allIndividualResults={allIndividualResults}
-            groupResults={groupResults}
+            allIndividualResults={formattedIndividualResults}
+            groupResults={formattedGroupResults}
             tournamentName={tournamentName}
             selectedTournamentId={tournament.id}
             mockSponsors={mockSponsors}

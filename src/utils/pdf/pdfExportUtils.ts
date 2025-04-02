@@ -1,3 +1,4 @@
+
 import { ScheduleItem, Sponsor, Tournament, Category } from '@/types';
 import { jsPDF } from 'jspdf';
 import { generateScheduleHTMLContent } from './scheduleUtils';
@@ -88,9 +89,21 @@ export const generateResultsPDF = (options: {
       format: 'a4'
     });
 
-    // Create the structure expected by renderResultsToPDF
-    const individualResults = category !== 'group' ? { [category]: results } : {};
-    const groupResults = category === 'group' ? { 'group': results } : {};
+    // Create empty structures for individual and group results
+    const individualResults: Record<Category, any[]> = {
+      'kids': [],
+      'juniors': [],
+      'active': []
+    };
+    
+    const groupResults: Record<string, any[]> = {};
+    
+    // Populate the correct structure based on the category
+    if (category !== 'group') {
+      individualResults[category as Category] = results;
+    } else {
+      groupResults['group'] = results;
+    }
     
     // Render results content to PDF
     renderResultsToPDF(doc, individualResults, groupResults, sponsors, tournament.name);
@@ -103,8 +116,20 @@ export const generateResultsPDF = (options: {
     console.error('Error generating PDF:', error);
     
     // Fallback to HTML if PDF generation fails
-    const individualResults = category !== 'group' ? { [category]: results } : {};
-    const groupResults = category === 'group' ? { 'group': results } : {};
+    const individualResults: Record<Category, any[]> = {
+      'kids': [],
+      'juniors': [],
+      'active': []
+    };
+    
+    const groupResults: Record<string, any[]> = {};
+    
+    if (category !== 'group') {
+      individualResults[category as Category] = results;
+    } else {
+      groupResults['group'] = results;
+    }
+    
     const content = generateResultsHTMLContent(individualResults, groupResults, sponsors, tournament.name);
     
     downloadHTMLAsFile(

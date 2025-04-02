@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { generateResultsPDF } from '@/utils/pdfUtils';
+import { generateResultsPDF } from '@/utils/pdf/pdfExportUtils';
 import { Tournament } from '@/types';
 
 interface ResultsTabProps {

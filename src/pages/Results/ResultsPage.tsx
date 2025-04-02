@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockParticipants, mockIndividualScores, mockSponsors, mockGroups, mockGroupScores } from '../../data/mockData';
 import { Category, ParticipantResult } from '../../types';
-import { generateResultsPDF } from '../../utils/pdfUtils';
+import { generateResultsPDF } from '../../utils/pdf/pdfExportUtils';
 
 // Import new components
 import ResultsList from '../../components/Results/ResultsList';
@@ -32,12 +32,32 @@ const ResultsPage = () => {
 
   // Handle PDF export
   const handleExportPDF = () => {
-    generateResultsPDF(
-      allIndividualResults,
-      groupResults,
-      mockSponsors,
-      "Schweiz. Peitschenclub Turnier"
-    );
+    const tournamentObj = {
+      id: 1,
+      name: "Schweiz. Peitschenclub Turnier",
+      date: new Date().toISOString().split('T')[0],
+      location: "Default Location",
+      year: new Date().getFullYear(),
+      isActive: true
+    };
+
+    // Get the selected category results
+    const categoryResults = allIndividualResults[selectedCategory];
+    
+    // Format them for the PDF generator
+    const formattedResults = categoryResults.map(result => ({
+      rank: result.rank,
+      name: `${result.participant.firstName} ${result.participant.lastName}`,
+      location: result.participant.location,
+      score: result.totalScore
+    }));
+    
+    generateResultsPDF({
+      results: formattedResults,
+      category: selectedCategory,
+      tournament: tournamentObj,
+      sponsors: mockSponsors
+    });
   };
 
   return (
