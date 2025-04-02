@@ -112,7 +112,15 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                   isAnimationActive={true}
                 >
                   {chartData.map((entry, index) => (
-                    <Bar key={`cell-${index}`} fill={entry.color} />
+                    <rect
+                      key={`cell-${index}`}
+                      x={0}
+                      y={0}
+                      width={0}
+                      height={0}
+                      fill={entry.color}
+                      dataKey="count"
+                    />
                   ))}
                 </Bar>
               </BarChart>
