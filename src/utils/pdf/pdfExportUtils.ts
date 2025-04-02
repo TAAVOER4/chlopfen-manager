@@ -67,6 +67,10 @@ export const generateSchedulePDF = (
 
 // Function to parse group category string into size and category
 const parseGroupCategoryString = (categoryString: string): { size: GroupSize, category: GroupCategory } | null => {
+  if (!categoryString || typeof categoryString !== 'string') {
+    return null;
+  }
+
   const parts = categoryString.split('_');
   if (parts.length >= 2) {
     const size = parts[0] as GroupSize;
@@ -146,7 +150,7 @@ export const generateResultsPDF = (options: {
     });
 
     // Format results to ensure they have the expected structure
-    const formattedResults = formatResultsForPDF(results);
+    const formattedResults = formatResultsForPDF(results || []);
     
     // Create empty structures for individual and group results
     const individualResults: Record<Category, any[]> = {
@@ -183,7 +187,7 @@ export const generateResultsPDF = (options: {
     console.error('Error generating PDF:', error);
     
     // Fallback to HTML if PDF generation fails - but first ensure results are formatted
-    const formattedResults = formatResultsForPDF(results);
+    const formattedResults = formatResultsForPDF(results || []);
     
     const individualResults: Record<Category, any[]> = {
       'kids': [],
@@ -214,3 +218,4 @@ export const generateResultsPDF = (options: {
     console.log('Fallback to HTML format due to error');
   }
 };
+

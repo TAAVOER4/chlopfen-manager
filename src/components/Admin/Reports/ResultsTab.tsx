@@ -95,15 +95,38 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
     }
   };
   
+  // Filter group results based on selected size and category
+  const filteredGroupResults = useMemo(() => {
+    // For group results, we need to filter by the selected group size and category
+    if (!groupResults || groupResults.length === 0) {
+      return [];
+    }
+
+    // Since our groupResults don't directly contain size and category information,
+    // we'll need to use a naming convention to filter them
+    // This is a simplified approach; in a real app, you'd have proper metadata
+    return groupResults.filter(group => {
+      const groupName = group.name.toLowerCase();
+      const sizeMatches = selectedGroupSize === 'three' 
+        ? groupName.includes('3er') || groupName.includes('dreier') 
+        : groupName.includes('4er') || groupName.includes('vierer');
+
+      const categoryMatches = selectedGroupCategory === 'kids_juniors'
+        ? (groupName.includes('kid') || groupName.includes('junior') || groupName.includes('kinder'))
+        : groupName.includes('aktiv');
+
+      return sizeMatches && categoryMatches;
+    });
+  }, [groupResults, selectedGroupSize, selectedGroupCategory]);
+
   const currentResults = useMemo(() => {
     if (selectedExportType === 'individual') {
       return allIndividualResults[selectedCategory] || [];
     } else {
-      // For group results, we would ideally filter by selected size and category
-      // Since the data structure doesn't support this filtering directly, we return all group results
-      return groupResults;
+      // Use the filtered group results
+      return filteredGroupResults;
     }
-  }, [selectedExportType, selectedCategory, allIndividualResults, groupResults, selectedGroupSize, selectedGroupCategory]);
+  }, [selectedExportType, selectedCategory, allIndividualResults, filteredGroupResults]);
 
   return (
     <div className="space-y-6">
