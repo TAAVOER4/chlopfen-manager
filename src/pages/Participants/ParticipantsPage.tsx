@@ -1,18 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Users, Pencil, Trash, Filter, Search, User } from 'lucide-react';
+import { PlusCircle, Users, Pencil, Trash, Filter, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
-import { Participant, Category } from '../../types';
+import { Participant, Category, Tournament } from '../../types';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { useTournament } from '@/contexts/TournamentContext';
+import { getTournamentById } from '@/data/mockTournaments';
 
 const ParticipantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -21,6 +23,7 @@ const ParticipantsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState('individual');
+  const { tournaments } = useTournament(); // Get all tournaments
 
   const handleDeleteParticipant = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -43,6 +46,13 @@ const ParticipantsPage = () => {
     return groupsForParticipant.map(g => g.name).join(', ');
   };
   
+  // Function to get tournament name by ID
+  const getTournamentName = (tournamentId?: number): string => {
+    if (!tournamentId) return '-';
+    const tournament = getTournamentById(tournamentId);
+    return tournament ? tournament.name : '-';
+  };
+  
   // Filter participants based on selected category and search text
   const filteredParticipants = mockParticipants
     .filter(participant => 
@@ -52,14 +62,16 @@ const ParticipantsPage = () => {
       if (!searchText.trim()) return true;
       
       const searchLower = searchText.toLowerCase();
+      const tournamentName = getTournamentName(participant.tournamentId).toLowerCase();
       
-      // Search across all text fields EXCEPT groups column
+      // Search across all text fields INCLUDING tournament name
       return (
         participant.firstName.toLowerCase().includes(searchLower) ||
         participant.lastName.toLowerCase().includes(searchLower) ||
         participant.location.toLowerCase().includes(searchLower) ||
         participant.birthYear.toString().includes(searchLower) ||
-        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower)
+        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower) ||
+        tournamentName.includes(searchLower)
       );
     });
 
@@ -145,6 +157,7 @@ const ParticipantsPage = () => {
                   <TableHead>Kategorie</TableHead>
                   <TableHead>Jahrgang</TableHead>
                   <TableHead>Wohnort</TableHead>
+                  <TableHead>Turnier</TableHead>
                   <TableHead>Gruppe(n)</TableHead>
                   <TableHead>Teilnahme</TableHead>
                   <TableHead className="w-[160px]">Aktionen</TableHead>
@@ -159,6 +172,12 @@ const ParticipantsPage = () => {
                     <TableCell>{getCategoryDisplay(participant.category)}</TableCell>
                     <TableCell>{participant.birthYear}</TableCell>
                     <TableCell>{participant.location}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {getTournamentName(participant.tournamentId)}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {getParticipantGroups(participant.id)}
                     </TableCell>
@@ -191,7 +210,7 @@ const ParticipantsPage = () => {
                 ))}
                 {filteredParticipants.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Keine Teilnehmer vorhanden
                     </TableCell>
                   </TableRow>
@@ -211,6 +230,7 @@ const ParticipantsPage = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Kategorie</TableHead>
                   <TableHead>Größe</TableHead>
+                  <TableHead>Turnier</TableHead>
                   <TableHead>Mitglieder</TableHead>
                   <TableHead className="w-[100px]">Aktionen</TableHead>
                 </TableRow>
@@ -221,6 +241,12 @@ const ParticipantsPage = () => {
                     <TableCell className="font-medium">{group.name}</TableCell>
                     <TableCell>{getCategoryDisplay(group.category)}</TableCell>
                     <TableCell>{group.size === 'three' ? 'Dreiergruppe' : 'Vierergruppe'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {getTournamentName(group.tournamentId)}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {group.participantIds.map(id => {
                         const participant = mockParticipants.find(p => p.id === id);
@@ -239,7 +265,7 @@ const ParticipantsPage = () => {
                 ))}
                 {mockGroups.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Keine Gruppen vorhanden
                     </TableCell>
                   </TableRow>
