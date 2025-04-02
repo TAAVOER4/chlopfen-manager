@@ -18,15 +18,18 @@ import { useParticipantReordering } from '@/hooks/useParticipantReordering';
 
 const JudgingPage: React.FC = () => {
   const location = useLocation();
+  
   // Initialize defaultTab based on the URL path or retrieved from sessionStorage
   const getInitialTab = (): string => {
     // Check if we're coming back from a group judging page
-    if (location.pathname.includes('/judging') && location.state?.from === 'groupJudging') {
+    if (location.state?.from === 'groupJudging') {
       return 'group';
     }
     
     // Try to get from session storage
     const savedTab = sessionStorage.getItem('judgingActiveTab');
+    
+    // Default to individual if not coming from group judging
     return savedTab || 'individual';
   };
 
