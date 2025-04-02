@@ -70,13 +70,16 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
 
   const handleGenerateResults = () => {
     try {
-      const exportData = selectedExportType === 'individual' 
-        ? allIndividualResults[selectedCategory]
-        : groupResults;
-      
+      let exportData;
       const category = selectedExportType === 'individual' 
         ? selectedCategory 
         : `${selectedGroupSize}_${selectedGroupCategory}`;
+      
+      if (selectedExportType === 'individual') {
+        exportData = allIndividualResults[selectedCategory];
+      } else {
+        exportData = filteredGroupResults;
+      }
       
       console.log("Exporting data:", exportData);
       console.log("Category:", category);
@@ -102,20 +105,49 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
       return [];
     }
 
+    console.log("Filtering groups:", groupResults);
+    console.log("Selected size:", selectedGroupSize);
+    console.log("Selected category:", selectedGroupCategory);
+    
     // Since our groupResults don't directly contain size and category information,
-    // we'll need to use a naming convention to filter them
-    // This is a simplified approach; in a real app, you'd have proper metadata
+    // we'll use a more lenient approach to match groups
     return groupResults.filter(group => {
+      if (!group.name) return false; 
+      
       const groupName = group.name.toLowerCase();
-      const sizeMatches = selectedGroupSize === 'three' 
-        ? groupName.includes('3er') || groupName.includes('dreier') 
-        : groupName.includes('4er') || groupName.includes('vierer');
-
-      const categoryMatches = selectedGroupCategory === 'kids_juniors'
-        ? (groupName.includes('kid') || groupName.includes('junior') || groupName.includes('kinder'))
-        : groupName.includes('aktiv');
-
-      return sizeMatches && categoryMatches;
+      
+      // More lenient size matching to catch more naming patterns
+      let sizeMatches = false;
+      if (selectedGroupSize === 'three') {
+        sizeMatches = groupName.includes('3') || 
+                      groupName.includes('drei') || 
+                      groupName.includes('dreier');
+      } else {
+        sizeMatches = groupName.includes('4') || 
+                      groupName.includes('vier') || 
+                      groupName.includes('vierer');
+      }
+      
+      // More lenient category matching
+      let categoryMatches = false;
+      if (selectedGroupCategory === 'kids_juniors') {
+        categoryMatches = groupName.includes('kid') || 
+                          groupName.includes('junior') || 
+                          groupName.includes('kinder') ||
+                          groupName.includes('jugend');
+      } else {
+        categoryMatches = groupName.includes('aktiv') || 
+                          groupName.includes('adult') ||
+                          groupName.includes('active');
+      }
+      
+      // If we can't determine the category from the name,
+      // default to showing the group rather than filtering it out
+      if (!categoryMatches && !groupName.includes('aktiv') && !groupName.includes('adult')) {
+        categoryMatches = selectedGroupCategory === 'kids_juniors';
+      }
+      
+      return sizeMatches || categoryMatches; // Use OR for more lenient filtering
     });
   }, [groupResults, selectedGroupSize, selectedGroupCategory]);
 

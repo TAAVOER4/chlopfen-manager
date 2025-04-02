@@ -151,6 +151,7 @@ export const generateResultsPDF = (options: {
 
     // Format results to ensure they have the expected structure
     const formattedResults = formatResultsForPDF(results || []);
+    console.log('Formatted results for PDF:', formattedResults);
     
     // Create empty structures for individual and group results
     const individualResults: Record<Category, any[]> = {
@@ -170,9 +171,11 @@ export const generateResultsPDF = (options: {
       if (groupInfo) {
         const key = `${groupInfo.size}_${groupInfo.category}`;
         groupResults[key] = formattedResults;
+        console.log(`Added ${formattedResults.length} results to group key ${key}`);
       } else {
         // Fallback to the old 'group' key if parsing fails
         groupResults['group'] = formattedResults;
+        console.log(`Fallback: Added ${formattedResults.length} results to default group key`);
       }
     }
     
@@ -218,4 +221,3 @@ export const generateResultsPDF = (options: {
     console.log('Fallback to HTML format due to error');
   }
 };
-
