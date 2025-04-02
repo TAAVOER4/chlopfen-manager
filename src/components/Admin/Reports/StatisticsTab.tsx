@@ -102,27 +102,18 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                     boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'
                   }}
                 />
-                <Bar 
-                  dataKey="count" 
-                  fill="#3b82f6" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={80}
-                  fillOpacity={0.9}
-                  name="Anzahl"
-                  isAnimationActive={true}
-                >
-                  {chartData.map((entry, index) => (
-                    <rect
-                      key={`cell-${index}`}
-                      x={0}
-                      y={0}
-                      width={0}
-                      height={0}
-                      fill={entry.color}
-                      dataKey="count"
-                    />
-                  ))}
-                </Bar>
+                {chartData.map((entry, index) => (
+                  <Bar 
+                    key={`bar-${index}`}
+                    dataKey="count"
+                    name={entry.name}
+                    fill={entry.color}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={80}
+                    fillOpacity={0.9}
+                    isAnimationActive={true}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
