@@ -19,7 +19,9 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { generateResultsPDF } from '@/utils/pdf/pdfExportUtils';
-import { Tournament } from '@/types';
+import { Tournament, GroupSize, GroupCategory } from '@/types';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface ResultsTabProps {
   allIndividualResults: {
@@ -52,6 +54,8 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('kids');
   const [selectedExportType, setSelectedExportType] = useState<string>('individual');
+  const [selectedGroupSize, setSelectedGroupSize] = useState<GroupSize>('three');
+  const [selectedGroupCategory, setSelectedGroupCategory] = useState<GroupCategory>('kids_juniors');
   
   // Create a complete tournament object that matches the Tournament type
   const tournamentObj: Tournament = {
@@ -70,7 +74,7 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
     
     generateResultsPDF({
       results: exportData,
-      category: selectedExportType === 'individual' ? selectedCategory : 'group',
+      category: selectedExportType === 'individual' ? selectedCategory : `${selectedGroupSize}_${selectedGroupCategory}`,
       tournament: tournamentObj,
       sponsors: mockSponsors
     });
@@ -109,7 +113,7 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
               </Select>
             </div>
             
-            {selectedExportType === 'individual' && (
+            {selectedExportType === 'individual' ? (
               <div className="w-full md:w-1/3">
                 <label className="text-sm font-medium mb-2 block">Kategorie</label>
                 <Select
@@ -125,6 +129,48 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
                     <SelectItem value="active">Aktive</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            ) : (
+              <div className="w-full md:w-2/3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Gruppengrösse</label>
+                    <RadioGroup 
+                      defaultValue="three"
+                      value={selectedGroupSize}
+                      onValueChange={(value) => setSelectedGroupSize(value as GroupSize)}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="three" id="option-three" />
+                        <Label htmlFor="option-three">3er Gruppen</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="four" id="option-four" />
+                        <Label htmlFor="option-four">4er Gruppen</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Kategorie</label>
+                    <RadioGroup 
+                      defaultValue="kids_juniors"
+                      value={selectedGroupCategory}
+                      onValueChange={(value) => setSelectedGroupCategory(value as GroupCategory)}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="kids_juniors" id="option-kids_juniors" />
+                        <Label htmlFor="option-kids_juniors">Kids/Junioren</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="active" id="option-active" />
+                        <Label htmlFor="option-active">Aktive</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
               </div>
             )}
             

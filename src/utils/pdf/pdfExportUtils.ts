@@ -1,5 +1,5 @@
 
-import { ScheduleItem, Sponsor, Tournament, Category } from '@/types';
+import { ScheduleItem, Sponsor, Tournament, Category, GroupCategory, GroupSize } from '@/types';
 import { jsPDF } from 'jspdf';
 import { generateScheduleHTMLContent } from './scheduleUtils';
 import { generateResultsHTMLContent } from './htmlGeneratorUtils';
@@ -65,6 +65,17 @@ export const generateSchedulePDF = (
   }
 };
 
+// Function to parse group category string into size and category
+const parseGroupCategoryString = (categoryString: string): { size: GroupSize, category: GroupCategory } | null => {
+  const parts = categoryString.split('_');
+  if (parts.length >= 2) {
+    const size = parts[0] as GroupSize;
+    const category = parts.slice(1).join('_') as GroupCategory;
+    return { size, category };
+  }
+  return null;
+};
+
 // Function to generate PDF of the results
 export const generateResultsPDF = (options: {
   results: any[],
@@ -99,10 +110,18 @@ export const generateResultsPDF = (options: {
     const groupResults: Record<string, any[]> = {};
     
     // Populate the correct structure based on the category
-    if (category !== 'group') {
+    if (category === 'kids' || category === 'juniors' || category === 'active') {
       individualResults[category as Category] = results;
     } else {
-      groupResults['group'] = results;
+      // Handle group categories like "three_kids_juniors"
+      const groupInfo = parseGroupCategoryString(category);
+      if (groupInfo) {
+        const key = `${groupInfo.size}_${groupInfo.category}`;
+        groupResults[key] = results;
+      } else {
+        // Fallback to the old 'group' key if parsing fails
+        groupResults['group'] = results;
+      }
     }
     
     // Render results content to PDF
@@ -124,10 +143,16 @@ export const generateResultsPDF = (options: {
     
     const groupResults: Record<string, any[]> = {};
     
-    if (category !== 'group') {
+    if (category === 'kids' || category === 'juniors' || category === 'active') {
       individualResults[category as Category] = results;
     } else {
-      groupResults['group'] = results;
+      const groupInfo = parseGroupCategoryString(category);
+      if (groupInfo) {
+        const key = `${groupInfo.size}_${groupInfo.category}`;
+        groupResults[key] = results;
+      } else {
+        groupResults['group'] = results;
+      }
     }
     
     const content = generateResultsHTMLContent(individualResults, groupResults, sponsors, tournament.name);
