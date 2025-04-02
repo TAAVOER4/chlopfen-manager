@@ -18,6 +18,7 @@ import ResultsPage from "./pages/Results/ResultsPage";
 import AdminPage from "./pages/Admin/AdminPage";
 import UsersPage from "./pages/Admin/UsersPage";
 import SponsorsPage from "./pages/Admin/SponsorsPage";
+import SchedulePage from "./pages/Admin/SchedulePage";
 import TournamentPage from "./pages/Admin/TournamentPage";
 import TournamentParticipantsPage from "./pages/Admin/TournamentParticipantsPage";
 import TournamentJudgesPage from "./pages/Admin/TournamentJudgesPage";
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
                 <Route path="/admin/sponsors" element={<SponsorsPage />} />
+                <Route path="/admin/schedule" element={<SchedulePage />} />
                 <Route path="/admin/tournament" element={<TournamentPage />} />
                 <Route path="/admin/tournament/:tournamentId/participants" element={<TournamentParticipantsPage />} />
                 <Route path="/admin/tournament/:tournamentId/judges" element={<TournamentJudgesPage />} />

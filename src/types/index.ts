@@ -5,7 +5,7 @@ export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
 export type UserRole = 'admin' | 'judge' | 'reader' | 'editor';
-export type SponsorType = 'prize' | 'donor' | 'banner';
+export type SponsorType = 'prize' | 'donor' | 'banner' | 'main';
 
 export interface Participant {
   id: number;
@@ -75,6 +75,7 @@ export interface Sponsor {
   type: SponsorType;
   websiteUrl?: string;
   tournamentId?: number; // Reference to tournament
+  isMainSponsor?: boolean; // New flag to mark main sponsors
 }
 
 export interface ParticipantResult {
@@ -102,4 +103,16 @@ export interface Tournament {
   location: string;
   year: number; // The year of the tournament
   isActive: boolean; // Flag to mark the currently active tournament
+}
+
+// New Schedule interface
+export interface ScheduleItem {
+  id: number;
+  tournamentId: number;
+  startTime: string; // format: "HH:mm"
+  endTime: string; // format: "HH:mm"
+  title: string;
+  description?: string;
+  category?: Category | GroupCategory;
+  type: 'competition' | 'ceremony' | 'break' | 'other';
 }

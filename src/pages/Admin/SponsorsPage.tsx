@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,8 @@ import {
   ListFilter,
   PenLine,
   Trash2,
-  ImageOff
+  ImageOff,
+  Star
 } from 'lucide-react';
 import {
   Card,
@@ -185,6 +187,7 @@ const SponsorsPage = () => {
       case 'prize': return <Award className="h-5 w-5 text-yellow-500" />;
       case 'donor': return <Heart className="h-5 w-5 text-red-500" />;
       case 'banner': return <Flag className="h-5 w-5 text-blue-500" />;
+      case 'main': return <Star className="h-5 w-5 text-purple-500" />;
       default: return null;
     }
   };
@@ -194,6 +197,7 @@ const SponsorsPage = () => {
       case 'prize': return 'Preissponsor';
       case 'donor': return 'Gönner';
       case 'banner': return 'Bandensponsor';
+      case 'main': return 'Hauptsponsor';
       default: return type;
     }
   };
@@ -225,6 +229,9 @@ const SponsorsPage = () => {
             </TabsTrigger>
             <TabsTrigger value="banner" className="flex items-center gap-2">
               <Flag className="h-4 w-4" /> Bandensponsor
+            </TabsTrigger>
+            <TabsTrigger value="main" className="flex items-center gap-2">
+              <Star className="h-4 w-4" /> Hauptsponsor
             </TabsTrigger>
           </TabsList>
           
@@ -439,6 +446,74 @@ const SponsorsPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="main">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hauptsponsor Management</CardTitle>
+              <CardDescription>
+                Verwalten Sie die Hauptsponsoren für das Turnier. Diese werden auf dem Zeitplan angezeigt.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Logo</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Kategorie</TableHead>
+                    <TableHead>Website</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSponsors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Keine Hauptsponsoren gefunden. Fügen Sie neue Hauptsponsoren hinzu.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSponsors.map((sponsor) => (
+                      <TableRow key={sponsor.id}>
+                        <TableCell>
+                          <div className="h-12 w-16 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                            {sponsor.logo ? (
+                              <img src={sponsor.logo} alt={`${sponsor.name} Logo`} className="max-h-12 max-w-full object-contain" />
+                            ) : (
+                              <Star className="h-6 w-6 text-purple-500" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{sponsor.name}</TableCell>
+                        <TableCell>{getCategoryDisplay(sponsor.category)}</TableCell>
+                        <TableCell>
+                          {sponsor.websiteUrl ? (
+                            <a href={sponsor.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                              Website öffnen
+                            </a>
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditSponsor(sponsor)}>
+                              <PenLine className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteSponsor(sponsor)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
       
       {/* Add/Edit Sponsor Dialog */}
@@ -517,6 +592,12 @@ const SponsorsPage = () => {
                       <div className="flex items-center gap-2">
                         <Flag className="h-4 w-4" />
                         <span>Bandensponsor</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="main">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4" />
+                        <span>Hauptsponsor</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
