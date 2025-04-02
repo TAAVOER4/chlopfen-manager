@@ -25,6 +25,17 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
   individualScores, 
   groupScores 
 }) => {
+  // Calculate max height for the chart based on the highest participant count
+  const kidCount = participants.filter(p => p.category === 'kids').length;
+  const juniorCount = participants.filter(p => p.category === 'juniors').length;
+  const activeCount = participants.filter(p => p.category === 'active').length;
+  const maxCount = Math.max(kidCount, juniorCount, activeCount);
+  
+  // Calculate bar heights as percentages of the maximum value
+  const kidHeight = maxCount > 0 ? (kidCount / maxCount) * 160 : 0;
+  const juniorHeight = maxCount > 0 ? (juniorCount / maxCount) * 160 : 0;
+  const activeHeight = maxCount > 0 ? (activeCount / maxCount) * 160 : 0;
+
   return (
     <Card>
       <CardHeader>
@@ -59,21 +70,21 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
         
         <div className="mt-8">
           <h3 className="font-medium mb-4">Teilnehmer pro Kategorie</h3>
-          <div className="h-[200px] w-full bg-muted rounded-md flex items-end justify-around p-4">
+          <div className="h-[200px] w-full bg-muted rounded-md flex items-end justify-around p-4 overflow-hidden">
             <div className="flex flex-col items-center">
-              <div className="bg-blue-500 w-16 rounded-t-md" style={{ height: '80px' }}></div>
+              <div className="bg-blue-500 w-16 rounded-t-md" style={{ height: `${kidHeight}px` }}></div>
               <p className="mt-2 text-sm">Kinder</p>
-              <p className="text-muted-foreground text-xs">{participants.filter(p => p.category === 'kids').length}</p>
+              <p className="text-muted-foreground text-xs">{kidCount}</p>
             </div>
             <div className="flex flex-col items-center">
-              <div className="bg-green-500 w-16 rounded-t-md" style={{ height: '120px' }}></div>
+              <div className="bg-green-500 w-16 rounded-t-md" style={{ height: `${juniorHeight}px` }}></div>
               <p className="mt-2 text-sm">Junioren</p>
-              <p className="text-muted-foreground text-xs">{participants.filter(p => p.category === 'juniors').length}</p>
+              <p className="text-muted-foreground text-xs">{juniorCount}</p>
             </div>
             <div className="flex flex-col items-center">
-              <div className="bg-red-500 w-16 rounded-t-md" style={{ height: '160px' }}></div>
+              <div className="bg-red-500 w-16 rounded-t-md" style={{ height: `${activeHeight}px` }}></div>
               <p className="mt-2 text-sm">Aktive</p>
-              <p className="text-muted-foreground text-xs">{participants.filter(p => p.category === 'active').length}</p>
+              <p className="text-muted-foreground text-xs">{activeCount}</p>
             </div>
           </div>
         </div>
