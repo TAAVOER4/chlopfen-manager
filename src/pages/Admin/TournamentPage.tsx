@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar as CalendarIcon, Map, Trophy, Plus, PenLine, Trash2, CheckCircle } from 'lucide-react';
@@ -77,7 +76,6 @@ const TournamentPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tournamentToDelete, setTournamentToDelete] = useState<Tournament | null>(null);
   
-  // Initialize form with default values or editing values
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentSchema),
     defaultValues: {
@@ -89,7 +87,6 @@ const TournamentPage = () => {
     },
   });
   
-  // Redirect if not admin
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -102,7 +99,6 @@ const TournamentPage = () => {
     );
   }
   
-  // Function to edit a tournament
   const handleEdit = (tournament: Tournament) => {
     setIsEditing(true);
     form.reset({
@@ -112,12 +108,10 @@ const TournamentPage = () => {
       year: tournament.year,
       isActive: tournament.isActive,
     });
-    // Store the tournament ID to update
     form.setValue('id' as any, tournament.id);
     setDialogOpen(true);
   };
   
-  // Function to add a new tournament
   const handleAdd = () => {
     setIsEditing(false);
     form.reset({
@@ -130,18 +124,14 @@ const TournamentPage = () => {
     setDialogOpen(true);
   };
   
-  // Function to handle delete confirmation
   const handleDeleteClick = (tournament: Tournament) => {
     setTournamentToDelete(tournament);
     setDeleteConfirmOpen(true);
   };
   
-  // Function to delete a tournament
   const handleDelete = () => {
     if (!tournamentToDelete) return;
     
-    // In a real app, you would send a delete request to the server
-    // For now, we'll just show a success toast
     toast({
       title: "Turnier gelöscht",
       description: `Das Turnier "${tournamentToDelete.name}" wurde erfolgreich gelöscht.`,
@@ -151,7 +141,6 @@ const TournamentPage = () => {
     setTournamentToDelete(null);
   };
   
-  // Function to set a tournament as active
   const handleSetActive = (tournament: Tournament) => {
     setActiveTournament({
       ...tournament,
@@ -164,17 +153,17 @@ const TournamentPage = () => {
     });
   };
   
-  // Function to handle form submission
   const onSubmit = (values: TournamentFormValues) => {
     if (isEditing) {
-      // Get the ID from the form
       const id = form.getValues('id' as any);
       
-      // Update the existing tournament
       const updatedTournament: Tournament = {
-        ...values,
         id,
+        name: values.name,
         date: format(values.date, 'yyyy-MM-dd'),
+        location: values.location,
+        year: values.year,
+        isActive: values.isActive
       };
       
       updateTournament(updatedTournament);
@@ -184,11 +173,13 @@ const TournamentPage = () => {
         description: `Das Turnier "${values.name}" wurde erfolgreich aktualisiert.`,
       });
     } else {
-      // Create a new tournament
       const newTournament: Tournament = {
-        ...values,
         id: Math.max(0, ...tournaments.map(t => t.id)) + 1,
+        name: values.name,
         date: format(values.date, 'yyyy-MM-dd'),
+        location: values.location,
+        year: values.year,
+        isActive: values.isActive
       };
       
       addTournament(newTournament);
@@ -202,12 +193,10 @@ const TournamentPage = () => {
     setDialogOpen(false);
   };
   
-  // Function to navigate to participant assignment
   const goToParticipantAssignment = (tournamentId: number) => {
     navigate(`/admin/tournament/${tournamentId}/participants`);
   };
   
-  // Function to navigate to judge assignment
   const goToJudgeAssignment = (tournamentId: number) => {
     navigate(`/admin/tournament/${tournamentId}/judges`);
   };
@@ -343,7 +332,6 @@ const TournamentPage = () => {
         </CardContent>
       </Card>
       
-      {/* Dialog for adding/editing tournaments */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -486,7 +474,6 @@ const TournamentPage = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete confirmation dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
