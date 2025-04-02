@@ -1,18 +1,25 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types';
+import { User, Tournament } from '@/types';
 import { mockJudges } from '@/data/mockJudges';
 import { useToast } from '@/hooks/use-toast';
 import { authenticateUser } from '@/utils/authUtils';
+import { mockTournaments, getActiveTournament } from '@/data/mockTournaments';
 
 interface UserContextType {
   currentUser: User | null;
   isAdmin: boolean;
+  isJudge: boolean;
+  isReader: boolean;
+  isEditor: boolean;
   isImpersonating: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
   impersonate: (user: User) => void;
   stopImpersonating: () => void;
+  availableTournaments: Tournament[];
+  selectedTournament: Tournament | null;
+  setSelectedTournament: (tournament: Tournament | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -21,12 +28,19 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [originalAdmin, setOriginalAdmin] = useState<User | null>(null);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
 
   // On initial load, check if we have a saved user or are impersonating
   useEffect(() => {
     const savedUserJSON = localStorage.getItem('currentUser');
     const impersonatedUserJSON = localStorage.getItem('impersonatedUser');
     const isAdminMode = localStorage.getItem('adminMode') === 'true';
+
+    // Try to get the active tournament
+    const activeTournament = getActiveTournament();
+    if (activeTournament) {
+      setSelectedTournament(activeTournament);
+    }
 
     if (savedUserJSON) {
       try {
@@ -51,7 +65,25 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const isAdmin = !!currentUser && currentUser.role === 'admin';
+  const isJudge = !!currentUser && currentUser.role === 'judge';
+  const isReader = !!currentUser && currentUser.role === 'reader';
+  const isEditor = !!currentUser && currentUser.role === 'editor';
   const isImpersonating = !!originalAdmin;
+
+  // Get available tournaments based on user role and assigned tournaments
+  const availableTournaments = React.useMemo(() => {
+    if (!currentUser) return [];
+    
+    // Admin and Judge roles can see all tournaments
+    if (currentUser.role === 'admin' || currentUser.role === 'judge') {
+      return mockTournaments;
+    }
+    
+    // Reader and Editor roles can only see assigned tournaments
+    return mockTournaments.filter(tournament => 
+      currentUser.tournamentIds?.includes(tournament.id)
+    );
+  }, [currentUser]);
 
   const login = (username: string, password: string): boolean => {
     try {
@@ -65,6 +97,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         delete (userToStore as any).passwordHash;
         
         localStorage.setItem('currentUser', JSON.stringify(userToStore));
+        
+        // Set active tournament if available
+        const activeTournament = getActiveTournament();
+        if (activeTournament) {
+          setSelectedTournament(activeTournament);
+        }
         
         toast({
           title: "Anmeldung erfolgreich",
@@ -87,6 +125,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setCurrentUser(null);
     setOriginalAdmin(null);
+    setSelectedTournament(null);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('impersonatedUser');
     localStorage.removeItem('adminMode');
@@ -114,7 +153,11 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     toast({
       title: "Benutzer wechseln",
-      description: `Sie agieren jetzt als ${user.name} (${user.role === 'admin' ? 'Administrator' : 'Richter'}).`
+      description: `Sie agieren jetzt als ${user.name} (${
+        user.role === 'admin' ? 'Administrator' : 
+        user.role === 'judge' ? 'Richter' : 
+        user.role === 'reader' ? 'Nur Lesen' : 'Bearbeiter'
+      }).`
     });
   };
 
@@ -137,11 +180,17 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         currentUser,
         isAdmin,
+        isJudge,
+        isReader,
+        isEditor,
         isImpersonating,
         login,
         logout,
         impersonate,
-        stopImpersonating
+        stopImpersonating,
+        availableTournaments,
+        selectedTournament,
+        setSelectedTournament
       }}
     >
       {children}

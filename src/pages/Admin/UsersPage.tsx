@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Users, Lock } from 'lucide-react';
+import { ArrowLeft, UserPlus, Users, Lock, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,9 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { mockJudges, updateMockJudges } from '@/data/mockJudges';
-import { User, CriterionKey, GroupCriterionKey, UserRole } from '@/types';
+import { mockTournaments } from '@/data/mockTournaments';
+import { User, CriterionKey, GroupCriterionKey, UserRole, Tournament } from '@/types';
 import { useUser } from '@/contexts/UserContext';
 import DeleteUserDialog from '@/components/Admin/DeleteUserDialog';
 import UserTable from '@/components/Admin/UserTable';
@@ -25,6 +28,7 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("all");
   const { impersonate } = useUser();
   
   // Available criteria for assignment
@@ -41,6 +45,13 @@ const UsersPage = () => {
     { value: 'rhythm', label: 'Rhythmus (Gruppe)' },
     { value: 'tempo', label: 'Takt (Gruppe)' },
   ];
+
+  const tournaments: Tournament[] = mockTournaments;
+
+  // Filter users based on active role tab
+  const filteredUsers = activeTab === "all" 
+    ? users 
+    : users.filter(user => user.role === activeTab);
 
   const handleImpersonate = (userId: number) => {
     const user = users.find(u => u.id === userId);
@@ -122,7 +133,8 @@ const UsersPage = () => {
       passwordHash: defaultPasswordHash,
       assignedCriteria: {
         individual: 'rhythm'
-      }
+      },
+      tournamentIds: []
     };
     
     const updatedUsers = [...users, newUser];
@@ -172,14 +184,47 @@ const UsersPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="h-5 w-5 mr-2" />
-            Benutzer und Berechtigungen
-          </CardTitle>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <CardTitle className="flex items-center">
+              <Users className="h-5 w-5 mr-2" />
+              Benutzer und Berechtigungen
+            </CardTitle>
+            
+            <div className="flex items-center">
+              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-5">
+                  <TabsTrigger value="all">
+                    Alle <Badge variant="outline" className="ml-2">{users.length}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="admin">
+                    Admins <Badge variant="outline" className="ml-2">
+                      {users.filter(u => u.role === 'admin').length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="judge">
+                    Richter <Badge variant="outline" className="ml-2">
+                      {users.filter(u => u.role === 'judge').length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="reader">
+                    Leser <Badge variant="outline" className="ml-2">
+                      {users.filter(u => u.role === 'reader').length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="editor">
+                    Bearbeiter <Badge variant="outline" className="ml-2">
+                      {users.filter(u => u.role === 'editor').length}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <UserTable
-            users={users}
+            users={filteredUsers}
             editingUser={editingUser}
             onEdit={handleEdit}
             onSave={handleSave}
@@ -189,6 +234,8 @@ const UsersPage = () => {
             onPasswordChange={handlePasswordChange}
             individualCriteria={individualCriteria}
             groupCriteria={groupCriteria}
+            tournaments={tournaments}
+            displayTournaments={true}
           />
         </CardContent>
         <CardFooter className="justify-between">

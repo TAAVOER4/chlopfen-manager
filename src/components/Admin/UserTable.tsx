@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, CriterionKey, GroupCriterionKey } from '@/types';
+import { User, CriterionKey, GroupCriterionKey, Tournament } from '@/types';
 import UserRow from './UserRow';
 
 interface UserTableProps {
@@ -21,6 +21,8 @@ interface UserTableProps {
   onPasswordChange: (userId: number, newPassword: string) => void;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
+  tournaments: Tournament[];
+  displayTournaments?: boolean;
 }
 
 const UserTable: React.FC<UserTableProps> = ({ 
@@ -33,7 +35,9 @@ const UserTable: React.FC<UserTableProps> = ({
   onUserChange,
   onPasswordChange,
   individualCriteria,
-  groupCriteria
+  groupCriteria,
+  tournaments,
+  displayTournaments = false
 }) => {
   return (
     <Table>
@@ -44,6 +48,7 @@ const UserTable: React.FC<UserTableProps> = ({
           <TableHead>Rolle</TableHead>
           <TableHead>Passwort</TableHead>
           <TableHead>Zugewiesene Kriterien</TableHead>
+          <TableHead>Zugewiesene Turniere</TableHead>
           <TableHead className="text-right">Aktionen</TableHead>
         </TableRow>
       </TableHeader>
@@ -61,6 +66,8 @@ const UserTable: React.FC<UserTableProps> = ({
             onPasswordChange={onPasswordChange}
             individualCriteria={individualCriteria}
             groupCriteria={groupCriteria}
+            tournaments={tournaments}
+            displayTournaments={displayTournaments}
           />
         ))}
       </TableBody>

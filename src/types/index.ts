@@ -4,7 +4,7 @@ export type GroupCategory = 'kids_juniors' | 'active';
 export type GroupSize = 'three' | 'four';
 export type CriterionKey = 'whipStrikes' | 'rhythm' | 'stance' | 'posture' | 'whipControl';
 export type GroupCriterionKey = 'whipStrikes' | 'rhythm' | 'tempo';
-export type UserRole = 'admin' | 'judge';
+export type UserRole = 'admin' | 'judge' | 'reader' | 'editor';
 export type SponsorType = 'prize' | 'donor' | 'banner';
 
 export interface Participant {
@@ -60,7 +60,7 @@ export interface User {
     individual?: CriterionKey;
     group?: GroupCriterionKey;
   };
-  tournamentIds?: number[]; // Reference to tournaments this judge is assigned to
+  tournamentIds: number[]; // Array of tournaments this user has access to
 }
 
 // For backward compatibility - Judge is now an alias to User

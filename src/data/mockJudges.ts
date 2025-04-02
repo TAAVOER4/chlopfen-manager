@@ -12,7 +12,8 @@ export let mockJudges: User[] = [
     username: 'hans.mueller',
     role: 'admin',
     passwordHash: defaultPasswordHash,
-    assignedCriteria: undefined
+    assignedCriteria: undefined,
+    tournamentIds: []  // Admins can see all tournaments
   },
   {
     id: 8,
@@ -20,7 +21,8 @@ export let mockJudges: User[] = [
     username: 'erwin.vogel',
     role: 'admin',
     passwordHash: defaultPasswordHash,
-    assignedCriteria: undefined
+    assignedCriteria: undefined,
+    tournamentIds: []  // Admins can see all tournaments
   },
   {
     id: 2,
@@ -31,7 +33,8 @@ export let mockJudges: User[] = [
     assignedCriteria: {
       individual: 'rhythm',
       group: 'rhythm'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
   },
   {
     id: 3,
@@ -42,7 +45,8 @@ export let mockJudges: User[] = [
     assignedCriteria: {
       individual: 'whipStrikes',
       group: 'whipStrikes'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
   },
   {
     id: 4,
@@ -52,7 +56,8 @@ export let mockJudges: User[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'stance'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
   },
   {
     id: 5,
@@ -62,7 +67,8 @@ export let mockJudges: User[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'posture'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
   },
   {
     id: 6,
@@ -72,7 +78,8 @@ export let mockJudges: User[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       group: 'tempo'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
   },
   {
     id: 7,
@@ -82,7 +89,26 @@ export let mockJudges: User[] = [
     passwordHash: defaultPasswordHash,
     assignedCriteria: {
       individual: 'whipControl'
-    }
+    },
+    tournamentIds: []  // Judges can see all tournaments
+  },
+  {
+    id: 9,
+    name: 'Christina Huber',
+    username: 'christina.huber',
+    role: 'reader',
+    passwordHash: defaultPasswordHash,
+    assignedCriteria: undefined,
+    tournamentIds: [1]  // Only assigned tournaments
+  },
+  {
+    id: 10,
+    name: 'Michael Wagner',
+    username: 'michael.wagner',
+    role: 'editor',
+    passwordHash: defaultPasswordHash,
+    assignedCriteria: undefined,
+    tournamentIds: [2]  // Only assigned tournaments
   }
 ];
 

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Edit, Save, Trash2, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from "@/components/ui/table";
-import { User, CriterionKey, GroupCriterionKey } from '@/types';
+import { User, CriterionKey, GroupCriterionKey, Tournament } from '@/types';
 import UserForm from './UserForm';
 import JudgeDisplay from './JudgeDisplay';
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 interface UserRowProps {
   user: User;
@@ -28,6 +29,8 @@ interface UserRowProps {
   onPasswordChange: (userId: number, newPassword: string) => void;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
+  tournaments: Tournament[];
+  displayTournaments?: boolean;
 }
 
 const UserRow: React.FC<UserRowProps> = ({ 
@@ -40,7 +43,9 @@ const UserRow: React.FC<UserRowProps> = ({
   onUserChange,
   onPasswordChange,
   individualCriteria,
-  groupCriteria
+  groupCriteria,
+  tournaments,
+  displayTournaments = false
 }) => {
   const isEditing = editingUser?.id === user.id;
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -56,6 +61,11 @@ const UserRow: React.FC<UserRowProps> = ({
   const groupCriteriaMap = Object.fromEntries(
     groupCriteria.map(c => [c.value, c.label])
   );
+
+  // Get tournament names for display
+  const userTournaments = tournaments
+    .filter(t => user.tournamentIds?.includes(t.id))
+    .map(t => t.name);
 
   const handlePasswordDialogOpen = () => {
     setNewPassword('');
@@ -79,6 +89,17 @@ const UserRow: React.FC<UserRowProps> = ({
     setPasswordDialogOpen(false);
   };
 
+  // Helper function to display user role in German
+  const getRoleName = (role: string): string => {
+    switch (role) {
+      case 'admin': return 'Administrator';
+      case 'judge': return 'Richter';
+      case 'reader': return 'Nur Lesen';
+      case 'editor': return 'Bearbeiter';
+      default: return role;
+    }
+  };
+
   return (
     <>
       <TableRow>
@@ -89,6 +110,7 @@ const UserRow: React.FC<UserRowProps> = ({
               onUserChange={onUserChange}
               individualCriteria={individualCriteria}
               groupCriteria={groupCriteria}
+              tournaments={tournaments}
             />
           ) : (
             user.name
@@ -98,7 +120,16 @@ const UserRow: React.FC<UserRowProps> = ({
           {isEditing ? null : user.username}
         </TableCell>
         <TableCell>
-          {isEditing ? null : (user.role === 'admin' ? 'Administrator' : 'Richter')}
+          {isEditing ? null : (
+            <Badge variant={
+              user.role === 'admin' ? 'destructive' : 
+              user.role === 'judge' ? 'default' :
+              user.role === 'editor' ? 'secondary' : 
+              'outline'
+            }>
+              {getRoleName(user.role)}
+            </Badge>
+          )}
         </TableCell>
         <TableCell>
           <Button
@@ -112,11 +143,32 @@ const UserRow: React.FC<UserRowProps> = ({
         </TableCell>
         <TableCell>
           {isEditing ? null : (
-            <JudgeDisplay 
-              judge={user}
-              individualCriteriaMap={individualCriteriaMap}
-              groupCriteriaMap={groupCriteriaMap}
-            />
+            user.role === 'judge' ? (
+              <JudgeDisplay 
+                judge={user}
+                individualCriteriaMap={individualCriteriaMap}
+                groupCriteriaMap={groupCriteriaMap}
+              />
+            ) : null
+          )}
+        </TableCell>
+        <TableCell>
+          {isEditing ? null : (
+            (user.role === 'reader' || user.role === 'editor') && displayTournaments ? (
+              <div className="flex flex-wrap gap-1">
+                {userTournaments.length > 0 ? (
+                  userTournaments.map((name, index) => (
+                    <Badge key={index} variant="outline">{name}</Badge>
+                  ))
+                ) : (
+                  <span className="text-yellow-600 text-sm">Keine Turniere zugewiesen</span>
+                )}
+              </div>
+            ) : (
+              <span className="text-muted-foreground text-sm">
+                {(user.role === 'admin' || user.role === 'judge') ? 'Alle Turniere' : ''}
+              </span>
+            )
           )}
         </TableCell>
         <TableCell className="text-right">
