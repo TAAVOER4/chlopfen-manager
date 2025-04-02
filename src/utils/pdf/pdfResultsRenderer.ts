@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { Category, ParticipantResult, GroupResult, GroupCategory, Sponsor } from '@/types';
 import { getCategoryDisplay } from '../categoryUtils';
@@ -331,8 +330,8 @@ export const renderResultsToPDF = (
   });
   
   // Add footer
-  const lastPage = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= lastPage; i++) {
+  const pageCount = doc.internal.pages.length - 1;
+  for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     yPos = doc.internal.pageSize.height - 10;
     doc.setFontSize(9);

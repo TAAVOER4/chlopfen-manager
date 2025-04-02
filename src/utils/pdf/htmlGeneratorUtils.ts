@@ -1,8 +1,8 @@
-
-import { Category, ParticipantResult, GroupResult, Sponsor, Tournament } from '@/types';
+import { Category, ParticipantResult, GroupResult, Sponsor, Tournament, ScheduleItem } from '@/types';
 import { generateIndividualResultsHTMLContent } from './resultsIndividualUtils';
 import { generateGroupResultsHTMLContent } from './resultsGroupUtils';
 import { generateSponsorsHTMLContent } from './sponsorUtils';
+import { getCategoryDisplay } from '../categoryUtils';
 
 // Generate HTML content for results
 export const generateResultsHTMLContent = (
