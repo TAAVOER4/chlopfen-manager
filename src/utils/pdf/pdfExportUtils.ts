@@ -1,4 +1,4 @@
-import { ScheduleItem, Sponsor, Tournament, Category, ParticipantResult, GroupResult } from '@/types';
+import { ScheduleItem, Sponsor, Tournament, Category } from '@/types';
 import { jsPDF } from 'jspdf';
 import { generateScheduleHTMLContent } from './scheduleUtils';
 import { generateResultsHTMLContent } from './htmlGeneratorUtils';
@@ -65,16 +65,19 @@ export const generateSchedulePDF = (
 };
 
 // Function to generate PDF of the results
-export const generateResultsPDF = (
-  individualResults: Record<Category, ParticipantResult[]>,
-  groupResults: Record<string, GroupResult[]>,
-  sponsors: Sponsor[],
-  tournamentName: string
-): void => {
+export const generateResultsPDF = (options: {
+  results: any[],
+  category: string,
+  tournament: Tournament,
+  sponsors: Sponsor[]
+}): void => {
+  // Extract options
+  const { results, category, tournament, sponsors } = options;
+  
   // Log generation info
   console.log('Generating results PDF');
-  console.log('Individual results:', Object.keys(individualResults).length, 'categories');
-  console.log('Group results:', Object.keys(groupResults).length, 'categories');
+  console.log('Results category:', category);
+  console.log('Results count:', results.length);
   console.log('Sponsors:', sponsors.length);
   
   try {
@@ -85,21 +88,28 @@ export const generateResultsPDF = (
       format: 'a4'
     });
 
+    // Create the structure expected by renderResultsToPDF
+    const individualResults = category !== 'group' ? { [category]: results } : {};
+    const groupResults = category === 'group' ? { 'group': results } : {};
+    
     // Render results content to PDF
-    renderResultsToPDF(doc, individualResults, groupResults, sponsors, tournamentName);
+    renderResultsToPDF(doc, individualResults, groupResults, sponsors, tournament.name);
     
     // Save and download the PDF file
-    doc.save(`ergebnisse_${tournamentName.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+    doc.save(`ergebnisse_${tournament.name.toLowerCase().replace(/\s+/g, '-')}.pdf`);
     
     console.log('PDF successfully generated');
   } catch (error) {
     console.error('Error generating PDF:', error);
     
     // Fallback to HTML if PDF generation fails
-    const content = generateResultsHTMLContent(individualResults, groupResults, sponsors, tournamentName);
+    const individualResults = category !== 'group' ? { [category]: results } : {};
+    const groupResults = category === 'group' ? { 'group': results } : {};
+    const content = generateResultsHTMLContent(individualResults, groupResults, sponsors, tournament.name);
+    
     downloadHTMLAsFile(
       content, 
-      `ergebnisse_${tournamentName.toLowerCase().replace(/\s+/g, '-')}.html`
+      `ergebnisse_${tournament.name.toLowerCase().replace(/\s+/g, '-')}.html`
     );
     console.log('Fallback to HTML format due to error');
   }

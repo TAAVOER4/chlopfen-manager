@@ -53,11 +53,11 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('kids');
   const [selectedExportType, setSelectedExportType] = useState<string>('individual');
   
-  // Format the tournament object to match the expected Tournament type
+  // Create a complete tournament object that matches the Tournament type
   const tournamentObj: Tournament = {
     id: selectedTournamentId,
     name: tournamentName,
-    date: new Date().toISOString(), // Default to current date
+    date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
     location: "Default Location",
     year: new Date().getFullYear(),
     isActive: true
