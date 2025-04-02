@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { 
   Button,
   Card,
@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui';
 import { Form } from "@/components/ui/form";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { mockGroups, mockParticipants } from '../../data/mockData';
@@ -19,12 +20,14 @@ import { useToast } from '@/hooks/use-toast';
 import { GroupSize, GroupCategory } from '../../types';
 import { isDuplicateGroup } from '../../utils/groupUtils';
 import { useGroupForm } from '@/hooks/useGroupForm';
+import { useTournament } from '@/contexts/TournamentContext';
 import GroupInfoForm, { groupSchema, GroupFormValues } from '@/components/Groups/GroupInfoForm';
 import AvailableParticipants from '@/components/Groups/AvailableParticipants';
 
 const RegisterGroup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { activeTournament } = useTournament();
 
   // Initialize form with default values - Updated default category to kids_juniors
   const form = useForm<GroupFormValues>({
@@ -45,10 +48,24 @@ const RegisterGroup = () => {
     removeParticipant,
     handleNameChange,
     handleRegenerateName
-  } = useGroupForm({ form, mockParticipants });
+  } = useGroupForm({ 
+    form, 
+    mockParticipants: activeTournament 
+      ? mockParticipants.filter(p => p.tournamentId === activeTournament.id || p.tournamentId === undefined) 
+      : mockParticipants 
+  });
 
   // Handle form submission
   const onSubmit = (data: GroupFormValues) => {
+    if (!activeTournament) {
+      toast({
+        title: "Kein aktives Turnier",
+        description: "Bitte wählen Sie zuerst ein aktives Turnier aus.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (selectedParticipants.length === 0) {
       toast({
         title: "Keine Teilnehmer ausgewählt",
@@ -83,13 +100,14 @@ const RegisterGroup = () => {
     // Create a new group ID
     const newId = Math.max(...mockGroups.map(g => g.id), 0) + 1;
     
-    // Create the new group
+    // Create the new group with tournament reference
     const newGroup = {
       id: newId,
       name: data.name,
       size: data.size as GroupSize,
       category: data.category as GroupCategory,
-      participantIds: participantIds
+      participantIds: participantIds,
+      tournamentId: activeTournament.id
     };
     
     // Update participants to be part of this group
@@ -102,6 +120,11 @@ const RegisterGroup = () => {
         }
         // Add the new group id to the participant's groupIds array
         mockParticipants[index].groupIds?.push(newId);
+        
+        // Ensure the participant is assigned to the active tournament
+        if (!mockParticipants[index].tournamentId) {
+          mockParticipants[index].tournamentId = activeTournament.id;
+        }
       }
     });
     
@@ -110,7 +133,7 @@ const RegisterGroup = () => {
     
     toast({
       title: "Gruppe erstellt",
-      description: `${data.name} wurde erfolgreich erstellt.`
+      description: `${data.name} wurde erfolgreich für ${activeTournament.name} erstellt.`
     });
     
     navigate('/participants');
@@ -126,6 +149,16 @@ const RegisterGroup = () => {
         <h1 className="text-3xl font-bold text-swiss-blue">Gruppe erfassen</h1>
       </div>
 
+      {!activeTournament && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Kein aktives Turnier</AlertTitle>
+          <AlertDescription>
+            Bitte wählen Sie unter Administration → Turnierverwaltung ein aktives Turnier aus, bevor Sie Gruppen erfassen.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <Form {...form}>
@@ -133,7 +166,7 @@ const RegisterGroup = () => {
               <CardHeader>
                 <CardTitle>Gruppeninformationen</CardTitle>
                 <CardDescription>
-                  Erfassen Sie die grundlegenden Informationen der Gruppe
+                  Erfassen Sie die grundlegenden Informationen der Gruppe für {activeTournament?.name || "das aktuelle Turnier"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -149,7 +182,7 @@ const RegisterGroup = () => {
                 <Button variant="outline" type="button" onClick={() => navigate('/participants')}>
                   Abbrechen
                 </Button>
-                <Button type="submit">Gruppe speichern</Button>
+                <Button type="submit" disabled={!activeTournament}>Gruppe speichern</Button>
               </CardFooter>
             </form>
           </Form>

@@ -23,6 +23,18 @@ export const mockTournaments: Tournament[] = [
 
 // Function to get the active tournament
 export const getActiveTournament = (): Tournament | undefined => {
+  // First check session storage
+  const storedTournamentId = sessionStorage.getItem('activeTournamentId');
+  if (storedTournamentId) {
+    const tournamentFromStorage = mockTournaments.find(
+      t => t.id.toString() === storedTournamentId
+    );
+    if (tournamentFromStorage) {
+      return tournamentFromStorage;
+    }
+  }
+  
+  // Fall back to the tournament marked as active in the data
   return mockTournaments.find(tournament => tournament.isActive);
 };
 

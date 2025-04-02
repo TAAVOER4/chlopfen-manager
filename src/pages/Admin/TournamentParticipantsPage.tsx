@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -24,10 +23,12 @@ import { mockParticipants } from '@/data/mockData';
 import { getTournamentById } from '@/data/mockTournaments';
 import { Participant, Tournament } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { useTournament } from '@/contexts/TournamentContext';
 
 const TournamentParticipantsPage = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const { toast } = useToast();
+  const { activeTournament, setActiveTournament } = useTournament();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -48,7 +49,7 @@ const TournamentParticipantsPage = () => {
   // Get participants data
   useEffect(() => {
     setParticipants(mockParticipants);
-    // In a real app, you would filter participants based on tournamentId
+    // Filter participants based on tournamentId
     if (tournamentId) {
       const tournamentParticipants = mockParticipants.filter(
         p => p.tournamentId === parseInt(tournamentId)
@@ -80,10 +81,30 @@ const TournamentParticipantsPage = () => {
   };
 
   const saveAssignments = () => {
-    // In a real app, you would send a request to update participant assignments
+    if (!tournament) return;
+
+    // Update participants in the mockParticipants array
+    participants.forEach(participant => {
+      const index = mockParticipants.findIndex(p => p.id === participant.id);
+      if (index !== -1) {
+        if (selectedParticipants.includes(participant.id)) {
+          // Assign to tournament
+          mockParticipants[index].tournamentId = tournament.id;
+        } else if (mockParticipants[index].tournamentId === tournament.id) {
+          // Remove from tournament if currently assigned
+          mockParticipants[index].tournamentId = undefined;
+        }
+      }
+    });
+    
+    // Refresh active tournament if this is the active one
+    if (activeTournament && tournament.id === activeTournament.id) {
+      setActiveTournament(tournament);
+    }
+    
     toast({
       title: "Teilnehmer zugewiesen",
-      description: `${selectedParticipants.length} Teilnehmer wurden dem Turnier zugewiesen.`,
+      description: `${selectedParticipants.length} Teilnehmer wurden dem Turnier ${tournament.name} zugewiesen.`,
     });
   };
 

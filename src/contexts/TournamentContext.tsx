@@ -21,6 +21,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     // Initialize with the active tournament from mock data
     const active = getActiveTournament();
     setActiveTournamentState(active || null);
+
+    // Store active tournament in session storage, if one exists
+    if (active) {
+      sessionStorage.setItem('activeTournamentId', active.id.toString());
+    }
   }, []);
 
   const setActiveTournament = (tournament: Tournament) => {
@@ -31,6 +36,9 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }))
     );
     setActiveTournamentState(tournament);
+    
+    // Store the active tournament ID in session storage
+    sessionStorage.setItem('activeTournamentId', tournament.id.toString());
   };
 
   const updateTournament = (updatedTournament: Tournament) => {
@@ -42,8 +50,10 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     
     if (updatedTournament.isActive) {
       setActiveTournamentState(updatedTournament);
+      sessionStorage.setItem('activeTournamentId', updatedTournament.id.toString());
     } else if (activeTournament?.id === updatedTournament.id && !updatedTournament.isActive) {
       setActiveTournamentState(null);
+      sessionStorage.removeItem('activeTournamentId');
     }
   };
 
@@ -58,6 +68,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         }))
       );
       setActiveTournamentState(newTournament);
+      sessionStorage.setItem('activeTournamentId', newTournament.id.toString());
     }
   };
 

@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { useTournament } from '@/contexts/TournamentContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,9 +15,23 @@ const LoginForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+  
   const { login } = useUser();
+  const { tournaments, setActiveTournament } = useTournament();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Select active tournament from session storage if available
+  useEffect(() => {
+    const storedTournamentId = sessionStorage.getItem('activeTournamentId');
+    if (storedTournamentId) {
+      setSelectedTournamentId(storedTournamentId);
+    } else if (tournaments.length > 0) {
+      const activeTournament = tournaments.find(t => t.isActive);
+      setSelectedTournamentId(activeTournament?.id.toString() || tournaments[0].id.toString());
+    }
+  }, [tournaments]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,10 +41,23 @@ const LoginForm: React.FC = () => {
     // Attempt login
     const success = login(username, password);
     
-    setIsLoading(false);
-    
     if (success) {
-      navigate('/'); // Redirect to home page on successful login
+      // Set active tournament if one is selected
+      if (selectedTournamentId) {
+        const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
+        if (tournament) {
+          setActiveTournament(tournament);
+        }
+      }
+      
+      toast({
+        title: "Anmeldung erfolgreich",
+        description: selectedTournamentId 
+          ? `Sie arbeiten jetzt mit dem Turnier: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
+          : "Bitte wählen Sie ein Turnier in der Turnierverwaltung aus.",
+      });
+      
+      navigate('/'); // Redirect to home page
     } else {
       setError('Falscher Benutzername oder Passwort. Für Testbenutzer ist das Standardpasswort "password".');
       toast({
@@ -37,6 +66,8 @@ const LoginForm: React.FC = () => {
         variant: "destructive",
       });
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -73,6 +104,27 @@ const LoginForm: React.FC = () => {
               required
               placeholder="Passwort eingeben"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tournament">Aktives Turnier</Label>
+            <Select 
+              value={selectedTournamentId} 
+              onValueChange={setSelectedTournamentId}
+            >
+              <SelectTrigger id="tournament">
+                <SelectValue placeholder="Turnier auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {tournaments.map((tournament) => (
+                  <SelectItem 
+                    key={tournament.id} 
+                    value={tournament.id.toString()}
+                  >
+                    {tournament.name} ({tournament.year})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
         <CardFooter className="flex-col space-y-2">
