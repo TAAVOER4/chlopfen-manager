@@ -23,6 +23,7 @@ import { Tournament, GroupSize, GroupCategory } from '@/types';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { mockGroups } from '@/data/mockData';
 
 interface ResultsTabProps {
   allIndividualResults: {
@@ -109,24 +110,39 @@ export const ResultsTab: React.FC<ResultsTabProps> = ({
     console.log("Selected size:", selectedGroupSize);
     console.log("Selected category:", selectedGroupCategory);
     
-    // Since we don't have proper size and category in the mock data,
-    // we'll use a simple approach based on group names
+    // Get original groups from mockGroups to check their categories
+    const groupMap = new Map();
+    mockGroups.forEach(group => {
+      groupMap.set(group.name, {
+        size: group.size,
+        category: group.category
+      });
+    });
+    
     return groupResults.filter(group => {
       if (!group || !group.name) return false;
       
+      // Find the original group data by name
+      const originalGroup = groupMap.get(group.name);
+      
+      if (originalGroup) {
+        // Use the actual category and size from mockGroups
+        return originalGroup.size === selectedGroupSize && 
+               originalGroup.category === selectedGroupCategory;
+      }
+      
+      // Fallback to name-based filtering if group not found in mockGroups
       const groupName = group.name.toLowerCase();
       
-      // For Active category, check if name contains "aktiv" or similar terms
       if (selectedGroupCategory === 'active') {
         return groupName.includes('aktiv') || groupName.includes('active');
       } 
-      // For Kids/Junioren category, include groups that don't contain active-related terms
       else if (selectedGroupCategory === 'kids_juniors') {
         const isActive = groupName.includes('aktiv') || groupName.includes('active');
         return !isActive;
       }
       
-      return false; // Default case: don't include the group
+      return false;
     });
   }, [groupResults, selectedGroupSize, selectedGroupCategory]);
 
