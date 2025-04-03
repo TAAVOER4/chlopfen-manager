@@ -44,8 +44,8 @@ export class AuthenticationService extends BaseSupabaseService {
         return this.validateAndReturnUser(userData as AuthUserData, password);
       }
       
-      // Try alternative lookup methods
-      const user = await this.findUserByAlternativeMethods(usernameOrEmail, password);
+      // Try alternative lookup methods - explicitly typed to avoid depth issues
+      const user: User | null = await this.findUserByAlternativeMethods(usernameOrEmail, password);
       if (user) return user;
       
       console.log('No user found with username or email:', usernameOrEmail);
@@ -85,7 +85,8 @@ export class AuthenticationService extends BaseSupabaseService {
         // If email match found, validate password
         if (emailData && emailData.length > 0) {
           console.log('Found user by email match');
-          return this.validateAndReturnUser(emailData[0] as unknown as AuthUserData, password);
+          const userData = emailData[0] as Record<string, unknown>;
+          return this.validateAndReturnUser(userData as AuthUserData, password);
         }
       } else {
         console.log('Email field does not exist in users table, skipping email query');
@@ -115,7 +116,8 @@ export class AuthenticationService extends BaseSupabaseService {
       // If found, validate password
       if (usernameWithEmailData && usernameWithEmailData.length > 0) {
         console.log('Found user by username-as-email match');
-        return this.validateAndReturnUser(usernameWithEmailData[0] as unknown as AuthUserData, password);
+        const userData = usernameWithEmailData[0] as Record<string, unknown>;
+        return this.validateAndReturnUser(userData as AuthUserData, password);
       }
     }
     

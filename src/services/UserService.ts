@@ -2,6 +2,7 @@
 import { User } from '@/types';
 import { UserQueryService } from './user/UserQueryService';
 import { UserMutationService } from './user/UserMutationService';
+import { PasswordService } from './auth/PasswordService';
 
 /**
  * Facade for user-related services
@@ -27,8 +28,8 @@ export class UserService {
 
   static async changePassword(username: string, newPassword: string): Promise<boolean> {
     try {
-      await UserMutationService.changePassword(username, newPassword);
-      return true;
+      // Use the dedicated PasswordService instead of UserMutationService
+      return await PasswordService.updateUserPassword(username, newPassword);
     } catch (error) {
       console.error('Error changing password in UserService:', error);
       return false;
