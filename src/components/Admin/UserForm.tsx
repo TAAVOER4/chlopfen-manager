@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +12,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, CriterionKey, GroupCriterionKey, UserRole, Tournament } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { hashPassword } from '@/utils/authUtils';
 
 interface UserFormProps {
   user: User;
@@ -31,7 +29,6 @@ const UserForm: React.FC<UserFormProps> = ({
   tournaments
 }) => {
   const [password, setPassword] = useState('');
-  const [showPasswordField, setShowPasswordField] = useState(!user.passwordHash);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUserChange({...user, name: e.target.value});
@@ -44,13 +41,12 @@ const UserForm: React.FC<UserFormProps> = ({
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
     
-    // Hash the password when entered
     if (e.target.value) {
-      const newPasswordHash = hashPassword(e.target.value);
-      console.log('Password hashed:', e.target.value, 'to:', newPasswordHash);
-      onUserChange({...user, passwordHash: newPasswordHash});
+      onUserChange({...user, password: e.target.value});
     } else {
-      onUserChange({...user, passwordHash: ''});
+      const updatedUser = {...user};
+      delete updatedUser.password;
+      onUserChange(updatedUser);
     }
   };
 
@@ -85,7 +81,6 @@ const UserForm: React.FC<UserFormProps> = ({
     onUserChange({...user, tournamentIds: updatedTournamentIds});
   };
 
-  // Admin and Judge roles can see all tournaments by default
   const canSeeAllTournaments = user.role === 'admin' || user.role === 'judge';
 
   return (

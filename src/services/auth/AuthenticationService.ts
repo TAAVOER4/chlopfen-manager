@@ -40,7 +40,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        return this.validateAndReturnUser(usernameData[0], password);
+        return this.validateAndReturnUser(usernameData[0] as AuthUserData, password);
       }
       
       // Try alternative lookup methods
@@ -124,7 +124,7 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: any, password: string): User | null {
+  private static validateAndReturnUser(userData: AuthUserData, password: string): User | null {
     if (!userData) return null;
     
     console.log('Validating password for user:', userData.username);

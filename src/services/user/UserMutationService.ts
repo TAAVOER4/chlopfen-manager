@@ -15,16 +15,13 @@ export class UserMutationService extends BaseSupabaseService {
       // Map user to Supabase format, converting passwordHash to password_hash
       const userData = UserMapper.toSupabaseFormat(user);
       
-      // Make sure we have a password hash
-      if (!userData.password_hash) {
-        // Check for plain password first (should be added to User interface)
-        if (user.password) {
-          // Hash the password if a plain password was provided
-          console.log('Hashing provided password for new user');
-          userData.password_hash = hashPassword(user.password);
-        } else {
-          throw new Error('Password is required for new users');
-        }
+      // Make sure we have a password hash or generate one if plain password was provided
+      if (!userData.password_hash && user.password) {
+        // Hash the password if a plain password was provided
+        console.log('Hashing provided password for new user');
+        userData.password_hash = hashPassword(user.password);
+      } else if (!userData.password_hash) {
+        throw new Error('Password is required for new users');
       }
       
       const { data, error } = await this.supabase
@@ -60,9 +57,13 @@ export class UserMutationService extends BaseSupabaseService {
       // Convert user to Supabase format
       const userData = UserMapper.toSupabaseFormat(user);
       
-      // If updating without changing password, remove password_hash 
-      // to avoid overwriting with empty value
-      if (!userData.password_hash) {
+      // If a plain password is provided, hash it before saving
+      if (user.password) {
+        console.log('Hashing new password for user update');
+        userData.password_hash = hashPassword(user.password);
+      } else if (!userData.password_hash) {
+        // If updating without changing password, remove password_hash 
+        // to avoid overwriting with empty value
         delete userData.password_hash;
       }
       

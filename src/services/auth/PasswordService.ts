@@ -10,7 +10,7 @@ export class PasswordService extends BaseSupabaseService {
     try {
       console.log('Starting password update for user:', username);
       
-      // Hash the new password
+      // Hash the new password at the service level, not during input
       const passwordHash = hashPassword(newPassword);
       console.log('Password hash generated successfully');
       
