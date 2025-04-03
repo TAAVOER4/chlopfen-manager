@@ -39,8 +39,9 @@ export class AuthService extends BaseSupabaseService {
       
       // If username match found, validate password
       if (usernameUsers && usernameUsers.length > 0) {
-        // Use type assertion instead of casting
-        return this.validateAndReturnUser(usernameUsers[0] as DatabaseUser, password);
+        // Use explicit type assertion to break the recursive type inference
+        const user = usernameUsers[0] as unknown as DatabaseUser;
+        return this.validateAndReturnUser(user, password);
       }
       
       // Second try - match on email field
@@ -56,8 +57,9 @@ export class AuthService extends BaseSupabaseService {
       
       // If email match found, validate password
       if (emailUsers && emailUsers.length > 0) {
-        // Use type assertion instead of casting
-        return this.validateAndReturnUser(emailUsers[0] as DatabaseUser, password);
+        // Use explicit type assertion to break the recursive type inference
+        const user = emailUsers[0] as unknown as DatabaseUser;
+        return this.validateAndReturnUser(user, password);
       }
       
       // Last try - check if username field contains an email that matches
@@ -74,8 +76,9 @@ export class AuthService extends BaseSupabaseService {
         
         // If found, validate password
         if (usernameWithEmailUsers && usernameWithEmailUsers.length > 0) {
-          // Use type assertion instead of casting
-          return this.validateAndReturnUser(usernameWithEmailUsers[0] as DatabaseUser, password);
+          // Use explicit type assertion to break the recursive type inference
+          const user = usernameWithEmailUsers[0] as unknown as DatabaseUser;
+          return this.validateAndReturnUser(user, password);
         }
       }
       
