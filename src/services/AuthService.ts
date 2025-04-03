@@ -39,8 +39,17 @@ export class AuthService extends BaseSupabaseService {
       
       // If username match found, validate password
       if (usernameUsers && usernameUsers.length > 0) {
-        // Use explicit type assertion to break the recursive type inference
-        const user = usernameUsers[0] as unknown as DatabaseUser;
+        // Extract the user data and explicitly type it
+        const userData = usernameUsers[0] as Record<string, any>;
+        const user: DatabaseUser = {
+          id: userData.id,
+          name: userData.name,
+          username: userData.username,
+          role: userData.role,
+          password_hash: userData.password_hash,
+          individual_criterion: userData.individual_criterion,
+          group_criterion: userData.group_criterion
+        };
         return this.validateAndReturnUser(user, password);
       }
       
@@ -57,8 +66,17 @@ export class AuthService extends BaseSupabaseService {
       
       // If email match found, validate password
       if (emailUsers && emailUsers.length > 0) {
-        // Use explicit type assertion to break the recursive type inference
-        const user = emailUsers[0] as unknown as DatabaseUser;
+        // Extract the user data and explicitly type it
+        const userData = emailUsers[0] as Record<string, any>;
+        const user: DatabaseUser = {
+          id: userData.id,
+          name: userData.name,
+          username: userData.username,
+          role: userData.role,
+          password_hash: userData.password_hash,
+          individual_criterion: userData.individual_criterion,
+          group_criterion: userData.group_criterion
+        };
         return this.validateAndReturnUser(user, password);
       }
       
@@ -76,8 +94,17 @@ export class AuthService extends BaseSupabaseService {
         
         // If found, validate password
         if (usernameWithEmailUsers && usernameWithEmailUsers.length > 0) {
-          // Use explicit type assertion to break the recursive type inference
-          const user = usernameWithEmailUsers[0] as unknown as DatabaseUser;
+          // Extract the user data and explicitly type it
+          const userData = usernameWithEmailUsers[0] as Record<string, any>;
+          const user: DatabaseUser = {
+            id: userData.id,
+            name: userData.name,
+            username: userData.username,
+            role: userData.role,
+            password_hash: userData.password_hash,
+            individual_criterion: userData.individual_criterion,
+            group_criterion: userData.group_criterion
+          };
           return this.validateAndReturnUser(user, password);
         }
       }
