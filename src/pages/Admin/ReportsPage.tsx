@@ -108,6 +108,7 @@ const ReportsPage: React.FC = () => {
           <ExportsTab 
             participants={mockParticipants}
             tournamentName={tournamentName}
+            groups={mockGroups}
           />
         </TabsContent>
         
