@@ -24,7 +24,7 @@ export class AuthenticationService extends BaseSupabaseService {
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail)
-        .limit(1) as any;
+        .limit(1);
       
       if (usernameError) {
         console.error('Error during username query:', usernameError);
@@ -40,7 +40,7 @@ export class AuthenticationService extends BaseSupabaseService {
         .from('users')
         .select('*')
         .eq('email', usernameOrEmail)
-        .limit(1) as any;
+        .limit(1);
       
       if (emailError) {
         console.error('Error during email query:', emailError);
@@ -57,7 +57,7 @@ export class AuthenticationService extends BaseSupabaseService {
           .from('users')
           .select('*')
           .eq('username', usernameOrEmail)
-          .limit(1) as any;
+          .limit(1);
         
         if (usernameWithEmailError) {
           console.error('Error during username-with-email query:', usernameWithEmailError);
@@ -80,7 +80,7 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: any, password: string): User | null {
+  private static validateAndReturnUser(userData: Record<string, any>, password: string): User | null {
     if (!userData) return null;
     
     const user: DatabaseUser = {
