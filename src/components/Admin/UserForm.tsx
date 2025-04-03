@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,6 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, CriterionKey, GroupCriterionKey, UserRole, Tournament } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { hashPassword } from '@/utils/authUtils';
 
 interface UserFormProps {
   user: User;
@@ -28,12 +29,25 @@ const UserForm: React.FC<UserFormProps> = ({
   groupCriteria,
   tournaments
 }) => {
+  const [password, setPassword] = useState('');
+  const [showPasswordField, setShowPasswordField] = useState(!user.passwordHash);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUserChange({...user, name: e.target.value});
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUserChange({...user, username: e.target.value});
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    
+    // Wenn ein Passwort eingegeben wird, generieren wir den Hash
+    if (e.target.value) {
+      const newPasswordHash = hashPassword(e.target.value);
+      onUserChange({...user, passwordHash: newPasswordHash});
+    }
   };
 
   const handleRoleChange = (value: string) => {
@@ -85,16 +99,32 @@ const UserForm: React.FC<UserFormProps> = ({
       </div>
       
       <div>
-        <Label htmlFor="username" className="text-sm font-medium">Benutzername</Label>
+        <Label htmlFor="username" className="text-sm font-medium">E-Mail Adresse</Label>
         <Input 
           id="username"
+          type="email"
           value={user.username || ''}
           onChange={handleUsernameChange}
           className="w-full mt-1"
-          placeholder="E-Mail-Adresse oder Benutzername eingeben"
+          placeholder="E-Mail-Adresse eingeben"
           required
         />
       </div>
+
+      {showPasswordField && (
+        <div>
+          <Label htmlFor="password" className="text-sm font-medium">Passwort</Label>
+          <Input 
+            id="password"
+            type="password"
+            value={password}
+            onChange={handlePasswordChange}
+            className="w-full mt-1"
+            placeholder="Passwort eingeben"
+            required={!user.passwordHash}
+          />
+        </div>
+      )}
       
       <div>
         <Label htmlFor="role" className="text-sm font-medium">Rolle</Label>

@@ -1,4 +1,6 @@
+
 // This is a simplified version of bcrypt for browser environments
+import bcrypt from 'bcryptjs';
 
 /**
  * Hash a password for storing.
@@ -8,34 +10,50 @@ export function hashPassword(password: string): string {
     throw new Error('Password cannot be empty');
   }
   
-  if (password === "password") {
-    // Return a predefined hash for the default password to simplify development
-    return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+  try {
+    // Verwende bcryptjs mit einem Saltrunden-Wert von 10
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(password, salt);
+  } catch (error) {
+    console.error('Password hashing error:', error);
+    
+    // Fallback für Entwicklungszwecke
+    if (password === "password") {
+      return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+    }
+    
+    const salt = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    return `hashed_${password}_${salt}`;
   }
-  
-  // For simplicity in this demo, we're creating a more unique hash
-  // In a real application, you would use a proper hashing algorithm like bcrypt
-  const salt = Date.now().toString(36) + Math.random().toString(36).substring(2);
-  return `hashed_${password}_${salt}`;
 }
 
 /**
  * Check a password against a hash.
  */
 export function verifyPassword(password: string, hash: string): boolean {
+  if (!password || !hash) {
+    return false;
+  }
+  
   // Special case for our default password and hash for development
   if (password === "password" && hash === "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi") {
     return true;
   }
   
-  // Extract the original password from the hash (for this simplified demo)
-  // In a real application, you would use a proper verification method
-  const parts = hash.split('_');
-  if (parts.length >= 2 && parts[0] === 'hashed') {
-    return parts[1] === password;
+  try {
+    // Versuche mit bcryptjs zu validieren
+    return bcrypt.compareSync(password, hash);
+  } catch (error) {
+    console.error('Password verification error:', error);
+    
+    // Fallback für das vereinfachte Hashformat
+    const parts = hash.split('_');
+    if (parts.length >= 2 && parts[0] === 'hashed') {
+      return parts[1] === password;
+    }
+    
+    return false;
   }
-  
-  return false;
 }
 
 /**

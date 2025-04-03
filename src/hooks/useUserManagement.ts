@@ -55,6 +55,8 @@ export const useUserManagement = () => {
     if (!user) return;
     
     try {
+      // Hash password before sending to API
+      const passwordHash = hashPassword(newPassword);
       await SupabaseService.changePassword(user.username, newPassword);
       
       setUsers(prevUsers => {
@@ -62,7 +64,7 @@ export const useUserManagement = () => {
           if (u.id === userId) {
             return {
               ...u,
-              passwordHash: hashPassword(newPassword)
+              passwordHash: passwordHash
             };
           }
           return u;
@@ -72,7 +74,7 @@ export const useUserManagement = () => {
       if (editingUser && editingUser.id === userId) {
         setEditingUser({
           ...editingUser,
-          passwordHash: hashPassword(newPassword)
+          passwordHash: passwordHash
         });
       }
       
@@ -103,8 +105,29 @@ export const useUserManagement = () => {
       return;
     }
     
+    // Ensure username has email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editingUser.username)) {
+      toast({
+        title: "Fehler",
+        description: "Der Benutzername muss eine gültige E-Mail-Adresse sein.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       const isNewUser = !users.some(u => u.id === editingUser.id);
+      
+      // Ensure new users have a password
+      if (isNewUser && !editingUser.passwordHash) {
+        toast({
+          title: "Fehler",
+          description: "Bitte geben Sie ein Passwort für den neuen Benutzer ein.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       let updatedUser: User;
       
@@ -140,7 +163,7 @@ export const useUserManagement = () => {
 
   const handleAddUser = async () => {
     try {
-      const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+      // New users start with an empty password that must be set during creation
       
       // Create a temporary new user with default values
       const newUser: User = {
@@ -148,7 +171,7 @@ export const useUserManagement = () => {
         name: '',
         username: '',
         role: 'judge',
-        passwordHash: defaultPasswordHash,
+        passwordHash: '', // Empty password hash that must be set
         assignedCriteria: {
           individual: undefined,
           group: undefined

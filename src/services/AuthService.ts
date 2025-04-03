@@ -1,4 +1,3 @@
-
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
@@ -29,9 +28,8 @@ export class AuthService extends BaseSupabaseService {
       const user = users[0];
       console.log('Found user with username:', user.username);
       
-      // Simple password check - direct comparison with stored password_hash
-      // For security in production, this should use proper password hashing
-      if (password === user.password_hash || password === 'password') {
+      // Passwortüberprüfung mit der verifyPassword-Funktion
+      if (verifyPassword(password, user.password_hash)) {
         console.log('Password matches, allowing login');
         
         const userResult: User = {
