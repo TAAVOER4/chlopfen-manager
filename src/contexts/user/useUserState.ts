@@ -106,9 +106,9 @@ export const useUserState = () => {
     );
   }, [currentUser, availableTournaments]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('Login attempt with:', email);
+      console.log('Login attempt with:', username);
       setIsLoading(true);
       
       // Initialize users if needed
@@ -120,7 +120,7 @@ export const useUserState = () => {
       }
       
       // Authenticate user
-      const authenticatedUser = await SupabaseService.authenticateUser(email, password);
+      const authenticatedUser = await SupabaseService.authenticateUser(username, password);
       
       if (authenticatedUser) {
         // Load user tournament assignments if they exist
@@ -162,7 +162,7 @@ export const useUserState = () => {
         console.log('Authentication failed');
         toast({
           title: "Anmeldung fehlgeschlagen",
-          description: "Falsche E-Mail oder falsches Passwort.",
+          description: "Falscher Benutzername oder falsches Passwort.",
           variant: "destructive"
         });
       }

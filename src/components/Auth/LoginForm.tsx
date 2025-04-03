@@ -13,7 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { SupabaseService } from '@/services/SupabaseService';
 
 const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,8 +42,8 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with:', email);
-      const success = await login(email, password);
+      console.log('Attempting login with:', username);
+      const success = await login(username, password);
       
       if (success) {
         // Set active tournament if one is selected
@@ -72,7 +72,7 @@ const LoginForm: React.FC = () => {
         setError('Bitte überprüfen Sie Ihre Anmeldedaten.');
         toast({
           title: "Anmeldung fehlgeschlagen",
-          description: "Falsche E-Mail oder falsches Passwort.",
+          description: "Falscher Benutzername oder falsches Passwort.",
           variant: "destructive",
         });
       }
@@ -107,14 +107,14 @@ const LoginForm: React.FC = () => {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">E-Mail</Label>
+            <Label htmlFor="username">Benutzername</Label>
             <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="E-Mail eingeben"
+              placeholder="Benutzername eingeben"
             />
           </div>
           <div className="space-y-2">
