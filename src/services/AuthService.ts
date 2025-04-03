@@ -27,15 +27,10 @@ export class AuthService extends BaseSupabaseService {
       const user = users[0];
       console.log('Found user with username:', username);
       
-      // For development, allow login with plain password 'password'
-      if (password === 'password' || 
-          // Allow login with specific plaintext passwords for testing
-          password === 'Leistung980ADMxy!' || 
-          username === 'erwin.vogel' || 
-          username === 'erwinvogel@hotmail.com' ||
-          // Check if this password equals the stored password hash directly for plaintext passwords
-          password === user.password_hash) {
-        console.log('Password matches, allowing login');
+      // Überprüfen des Passwortes:
+      // 1. Direkte Übereinstimmung mit Klartextpasswort
+      if (password === user.password_hash) {
+        console.log('Plain text password matches, allowing login');
         
         const userResult: User = {
           id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
@@ -53,7 +48,30 @@ export class AuthService extends BaseSupabaseService {
         return userResult;
       }
       
-      // As a fallback, try the original password verification (hashed)
+      // 2. Standardpasswörter für Entwicklung
+      if (password === 'password' || 
+          password === 'Leistung980ADMxy!' || 
+          username === 'erwin.vogel' || 
+          username === 'erwinvogel@hotmail.com') {
+        console.log('Using development password, allowing login');
+        
+        const userResult: User = {
+          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
+          name: user.name,
+          username: user.username,
+          role: user.role as UserRole,
+          passwordHash: user.password_hash,
+          assignedCriteria: {
+            individual: user.individual_criterion as CriterionKey | undefined,
+            group: user.group_criterion as GroupCriterionKey | undefined
+          },
+          tournamentIds: []
+        };
+        
+        return userResult;
+      }
+      
+      // 3. Fallback: Überprüfung gehashter Passwörter
       if (verifyPassword(password, user.password_hash)) {
         console.log('Hashed password verification succeeds, allowing login');
         

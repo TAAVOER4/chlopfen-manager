@@ -93,6 +93,12 @@ const LoginForm: React.FC = () => {
     setShowPassword(!showPassword);
   };
 
+  // Beispielbenutzer für einfaches Testen
+  const fillTestUser = () => {
+    setUsername('hans.mueller');
+    setPassword('password');
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -158,6 +164,17 @@ const LoginForm: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="text-xs mt-2" 
+              onClick={fillTestUser}
+            >
+              Test-Benutzer verwenden
+            </Button>
           </div>
         </CardContent>
         <CardFooter className="flex-col space-y-2">
