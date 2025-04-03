@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { Tournament, GroupCategory, GroupSize } from '@/types';
 import { renderResultsToPDF } from './pdfResultsRenderer';
 import { downloadHTMLAsFile, formatResultsForPDF, parseGroupCategoryString } from './baseUtils';
-import { generateResultsHTMLContent } from './htmlGeneratorUtils';
+import { generateResultsHTMLContent } from './html/htmlResultsGenerator';
 
 // Function to generate PDF of the results
 export const generateResultsPDF = (options: {

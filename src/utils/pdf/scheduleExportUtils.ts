@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { ScheduleItem, Sponsor, Tournament } from '@/types';
 import { renderScheduleToPDF } from './pdfScheduleRenderer';
 import { downloadHTMLAsFile } from './baseUtils';
-import { generateScheduleHTMLContent } from './htmlGeneratorUtils';
+import { generateScheduleHTMLContent } from './html/htmlScheduleGenerator';
 
 // Function to generate PDF of the schedule
 export const generateSchedulePDF = (
