@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { SupabaseService } from '@/services/SupabaseService';
+import { AuthService } from '@/services/AuthService';
 import { useLocalStorage } from './useLocalStorage';
 
 export const useAuthentication = () => {
@@ -38,18 +38,18 @@ export const useAuthentication = () => {
       
       try {
         // Make sure users table is initialized
-        await SupabaseService.initializeUsers();
+        await AuthService.initializeUsers();
       } catch (initError) {
         console.error('Initialization error:', initError);
       }
       
-      const authenticatedUser = await SupabaseService.authenticateUser(username, password);
+      const authenticatedUser = await AuthService.authenticateUser(username, password);
       
       if (authenticatedUser) {
         // For readers and editors, fetch their assigned tournaments
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
-            const { data: userTournaments, error } = await SupabaseService.supabase
+            const { data: userTournaments, error } = await AuthService.supabase
               .from('user_tournaments')
               .select('tournament_id')
               .eq('user_id', authenticatedUser.id.toString());

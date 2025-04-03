@@ -9,11 +9,11 @@ export class AuthService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Fixed query to correctly escape parameters
+      // Fixed query to correctly use parameterized query
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
-        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`);
+        .eq('username', usernameOrEmail);
         
       if (error) {
         console.error('Error during authentication query:', error);
@@ -21,7 +21,7 @@ export class AuthService extends BaseSupabaseService {
       }
       
       if (!users || users.length === 0) {
-        console.log('No user found with username or email:', usernameOrEmail);
+        console.log('No user found with username:', usernameOrEmail);
         return null;
       }
       
@@ -33,7 +33,7 @@ export class AuthService extends BaseSupabaseService {
         console.log('Password matches, allowing login');
         
         const userResult: User = {
-          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
+          id: parseInt(user.id.toString().substring(0, 8), 16) % 1000,
           name: user.name,
           username: user.username,
           role: user.role as UserRole,
@@ -100,8 +100,7 @@ export class AuthService extends BaseSupabaseService {
           },
           {
             name: 'Erwin Vogel',
-            username: 'erwin.vogel',
-            email: 'erwinvogel@hotmail.com',
+            username: 'erwin.vogel@hotmail.com',
             role: 'admin' as UserRole,
             password_hash: defaultPasswordHash,
             individual_criterion: null,

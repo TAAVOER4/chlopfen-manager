@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { SupabaseService } from '@/services/SupabaseService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -124,9 +125,11 @@ const LoginForm: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>
+                {error}
+              </AlertDescription>
+            </Alert>
           )}
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
