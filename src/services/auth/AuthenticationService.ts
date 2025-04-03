@@ -25,13 +25,18 @@ export class AuthenticationService extends BaseSupabaseService {
       
       // First try - exact match on username
       console.log('Querying by username:', usernameOrEmail);
+      
+      // Critical: We need to retrieve the user regardless of RLS policies for authentication
       const { data: usernameData, error: usernameError } = await this.supabase
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail)
         .limit(1);
       
-      console.log('Username query result:', { data: usernameData, error: usernameError });
+      console.log('Username query result:', { 
+        dataFound: usernameData && usernameData.length > 0, 
+        error: usernameError 
+      });
       
       if (usernameError) {
         console.error('Error during username query:', usernameError);
@@ -72,7 +77,10 @@ export class AuthenticationService extends BaseSupabaseService {
           .eq('email', usernameOrEmail)
           .limit(1);
         
-        console.log('Email query result:', { data: emailData, error: emailError });
+        console.log('Email query result:', { 
+          dataFound: emailData && emailData.length > 0, 
+          error: emailError 
+        });
         
         if (emailError) {
           console.error('Error during email query:', emailError);
@@ -101,7 +109,7 @@ export class AuthenticationService extends BaseSupabaseService {
         .limit(1);
       
       console.log('Username-as-email query result:', { 
-        data: usernameWithEmailData, 
+        dataFound: usernameWithEmailData && usernameWithEmailData.length > 0, 
         error: usernameWithEmailError 
       });
       

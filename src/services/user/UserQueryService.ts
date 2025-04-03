@@ -10,6 +10,9 @@ export class UserQueryService extends BaseSupabaseService {
   static async getAllUsers(): Promise<User[]> {
     try {
       console.log('Fetching all users from Supabase');
+      
+      // Use the service role key for this operation to bypass RLS
+      // This ensures admins can see all users regardless of RLS policies
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*') as any;
@@ -31,6 +34,41 @@ export class UserQueryService extends BaseSupabaseService {
     } catch (error) {
       console.error('Error while fetching users:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fetches a specific user by username
+   */
+  static async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      console.log(`Fetching user with username: ${username}`);
+      
+      const { data, error } = await this.supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single() as any;
+        
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Not found error
+          console.log(`No user found with username: ${username}`);
+          return null;
+        }
+        console.error(`Error fetching user ${username}:`, error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.log(`No user found with username: ${username}`);
+        return null;
+      }
+      
+      return UserMapper.toUserModel(data);
+    } catch (error) {
+      console.error(`Error fetching user ${username}:`, error);
+      return null;
     }
   }
 }

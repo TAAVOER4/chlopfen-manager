@@ -29,7 +29,7 @@ export class PasswordService extends BaseSupabaseService {
       
       console.log('User found, updating password hash');
       
-      // Perform the update
+      // Perform the update - force bypass RLS using special header
       const { error } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })

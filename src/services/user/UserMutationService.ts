@@ -6,115 +6,115 @@ import { hashPassword } from '@/utils/authUtils';
 
 export class UserMutationService extends BaseSupabaseService {
   /**
-   * Creates a new user
+   * Creates a new user in the database
    */
   static async createUser(user: Omit<User, 'id'>): Promise<User> {
     try {
       console.log('Creating new user:', user.username);
       
-      // Map user to Supabase format, converting passwordHash to password_hash
-      const userData = UserMapper.toSupabaseFormat(user);
-      
-      // Make sure we have a password hash or generate one if plain password was provided
-      if (!userData.password_hash && user.password) {
-        // Hash the password if a plain password was provided
-        console.log('Hashing provided password for new user');
-        userData.password_hash = hashPassword(user.password);
-      } else if (!userData.password_hash) {
-        throw new Error('Password is required for new users');
+      // Hash the password if it's not already hashed
+      let passwordHash = user.passwordHash;
+      if (!passwordHash?.startsWith('$2')) {
+        passwordHash = hashPassword(passwordHash || 'default');
       }
       
+      // Map our User model to the database schema
+      const dbUser = {
+        name: user.name,
+        username: user.username,
+        password_hash: passwordHash,
+        role: user.role,
+        individual_criterion: user.assignedCriteria?.individual || null,
+        group_criterion: user.assignedCriteria?.group || null
+      };
+      
+      // Insert the user into the database
       const { data, error } = await this.supabase
         .from('users')
-        .insert([userData])
+        .insert([dbUser])
         .select();
-        
+      
       if (error) {
         console.error('Error creating user:', error);
         throw error;
       }
       
       if (!data || data.length === 0) {
-        throw new Error('No data returned after user creation');
+        throw new Error('No data returned from user creation');
       }
       
-      console.log('User created successfully:', data[0].username);
+      console.log('User created successfully:', data[0]);
       
+      // Convert the database object back to our User model
       return UserMapper.toUserModel(data[0]);
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error in createUser:', error);
       throw error;
     }
   }
 
   /**
-   * Updates an existing user
+   * Updates an existing user in the database
    */
   static async updateUser(user: User): Promise<User> {
     try {
       console.log('Updating user:', user.username);
       
-      // Convert user to Supabase format
-      const userData = UserMapper.toSupabaseFormat(user);
+      // Map our User model to the database schema
+      const dbUser = {
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        individual_criterion: user.assignedCriteria?.individual || null,
+        group_criterion: user.assignedCriteria?.group || null
+      };
       
-      // If a plain password is provided, hash it before saving
-      if (user.password) {
-        console.log('Hashing new password for user update');
-        userData.password_hash = hashPassword(user.password);
-      } else {
-        // If updating without changing password, remove password_hash 
-        // to avoid overwriting with empty value
-        delete userData.password_hash;
-      }
-      
+      // Update the user in the database
       const { data, error } = await this.supabase
         .from('users')
-        .update(userData)
+        .update(dbUser)
         .eq('username', user.username)
         .select();
-        
+      
       if (error) {
         console.error('Error updating user:', error);
         throw error;
       }
       
       if (!data || data.length === 0) {
-        throw new Error('No data returned after user update');
+        throw new Error('No data returned from user update');
       }
       
-      console.log('User updated successfully:', data[0].username);
+      console.log('User updated successfully:', data[0]);
       
-      // Convert and return
-      const updatedUser = UserMapper.toUserModel(data[0]);
-      updatedUser.id = user.id; // Keep the local ID 
-      updatedUser.tournamentIds = user.tournamentIds; // Keep tournament assignments
-      
-      return updatedUser;
+      // Convert the database object back to our User model
+      return UserMapper.toUserModel(data[0]);
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error('Error in updateUser:', error);
       throw error;
     }
   }
 
   /**
-   * Deletes a user by username
+   * Deletes a user from the database
    */
   static async deleteUser(username: string): Promise<void> {
     try {
       console.log('Deleting user:', username);
+      
       const { error } = await this.supabase
         .from('users')
         .delete()
         .eq('username', username);
-        
+      
       if (error) {
         console.error('Error deleting user:', error);
         throw error;
       }
       
-      console.log('User deleted successfully:', username);
+      console.log('User deleted successfully');
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Error in deleteUser:', error);
       throw error;
     }
   }
