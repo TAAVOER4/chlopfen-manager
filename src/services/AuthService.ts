@@ -102,17 +102,33 @@ export class AuthService extends BaseSupabaseService {
   // Initialisierung: Füge Standardbenutzer hinzu, wenn noch keine vorhanden sind
   static async initializeUsers(): Promise<void> {
     try {
+      // Prüfe, ob die Tabelle 'users' existiert
+      const { error: tableCheckError } = await this.supabase
+        .from('users')
+        .select('id')
+        .limit(1);
+        
+      if (tableCheckError && tableCheckError.message.includes('does not exist')) {
+        console.error('Users table does not exist, creating table...');
+        // Hier könnte man die Tabelle erstellen, aber das sollte durch Migrations erfolgen
+        return;
+      }
+
+      // Prüfe, ob bereits Benutzer vorhanden sind
       const { data: existingUsers, error } = await this.supabase
         .from('users')
-        .select('count');
+        .select('id')
+        .limit(1);
         
       if (error) {
         console.error('Fehler beim Prüfen vorhandener Benutzer:', error);
         return;
       }
       
-      // Wenn keine Benutzer vorhanden sind oder die Tabelle nicht existiert, füge die Standardbenutzer hinzu
+      // Wenn keine Benutzer vorhanden sind, füge die Standardbenutzer hinzu
       if (!existingUsers || existingUsers.length === 0) {
+        console.log('Keine Benutzer gefunden, füge Standardbenutzer hinzu...');
+        
         // Plain password for development is "password"
         const defaultPasswordHash = "password";
         
@@ -156,6 +172,8 @@ export class AuthService extends BaseSupabaseService {
         } catch (insertError) {
           console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
         }
+      } else {
+        console.log('Benutzer bereits vorhanden, überspringe Initialisierung.');
       }
     } catch (error) {
       console.error('Error in initializeUsers:', error);

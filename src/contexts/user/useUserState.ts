@@ -111,7 +111,7 @@ export const useUserState = () => {
       console.log('Login attempt with:', username);
       setIsLoading(true);
       
-      // Initialize users if needed
+      // Initialize users if needed (first check if we need to create default users)
       try {
         await SupabaseService.initializeUsers();
       } catch (initError) {
