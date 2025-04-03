@@ -39,7 +39,7 @@ export const useUserMutations = (
       const isNewUser = !users.some(u => u.id === editingUser.id);
       
       // Ensure new users have a password
-      if (isNewUser && !editingUser.passwordHash) {
+      if (isNewUser && !editingUser.password) {
         toast({
           title: "Fehler",
           description: "Bitte geben Sie ein Passwort für den neuen Benutzer ein.",
