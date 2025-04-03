@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import LoginFormFields from './LoginFormFields';
 import { AuthenticationService } from '@/services/auth/AuthenticationService';
+import { hashPassword } from '@/utils/authUtils';
 
 type FormValues = {
   username: string;
@@ -51,7 +52,7 @@ const LoginForm: React.FC = () => {
 
   const handleGenerateHash = () => {
     try {
-      const hash = AuthenticationService.generatePasswordHash(passwordToHash);
+      const hash = hashPassword(passwordToHash);
       setGeneratedHash(hash);
     } catch (error) {
       console.error('Error generating hash:', error);

@@ -2,10 +2,21 @@
 import { User } from '@/types';
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { PasswordService } from './PasswordService';
-import { UserMapper } from './UserMapper';
+import { hashPassword } from '@/utils/authUtils';
 
-// Direct import to avoid circular dependency
-import { AuthUser, DbUser } from './types/AuthTypes';
+// Import from a different file to avoid circular dependency
+import { AuthUserData } from './types/AuthTypes';
+import { mapDatabaseUserToUser } from './UserMapper';
+
+type DatabaseUser = {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  password_hash: string;
+  individual_criterion: string | null;
+  group_criterion: string | null;
+}
 
 export class AuthenticationService extends BaseSupabaseService {
   static async authenticateUser(username: string, password: string): Promise<User | null> {
@@ -22,10 +33,10 @@ export class AuthenticationService extends BaseSupabaseService {
         return null;
       }
 
-      const dbUser = users as DbUser;
+      const dbUser = users as DatabaseUser;
 
       // Step 2: Verify the password
-      const passwordValid = await PasswordService.verifyPassword(password, dbUser.password_hash);
+      const passwordValid = await this.verifyPassword(password, dbUser.password_hash);
       
       if (!passwordValid) {
         console.log('Password invalid for user:', username);
@@ -33,11 +44,18 @@ export class AuthenticationService extends BaseSupabaseService {
       }
 
       // Step 3: Return the user if password is valid
-      return UserMapper.mapDbUserToUser(dbUser);
+      return mapDatabaseUserToUser(dbUser as AuthUserData);
     } catch (error) {
       console.error('Authentication error:', error);
       return null;
     }
+  }
+
+  // Helper method for password verification
+  private static async verifyPassword(password: string, hash: string): Promise<boolean> {
+    return await import('@/utils/authUtils').then(({ verifyPassword }) => {
+      return verifyPassword(password, hash);
+    });
   }
 
   static async initializeUsers(): Promise<void> {
@@ -62,10 +80,10 @@ export class AuthenticationService extends BaseSupabaseService {
       }
 
       // Create default admin user if none exists
-      const defaultAdmin: Omit<DbUser, 'id'> = {
+      const defaultAdmin = {
         username: 'admin',
         name: 'Administrator',
-        password_hash: await PasswordService.hashPassword('admin'),
+        password_hash: await import('@/utils/authUtils').then(({hashPassword}) => hashPassword('admin')),
         role: 'admin',
         is_active: true,
         created_at: new Date().toISOString()
@@ -84,5 +102,10 @@ export class AuthenticationService extends BaseSupabaseService {
     } catch (error) {
       console.error('Error initializing users:', error);
     }
+  }
+  
+  // Helper method for password hash generation - needed in LoginForm
+  static generatePasswordHash(password: string): string {
+    return hashPassword(password);
   }
 }

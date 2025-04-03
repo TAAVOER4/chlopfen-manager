@@ -1,6 +1,6 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { Tournament, User } from '@/types';
+import { useState, useEffect } from 'react';
+import { User, Tournament } from '@/types';
 import { BaseSupabaseService } from '@/services/BaseSupabaseService';
 
 export const useTournaments = (currentUser: User | null) => {
@@ -8,118 +8,62 @@ export const useTournaments = (currentUser: User | null) => {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load tournaments from Supabase
   useEffect(() => {
     const loadTournaments = async () => {
+      if (!currentUser) {
+        setAvailableTournaments([]);
+        setSelectedTournament(null);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const { data, error } = await BaseSupabaseService.getClient()
-          .from('tournaments')
-          .select('*');
-          
+        let query = BaseSupabaseService.getClient().from('tournaments').select('*');
+
+        // Admin users can see all tournaments
+        // Readers and editors can only see assigned tournaments
+        if (currentUser.role !== 'admin') {
+          if (currentUser.tournamentIds && currentUser.tournamentIds.length > 0) {
+            query = query.in('id', currentUser.tournamentIds);
+          } else {
+            // If user has no assigned tournaments, don't return any
+            setAvailableTournaments([]);
+            setSelectedTournament(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        const { data, error } = await query.order('date', { ascending: false });
+
         if (error) {
           console.error('Error loading tournaments:', error);
           return;
         }
-        
+
         if (data && data.length > 0) {
-          console.log('Loaded tournaments:', data);
-          const formattedTournaments: Tournament[] = data.map(t => ({
-            id: t.id,
-            name: t.name,
-            date: t.date,
-            location: t.location,
-            year: t.year,
-            isActive: t.is_active
-          }));
-          setAvailableTournaments(formattedTournaments);
-          
-          const activeTournament = formattedTournaments.find(t => t.isActive);
-          const storedTournamentId = sessionStorage.getItem('activeTournamentId');
-          
-          if (storedTournamentId) {
-            const tournamentFromStorage = formattedTournaments.find(
-              t => t.id.toString() === storedTournamentId
-            );
-            if (tournamentFromStorage) {
-              setSelectedTournament(tournamentFromStorage);
-              console.log('Set tournament from storage:', tournamentFromStorage);
-            } else if (activeTournament) {
-              setSelectedTournament(activeTournament);
-              console.log('Set active tournament:', activeTournament);
-            } else if (formattedTournaments.length > 0) {
-              setSelectedTournament(formattedTournaments[0]);
-              console.log('Set first tournament as default:', formattedTournaments[0]);
-            }
-          } else if (activeTournament) {
-            setSelectedTournament(activeTournament);
-            console.log('Set active tournament as default:', activeTournament);
-          } else if (formattedTournaments.length > 0) {
-            setSelectedTournament(formattedTournaments[0]);
-            console.log('Set first tournament as default:', formattedTournaments[0]);
-          }
+          // Convert to Tournament[] type
+          const tournaments = data as Tournament[];
+          setAvailableTournaments(tournaments);
+
+          // Set selected tournament to active one or first one
+          const activeTournament = tournaments.find(t => t.isActive);
+          setSelectedTournament(activeTournament || tournaments[0]);
         }
       } catch (error) {
-        console.error('Failed to load tournaments:', error);
+        console.error('Error in loadTournaments:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
-    loadTournaments();
-  }, []);
 
-  // Update when current user changes
-  useEffect(() => {
-    if (currentUser) {
-      console.log('Current user changed, loading user tournaments');
-      const loadUserTournaments = async () => {
-        try {
-          // For non-admin users, fetch their specific tournament assignments
-          if (currentUser.role === 'reader' || currentUser.role === 'editor') {
-            const { data, error } = await BaseSupabaseService.getClient()
-              .from('user_tournaments')
-              .select('tournament_id')
-              .eq('user_id', currentUser.id.toString());
-              
-            if (!error && data) {
-              currentUser.tournamentIds = data.map(ut => ut.tournament_id);
-              console.log('User tournament IDs:', currentUser.tournamentIds);
-            }
-          }
-        } catch (err) {
-          console.error('Error loading user tournament assignments:', err);
-        }
-      };
-      
-      loadUserTournaments();
-    }
+    loadTournaments();
   }, [currentUser]);
 
-  // Filter tournaments based on user role
-  const userTournaments = useMemo(() => {
-    if (!currentUser) return [];
-    
-    if (currentUser.role === 'admin' || currentUser.role === 'judge') {
-      return availableTournaments;
-    }
-    
-    return availableTournaments.filter(tournament => 
-      currentUser.tournamentIds?.includes(tournament.id)
-    );
-  }, [currentUser, availableTournaments]);
-
-  // Set selected tournament handler with persistence
-  const handleSetSelectedTournament = (tournament: Tournament) => {
-    setSelectedTournament(tournament);
-    sessionStorage.setItem('activeTournamentId', tournament.id.toString());
-    console.log('Set active tournament:', tournament);
-  };
-
   return {
-    availableTournaments: userTournaments,
+    availableTournaments,
     selectedTournament,
-    isLoading,
-    setSelectedTournament: handleSetSelectedTournament
+    setSelectedTournament,
+    isLoading
   };
 };
