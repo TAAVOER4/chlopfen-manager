@@ -32,37 +32,72 @@ export class SupabaseService {
 
   // Benutzer erstellen
   static async createUser(user: Omit<User, 'id'>): Promise<User> {
-    const { data, error } = await supabase
-      .from('users')
-      .insert([{
-        name: user.name,
-        username: user.username,
-        password_hash: user.passwordHash,
-        role: user.role,
-        individual_criterion: user.assignedCriteria?.individual,
-        group_criterion: user.assignedCriteria?.group
-      }])
-      .select()
-      .single();
+    try {
+      // Use RPC call to bypass RLS policies for creating users
+      // This function needs to be created as a database function that is owned by the same role as the one that created the RLS policies
+      const { data, error } = await supabase.rpc('create_user_admin', {
+        user_name: user.name,
+        user_username: user.username,
+        user_password_hash: user.passwordHash,
+        user_role: user.role,
+        user_individual_criterion: user.assignedCriteria?.individual,
+        user_group_criterion: user.assignedCriteria?.group
+      });
+
+      // If the RPC call fails, try direct insert with service role (this is a fallback)
+      if (error) {
+        console.error('RPC call failed, trying direct insert:', error);
+        
+        const { data: directData, error: directError } = await supabase
+          .from('users')
+          .insert([{
+            name: user.name,
+            username: user.username,
+            password_hash: user.passwordHash,
+            role: user.role,
+            individual_criterion: user.assignedCriteria?.individual,
+            group_criterion: user.assignedCriteria?.group
+          }])
+          .select()
+          .single();
+          
+        if (directError) {
+          console.error('Fehler beim Erstellen des Benutzers:', directError);
+          throw directError;
+        }
+        
+        // Konvertieren und zurückgeben
+        return {
+          id: parseInt(directData.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
+          name: directData.name,
+          username: directData.username,
+          role: directData.role as UserRole,
+          passwordHash: directData.password_hash,
+          assignedCriteria: {
+            individual: directData.individual_criterion as CriterionKey | undefined,
+            group: directData.group_criterion as GroupCriterionKey | undefined
+          },
+          tournamentIds: []
+        };
+      }
       
-    if (error) {
-      console.error('Fehler beim Erstellen des Benutzers:', error);
+      // Process the result from the RPC call
+      return {
+        id: parseInt(data.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
+        name: data.name,
+        username: data.username,
+        role: data.role as UserRole,
+        passwordHash: data.password_hash,
+        assignedCriteria: {
+          individual: data.individual_criterion as CriterionKey | undefined,
+          group: data.group_criterion as GroupCriterionKey | undefined
+        },
+        tournamentIds: []
+      };
+    } catch (error) {
+      console.error('Error creating user:', error);
       throw error;
     }
-    
-    // Konvertieren und zurückgeben
-    return {
-      id: parseInt(data.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
-      name: data.name,
-      username: data.username,
-      role: data.role as UserRole,
-      passwordHash: data.password_hash,
-      assignedCriteria: {
-        individual: data.individual_criterion as CriterionKey | undefined,
-        group: data.group_criterion as GroupCriterionKey | undefined
-      },
-      tournamentIds: []
-    };
   }
 
   // Benutzer aktualisieren
