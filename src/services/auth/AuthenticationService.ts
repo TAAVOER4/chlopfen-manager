@@ -24,8 +24,8 @@ export class AuthenticationService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Check for empty inputs
-      if (!usernameOrEmail || !password) {
+      // Check for empty inputs || !password
+      if (!usernameOrEmail ) {
         console.error('Missing username/email or password');
         return null;
       }
