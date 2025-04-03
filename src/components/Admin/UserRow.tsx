@@ -10,6 +10,7 @@ import UserPasswordDialog from './UserPasswordDialog';
 import UserRoleBadge from './UserRoleBadge';
 import UserTournaments from './UserTournaments';
 import UserRowActions from './UserRowActions';
+import { Save } from 'lucide-react';
 
 interface UserRowProps {
   user: User;
