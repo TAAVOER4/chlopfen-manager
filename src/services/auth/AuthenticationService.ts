@@ -1,6 +1,6 @@
 
 import { BaseSupabaseService } from '../BaseSupabaseService';
-import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
+import { User } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
 import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
@@ -32,18 +32,7 @@ export class AuthenticationService extends BaseSupabaseService {
       
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
-        const rawData = usernameData[0];
-        const user: DatabaseUser = {
-          id: String(rawData.id),
-          name: String(rawData.name),
-          username: String(rawData.username),
-          role: rawData.role as UserRole,
-          password_hash: String(rawData.password_hash),
-          individual_criterion: rawData.individual_criterion as CriterionKey | null,
-          group_criterion: rawData.group_criterion as GroupCriterionKey | null
-        };
-        
-        return this.validateAndReturnUser(user, password);
+        return this.validateAndReturnUser(usernameData[0], password);
       }
       
       // Second try - match on email field
@@ -59,18 +48,7 @@ export class AuthenticationService extends BaseSupabaseService {
       
       // If email match found, validate password
       if (emailData && emailData.length > 0) {
-        const rawData = emailData[0];
-        const user: DatabaseUser = {
-          id: String(rawData.id),
-          name: String(rawData.name),
-          username: String(rawData.username),
-          role: rawData.role as UserRole,
-          password_hash: String(rawData.password_hash),
-          individual_criterion: rawData.individual_criterion as CriterionKey | null,
-          group_criterion: rawData.group_criterion as GroupCriterionKey | null
-        };
-        
-        return this.validateAndReturnUser(user, password);
+        return this.validateAndReturnUser(emailData[0], password);
       }
       
       // Last try - check if username field contains an email that matches
@@ -87,18 +65,7 @@ export class AuthenticationService extends BaseSupabaseService {
         
         // If found, validate password
         if (usernameWithEmailData && usernameWithEmailData.length > 0) {
-          const rawData = usernameWithEmailData[0];
-          const user: DatabaseUser = {
-            id: String(rawData.id),
-            name: String(rawData.name),
-            username: String(rawData.username),
-            role: rawData.role as UserRole,
-            password_hash: String(rawData.password_hash),
-            individual_criterion: rawData.individual_criterion as CriterionKey | null,
-            group_criterion: rawData.group_criterion as GroupCriterionKey | null
-          };
-          
-          return this.validateAndReturnUser(user, password);
+          return this.validateAndReturnUser(usernameWithEmailData[0], password);
         }
       }
       
@@ -113,8 +80,19 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(user: DatabaseUser, password: string): User | null {
-    if (!user) return null;
+  private static validateAndReturnUser(userData: any, password: string): User | null {
+    if (!userData) return null;
+    
+    const user: DatabaseUser = {
+      id: String(userData.id),
+      name: String(userData.name),
+      username: String(userData.username),
+      role: userData.role,
+      password_hash: String(userData.password_hash),
+      individual_criterion: userData.individual_criterion,
+      group_criterion: userData.group_criterion,
+      email: userData.email
+    };
     
     console.log('Found user with username:', user.username);
     
@@ -124,7 +102,6 @@ export class AuthenticationService extends BaseSupabaseService {
     
     if (passwordVerified) {
       console.log('Password matches, allowing login');
-      
       return mapDatabaseUserToUser(user);
     }
     
