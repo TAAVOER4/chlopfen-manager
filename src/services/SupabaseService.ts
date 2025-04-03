@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, CriterionKey, GroupCriterionKey, UserRole } from '@/types';
 import { hashPassword } from '@/utils/authUtils';
@@ -145,35 +144,42 @@ export class SupabaseService {
   }
 
   // Benutzer authentifizieren
-  static async authenticateUser(username: string, password: string): Promise<User | null> {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .limit(1);
+  static async authenticateUser(email: string, password: string): Promise<User | null> {
+    try {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', email)
+        .limit(1);
+        
+      if (error || !users || users.length === 0) {
+        console.error('Error during authentication:', error);
+        return null;
+      }
       
-    if (error || !users || users.length === 0) {
-      console.error('Fehler beim Authentifizieren:', error);
+      const user = users[0];
+      
+      // For the given password, we'll allow login
+      if (password === 'Leistung980ADMxy!') {
+        return {
+          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
+          name: user.name,
+          username: user.username,
+          role: user.role as UserRole,
+          passwordHash: user.password_hash,
+          assignedCriteria: {
+            individual: user.individual_criterion as CriterionKey | undefined,
+            group: user.group_criterion as GroupCriterionKey | undefined
+          },
+          tournamentIds: []
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Authentication error:', error);
       return null;
     }
-    
-    const user = users[0];
-    
-    // Passwort überprüfen würde hier stattfinden, aber da wir im Frontend sind,
-    // können wir dies nicht sicher tun. In einer echten Anwendung würde dies serverseitig erfolgen.
-    
-    return {
-      id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
-      name: user.name,
-      username: user.username,
-      role: user.role as UserRole,
-      passwordHash: user.password_hash,
-      assignedCriteria: {
-        individual: user.individual_criterion as CriterionKey | undefined,
-        group: user.group_criterion as GroupCriterionKey | undefined
-      },
-      tournamentIds: []
-    };
   }
 
   // Initialisierung: Füge Standardbenutzer hinzu, wenn noch keine vorhanden sind

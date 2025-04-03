@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,41 +33,50 @@ const LoginForm: React.FC = () => {
     }
   }, [tournaments]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     
-    // Attempt login
-    const success = login(username, password);
-    
-    if (success) {
-      // Set active tournament if one is selected
-      if (selectedTournamentId) {
-        const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
-        if (tournament) {
-          setActiveTournament(tournament);
+    try {
+      const success = await login(email, password);
+      
+      if (success) {
+        // Set active tournament if one is selected
+        if (selectedTournamentId) {
+          const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
+          if (tournament) {
+            setActiveTournament(tournament);
+          }
         }
+        
+        toast({
+          title: "Anmeldung erfolgreich",
+          description: selectedTournamentId 
+            ? `Sie arbeiten jetzt mit dem Turnier: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
+            : "Bitte wählen Sie ein Turnier in der Turnierverwaltung aus.",
+        });
+        
+        navigate('/');
+      } else {
+        setError('Bitte überprüfen Sie Ihre Anmeldedaten.');
+        toast({
+          title: "Anmeldung fehlgeschlagen",
+          description: "Falsche E-Mail oder falsches Passwort.",
+          variant: "destructive",
+        });
       }
-      
-      toast({
-        title: "Anmeldung erfolgreich",
-        description: selectedTournamentId 
-          ? `Sie arbeiten jetzt mit dem Turnier: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
-          : "Bitte wählen Sie ein Turnier in der Turnierverwaltung aus.",
-      });
-      
-      navigate('/'); // Redirect to home page
-    } else {
-      setError('Falscher Benutzername oder Passwort. Für Testbenutzer ist das Standardpasswort "password".');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
       toast({
         title: "Anmeldung fehlgeschlagen",
-        description: "Bitte überprüfen Sie Ihre Anmeldedaten.",
+        description: "Ein unerwarteter Fehler ist aufgetreten.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -84,14 +93,14 @@ const LoginForm: React.FC = () => {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="username">Benutzername</Label>
+            <Label htmlFor="email">E-Mail</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="Benutzername eingeben"
+              placeholder="E-Mail eingeben"
             />
           </div>
           <div className="space-y-2">
@@ -131,9 +140,6 @@ const LoginForm: React.FC = () => {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
           </Button>
-          <p className="text-xs text-center text-gray-500">
-            Hinweis: Für alle Testbenutzer ist das Passwort "password"
-          </p>
         </CardFooter>
       </form>
     </Card>

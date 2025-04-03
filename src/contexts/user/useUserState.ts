@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { User, Tournament } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -12,13 +11,11 @@ export const useUserState = () => {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // On initial load, check if we have a saved user or are impersonating
   useEffect(() => {
     const savedUserJSON = localStorage.getItem('currentUser');
     const impersonatedUserJSON = localStorage.getItem('impersonatedUser');
     const isAdminMode = localStorage.getItem('adminMode') === 'true';
 
-    // Try to get the active tournament
     const activeTournament = getActiveTournament();
     if (activeTournament) {
       setSelectedTournament(activeTournament);
@@ -46,49 +43,40 @@ export const useUserState = () => {
     }
   }, []);
 
-  // User role flags
   const isAdmin = !!currentUser && currentUser.role === 'admin';
   const isJudge = !!currentUser && currentUser.role === 'judge';
   const isReader = !!currentUser && currentUser.role === 'reader';
   const isEditor = !!currentUser && currentUser.role === 'editor';
   const isImpersonating = !!originalAdmin;
 
-  // Get available tournaments based on user role and assigned tournaments
   const availableTournaments = useMemo(() => {
     if (!currentUser) return [];
     
-    // Admin and Judge roles can see all tournaments
     if (currentUser.role === 'admin' || currentUser.role === 'judge') {
       return mockTournaments;
     }
     
-    // Reader and Editor roles can only see assigned tournaments
     return mockTournaments.filter(tournament => 
       currentUser.tournamentIds?.includes(tournament.id)
     );
   }, [currentUser]);
 
-  // Login function
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       
-      // Initialisieren, falls nötig
       await SupabaseService.initializeUsers();
       
-      // Authentifizieren mit Supabase
-      const authenticatedUser = await SupabaseService.authenticateUser(username, password);
+      const authenticatedUser = await SupabaseService.authenticateUser(email, password);
       
       if (authenticatedUser) {
         setCurrentUser(authenticatedUser);
         
-        // Store user in localStorage, but without password hash for security
         const userToStore = { ...authenticatedUser };
         delete (userToStore as any).passwordHash;
         
         localStorage.setItem('currentUser', JSON.stringify(userToStore));
         
-        // Set active tournament if available
         const activeTournament = getActiveTournament();
         if (activeTournament) {
           setSelectedTournament(activeTournament);
@@ -103,7 +91,7 @@ export const useUserState = () => {
       } else {
         toast({
           title: "Anmeldung fehlgeschlagen",
-          description: "Falscher Benutzername oder Passwort.",
+          description: "Falsche E-Mail oder falsches Passwort.",
           variant: "destructive"
         });
       }
@@ -121,7 +109,6 @@ export const useUserState = () => {
     return false;
   };
 
-  // Logout function
   const logout = () => {
     setCurrentUser(null);
     setOriginalAdmin(null);
@@ -136,9 +123,7 @@ export const useUserState = () => {
     });
   };
 
-  // Impersonation functions
   const impersonate = (user: User) => {
-    // Store the admin state to return to later
     if (!originalAdmin && currentUser?.role === 'admin') {
       setOriginalAdmin(currentUser);
       localStorage.setItem('adminMode', 'true');
@@ -146,7 +131,6 @@ export const useUserState = () => {
     
     setCurrentUser(user);
     
-    // Store impersonated user in localStorage, but without password hash for security
     const userToStore = { ...user };
     delete (userToStore as any).passwordHash;
     
