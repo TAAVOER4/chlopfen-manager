@@ -10,7 +10,7 @@ import {
 import { FileText, BarChart2, FileOutput } from 'lucide-react';
 import { ResultsTab } from '@/components/Admin/Reports/ResultsTab';
 import { ExportsTab } from '@/components/Admin/Reports/ExportsTab';
-import { StatisticsTab } from '@/components/Admin/Reports/StatisticsTab';
+import StatisticsTab from '@/components/Admin/Reports/StatisticsTab';
 import { AccessDenied } from '@/components/Admin/Reports/AccessDenied';
 import { useReportsData } from '@/hooks/useReportsData';
 
