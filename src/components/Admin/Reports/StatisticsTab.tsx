@@ -9,10 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { BarChart2, FileText } from 'lucide-react';
+import { BarChart2, FileText, Download } from 'lucide-react';
 import { Participant, Group, IndividualScore, GroupScore } from '@/types';
 import { ChartContainer } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 interface StatisticsTabProps {
   participants: Participant[];
@@ -38,6 +40,85 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     { name: 'Junioren', value: juniorCount, color: '#22c55e' }, // green-500
     { name: 'Aktive', value: activeCount, color: '#ef4444' }, // red-500
   ];
+  
+  // Function to generate statistics PDF report
+  const handleGenerateStatisticsReport = () => {
+    // Create new PDF document
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Set font size and type
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Turnierstatistiken', 20, 20);
+    
+    // Add current date
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const currentDate = new Date().toLocaleDateString('de-CH');
+    doc.text(`Generiert am: ${currentDate}`, 20, 30);
+    
+    // Add horizontal line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 35, 190, 35);
+    
+    // Set font for content
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    
+    // Add statistics data
+    doc.text('Teilnehmerstatistiken:', 20, 45);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gesamtanzahl Teilnehmer: ${participants.length}`, 25, 55);
+    doc.text(`Kinder: ${kidCount}`, 25, 65);
+    doc.text(`Junioren: ${juniorCount}`, 25, 75);
+    doc.text(`Aktive: ${activeCount}`, 25, 85);
+    
+    // Add group statistics
+    doc.setFont('helvetica', 'bold');
+    doc.text('Gruppenstatistiken:', 20, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gesamtanzahl Gruppen: ${groups.length}`, 25, 110);
+    
+    const threeSizeGroups = groups.filter(g => g.size === 'three').length;
+    const fourSizeGroups = groups.filter(g => g.size === 'four').length;
+    doc.text(`3er-Gruppen: ${threeSizeGroups}`, 25, 120);
+    doc.text(`4er-Gruppen: ${fourSizeGroups}`, 25, 130);
+    
+    // Add scoring statistics
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bewertungsstatistiken:', 20, 145);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Einzelbewertungen: ${individualScores.length}`, 25, 155);
+    doc.text(`Gruppenbewertungen: ${groupScores.length}`, 25, 165);
+    doc.text(`Bewertungen gesamt: ${individualScores.length + groupScores.length}`, 25, 175);
+    
+    // Add average score calculations
+    if (individualScores.length > 0) {
+      const totalScore = individualScores.reduce((sum, score) => {
+        return sum + score.whipStrikes + score.rhythm + score.stance + score.posture + score.whipControl;
+      }, 0);
+      const avgScore = (totalScore / (individualScores.length * 5)).toFixed(2);
+      doc.text(`Durchschnittliche Bewertung: ${avgScore} / 10`, 25, 185);
+    }
+    
+    // Add footer with page numbers
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(`Seite ${i} von ${totalPages}`, 20, 285);
+    }
+    
+    // Save the PDF
+    const filename = `statistikbericht_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    
+    toast.success(`Statistikbericht wurde erfolgreich erstellt`);
+  };
   
   return (
     <Card>
@@ -120,7 +201,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
         </div>
       </CardContent>
       <CardFooter>
-        <Button>
+        <Button onClick={handleGenerateStatisticsReport}>
           <FileText className="h-4 w-4 mr-2" />
           Statistikbericht generieren
         </Button>
