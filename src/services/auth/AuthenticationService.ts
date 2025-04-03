@@ -40,13 +40,12 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        const userData = usernameData[0] as unknown as AuthUserData;
+        const userData = usernameData[0] as AuthUserData;
         return this.validateAndReturnUser(userData, password);
       }
       
       // Try alternative lookup methods
-      const user = await this.findUserByAlternativeMethods(usernameOrEmail, password);
-      return user;
+      return this.findUserByAlternativeMethods(usernameOrEmail, password);
     } catch (error) {
       console.error('Authentication error:', error);
       return null;
@@ -82,8 +81,7 @@ export class AuthenticationService extends BaseSupabaseService {
         // If email match found, validate password
         if (emailData && emailData.length > 0) {
           console.log('Found user by email match');
-          // Fix: convert to unknown first then cast to AuthUserData
-          const userData = emailData[0] as unknown as AuthUserData;
+          const userData = emailData[0] as AuthUserData;
           return this.validateAndReturnUser(userData, password);
         }
       } else {
@@ -114,8 +112,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If found, validate password
       if (usernameWithEmailData && usernameWithEmailData.length > 0) {
         console.log('Found user by username-as-email match');
-        // Fix: convert to unknown first then cast to AuthUserData
-        const userData = usernameWithEmailData[0] as unknown as AuthUserData;
+        const userData = usernameWithEmailData[0] as AuthUserData;
         return this.validateAndReturnUser(userData, password);
       }
     }

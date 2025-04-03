@@ -46,7 +46,6 @@ export class SupabaseService extends BaseSupabaseService {
     return UserService.deleteUser(username);
   }
 
-  // Fix the return type to match the UserService.changePassword return type
   static async changePassword(username: string, newPassword: string): Promise<boolean> {
     return UserService.changePassword(username, newPassword);
   }

@@ -15,7 +15,7 @@ interface UserListContentProps {
   onImpersonate: (userId: number) => void;
   onDeleteClick: (user: User) => void;
   onUserChange: (user: User) => void;
-  onPasswordChange: (userId: number, newPassword: string) => void;
+  onPasswordChange: (userId: number, newPassword: string) => Promise<boolean>;
   onAddUser: () => void;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
