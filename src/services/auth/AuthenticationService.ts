@@ -5,7 +5,7 @@ import { verifyPassword } from '@/utils/authUtils';
 import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
 
-// Separate interface for the raw database user data without type recursion
+// Define a simple type for the user data without recursion
 interface UserData {
   id: string;
   name: string;
@@ -222,6 +222,3 @@ export class AuthenticationService extends BaseSupabaseService {
     }
   }
 }
-
-// Generate and log a hash for "password" for debugging
-// Call this line in the browser console to see the hash: AuthenticationService.generatePasswordHash('password')

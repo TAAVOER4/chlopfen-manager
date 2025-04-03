@@ -62,7 +62,10 @@ const LoginForm: React.FC = () => {
   return (
     <div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <LoginFormFields register={register} errors={errors} />
+        <LoginFormFields 
+          register={register} 
+          errors={errors} 
+        />
         
         <div>
           <Button 

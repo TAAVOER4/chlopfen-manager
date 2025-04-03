@@ -1,25 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 
-interface PasswordInputProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  required?: boolean;
+interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
-  id?: string;
-  className?: string;
 }
 
-const PasswordInput: React.FC<PasswordInputProps> = ({
+const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(({
   value,
   onChange,
   required = false,
   placeholder = "Enter password",
   id = "password",
   className = "",
-}) => {
+  ...props
+}, ref) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const togglePasswordVisibility = () => {
@@ -29,6 +27,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   return (
     <div className="relative">
       <Input
+        ref={ref}
         id={id}
         type={showPassword ? "text" : "password"}
         value={value}
@@ -36,6 +35,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
         required={required}
         placeholder={placeholder}
         className={`pr-10 ${className}`}
+        {...props}
       />
       <button
         type="button"
@@ -46,6 +46,8 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       </button>
     </div>
   );
-};
+});
+
+PasswordInput.displayName = "PasswordInput";
 
 export default PasswordInput;

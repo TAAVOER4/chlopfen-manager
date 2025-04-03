@@ -6,19 +6,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import PasswordInput from './PasswordInput';
 import TournamentSelect from './TournamentSelect';
 import { Tournament } from '@/types';
+import { FieldErrors, UseFormRegister } from 'react-hook-form';
+
+interface FormValues {
+  username: string;
+  password: string;
+}
 
 interface LoginFormFieldsProps {
-  username: string;
-  setUsername: (username: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
-  error: string;
-  selectedTournamentId: string;
-  setSelectedTournamentId: (id: string) => void;
-  tournaments: Tournament[];
+  register: UseFormRegister<FormValues>;
+  errors: FieldErrors<FormValues>;
+  username?: string;
+  setUsername?: (username: string) => void;
+  password?: string;
+  setPassword?: (password: string) => void;
+  error?: string;
+  selectedTournamentId?: string;
+  setSelectedTournamentId?: (id: string) => void;
+  tournaments?: Tournament[];
 }
 
 const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
+  register,
+  errors,
   username,
   setUsername,
   password,
@@ -28,6 +38,10 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
   setSelectedTournamentId,
   tournaments
 }) => {
+  // Using either React Hook Form or controlled inputs based on what's provided
+  const isUsingHookForm = !!register;
+  const isUsingControlledInputs = !!setUsername && !!setPassword;
+
   return (
     <div className="space-y-4">
       {error && (
@@ -39,24 +53,41 @@ const LoginFormFields: React.FC<LoginFormFieldsProps> = ({
       )}
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
-        <Input
-          id="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          placeholder="Enter username"
-        />
+        {isUsingHookForm ? (
+          <Input
+            id="username"
+            type="text"
+            {...register('username')}
+            required
+            placeholder="Enter username"
+          />
+        ) : (
+          <Input
+            id="username"
+            type="text"
+            value={username || ''}
+            onChange={(e) => setUsername && setUsername(e.target.value)}
+            required
+            placeholder="Enter username"
+          />
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <PasswordInput 
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        {isUsingHookForm ? (
+          <PasswordInput 
+            {...register('password')}
+            required
+          />
+        ) : (
+          <PasswordInput 
+            value={password || ''}
+            onChange={(e) => setPassword && setPassword(e.target.value)}
+            required
+          />
+        )}
       </div>
-      {tournaments && tournaments.length > 0 && (
+      {tournaments && tournaments.length > 0 && selectedTournamentId !== undefined && setSelectedTournamentId && (
         <TournamentSelect 
           tournaments={tournaments}
           selectedTournamentId={selectedTournamentId}
