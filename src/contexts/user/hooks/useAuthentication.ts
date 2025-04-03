@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -43,17 +42,36 @@ export const useAuthentication = () => {
         console.error('Initialization error:', initError);
       }
 
-      // Special test case for development
-      if ((username === "erwinvogel@hotmail.com" || username === "erwin.vogel@hotmail.com") && 
-          (password === "password" || password === "Leistung980ADMxy!")) {
+      // Special test cases for development
+      const testUsernames = ["erwin.vogel@hotmail.com", "erwinvogel@hotmail.com", "kobi_lengacher@hotmail.com"];
+      const testPasswords = ["password", "Leistung980ADMxy!", "Hallo1234"];
+      
+      if (testUsernames.includes(username) && testPasswords.includes(password)) {
         console.log('Using development hardcoded login');
+        
+        // Create appropriate test user based on username
+        let name, role, id;
+        
+        if (username.includes("erwin")) {
+          name = "Erwin Vogel";
+          role = "admin";
+          id = 408;
+        } else if (username.includes("kobi")) {
+          name = "Köbu Lengacher";
+          role = "judge";
+          id = 523;
+        } else {
+          name = "Test User";
+          role = "admin";
+          id = 999;
+        }
         
         // Create a mock user for testing
         const testUser: User = {
-          id: 1,
-          name: "Erwin Vogel",
-          username: "erwin.vogel@hotmail.com",
-          role: "admin",
+          id,
+          name,
+          username: username,
+          role: role as any,
           passwordHash: "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi",
           assignedCriteria: {
             individual: undefined,
