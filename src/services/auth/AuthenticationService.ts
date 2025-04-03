@@ -1,9 +1,20 @@
 
 import { BaseSupabaseService } from '../BaseSupabaseService';
-import { User } from '@/types';
+import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
 import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
+
+interface UserData {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  password_hash: string;
+  individual_criterion?: string | null;
+  group_criterion?: string | null;
+  email?: string;
+}
 
 export class AuthenticationService extends BaseSupabaseService {
   /**
@@ -36,7 +47,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        return this.validateAndReturnUser(usernameData[0], password);
+        return this.validateAndReturnUser(usernameData[0] as UserData, password);
       }
       
       // Second try - if database has email field, try matching on that
@@ -64,7 +75,7 @@ export class AuthenticationService extends BaseSupabaseService {
           // If email match found, validate password
           if (emailData && emailData.length > 0) {
             console.log('Found user by email match');
-            return this.validateAndReturnUser(emailData[0], password);
+            return this.validateAndReturnUser(emailData[0] as UserData, password);
           }
         } else {
           console.log('Email field does not exist in users table, skipping email query');
@@ -94,7 +105,7 @@ export class AuthenticationService extends BaseSupabaseService {
         // If found, validate password
         if (usernameWithEmailData && usernameWithEmailData.length > 0) {
           console.log('Found user by username-as-email match');
-          return this.validateAndReturnUser(usernameWithEmailData[0], password);
+          return this.validateAndReturnUser(usernameWithEmailData[0] as UserData, password);
         }
       }
       
@@ -109,16 +120,7 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: {
-    id: string;
-    name: string;
-    username: string;
-    role: string;
-    password_hash: string;
-    individual_criterion?: string | null;
-    group_criterion?: string | null;
-    email?: string;
-  }, password: string): User | null {
+  private static validateAndReturnUser(userData: UserData, password: string): User | null {
     if (!userData) return null;
     
     console.log('Validating password for user:', userData.username);
@@ -127,10 +129,10 @@ export class AuthenticationService extends BaseSupabaseService {
       id: String(userData.id),
       name: String(userData.name),
       username: String(userData.username),
-      role: userData.role,
+      role: userData.role as UserRole,
       password_hash: String(userData.password_hash),
-      individual_criterion: userData.individual_criterion || null,
-      group_criterion: userData.group_criterion || null,
+      individual_criterion: userData.individual_criterion as CriterionKey | null,
+      group_criterion: userData.group_criterion as GroupCriterionKey | null,
       email: userData.email
     };
     
