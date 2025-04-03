@@ -32,6 +32,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
           description: "Das Passwort wurde erfolgreich geändert."
         });
       } else {
+        console.error('Password change returned false');
         throw new Error('Password update failed');
       }
     } catch (error) {

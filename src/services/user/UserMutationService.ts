@@ -131,21 +131,46 @@ export class UserMutationService extends BaseSupabaseService {
       
       console.log('Generated password hash:', passwordHash);
       
-      const { data, error } = await this.supabase
+      // Log the SQL query that will be executed
+      console.log('Executing update query with username:', username);
+      
+      // Add more detailed logging for debugging
+      const beforeUpdate = await this.supabase
+        .from('users')
+        .select('username, password_hash')
+        .eq('username', username)
+        .single();
+      
+      console.log('Current user data before update:', beforeUpdate);
+      
+      // Update the password hash directly with more debug info
+      const { data, error, status, statusText, count } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })
-        .eq('username', username)
-        .select() as any;
+        .eq('username', username);
+      
+      console.log('Update response:', { data, error, status, statusText, count });
         
       if (error) {
         console.error('Error changing password:', error);
         throw error;
       }
       
-      if (data && data.length > 0) {
-        console.log('Password changed successfully for user:', username);
+      // Verify the update was successful by fetching the updated record
+      const afterUpdate = await this.supabase
+        .from('users')
+        .select('username, password_hash')
+        .eq('username', username)
+        .single();
+      
+      console.log('User data after update:', afterUpdate);
+      
+      if (afterUpdate.error) {
+        console.warn('Could not verify password update:', afterUpdate.error);
+      } else if (beforeUpdate.data?.password_hash === afterUpdate.data?.password_hash) {
+        console.warn('Password hash did not change despite no error');
       } else {
-        console.warn('No data returned after password update, user might not exist:', username);
+        console.log('Password changed successfully for user:', username);
       }
     } catch (error) {
       console.error('Error changing password:', error);

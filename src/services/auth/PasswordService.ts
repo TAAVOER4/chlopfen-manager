@@ -14,8 +14,11 @@ export class PasswordService extends BaseSupabaseService {
       const passwordHash = hashPassword(newPassword);
       console.log('Password hash generated successfully');
       
+      // Log more details about the update operation
+      console.log('Updating password for user with username:', username);
+      
       // Update the password directly
-      const { error, count } = await this.supabase
+      const { error, count, data } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })
         .eq('username', username);
@@ -24,6 +27,8 @@ export class PasswordService extends BaseSupabaseService {
         console.error('Error updating password:', error);
         return false;
       }
+      
+      console.log('Password update response:', { error, count, data });
       
       if (count === 0) {
         console.warn('No rows updated. User might not exist:', username);

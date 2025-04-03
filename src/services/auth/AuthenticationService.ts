@@ -40,7 +40,8 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        return this.validateAndReturnUser(usernameData[0] as unknown as AuthUserData, password);
+        const userData = usernameData[0] as Record<string, any>;
+        return this.validateAndReturnUser(userData as AuthUserData, password);
       }
       
       // Try alternative lookup methods
@@ -131,9 +132,9 @@ export class AuthenticationService extends BaseSupabaseService {
     
     // Debug: Log password hash format
     console.log('Password hash format:', {
-      hash: userData.password_hash.substring(0, 10) + '...',
-      length: userData.password_hash.length,
-      startsWithBcrypt: userData.password_hash.startsWith('$2')
+      hash: userData.password_hash?.substring(0, 10) + '...',
+      length: userData.password_hash?.length,
+      startsWithBcrypt: userData.password_hash?.startsWith('$2')
     });
     
     if (AuthValidator.verifyPassword(password, userData.password_hash)) {
