@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useTournament } from '@/contexts/TournamentContext';
@@ -63,16 +62,10 @@ const LoginForm: React.FC = () => {
     try {
       console.log('Attempting login with:', username);
       
-      // First initialize users to ensure we have test users available
+      // First initialize users to ensure we have data in the database
       await SupabaseService.initializeUsers();
       
-      // Use specific test credentials for testing if needed
-      const actualUsername = username;
-      const actualPassword = password;
-      
-      console.log('Login credentials:', { username: actualUsername, password: actualPassword });
-      
-      const success = await login(actualUsername, actualPassword);
+      const success = await login(username, password);
       
       if (success) {
         // Set active tournament if one is selected and tournaments are available

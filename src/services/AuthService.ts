@@ -9,71 +9,15 @@ export class AuthService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Try different fields for authentication flexibility - first try username
-      const { data: usersByUsername, error: usernameError } = await this.supabase
+      // Query for the user
+      const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail);
         
-      if (usernameError) {
-        console.error('Error during authentication query:', usernameError);
+      if (error) {
+        console.error('Error during authentication query:', error);
         return null;
-      }
-      
-      let users = usersByUsername;
-      
-      // If no users found by username, try alternative methods
-      if (!users || users.length === 0) {
-        console.log('No user found with username, trying alternate methods');
-        
-        // Handle special cases like erwinvogel@hotmail.com -> erwin.vogel@hotmail.com
-        if (usernameOrEmail === "erwinvogel@hotmail.com") {
-          console.log('Trying special case for Erwin Vogel');
-          const { data: specialUsers } = await this.supabase
-            .from('users')
-            .select('*')
-            .eq('username', 'erwin.vogel@hotmail.com');
-            
-          if (specialUsers && specialUsers.length > 0) {
-            users = specialUsers;
-          }
-        }
-        
-        // If still no users found, try a case-insensitive search
-        if (!users || users.length === 0) {
-          console.log('Trying case-insensitive search');
-          const { data: caseInsensitiveUsers } = await this.supabase
-            .from('users')
-            .select('*')
-            .ilike('username', `%${usernameOrEmail}%`);
-            
-          if (caseInsensitiveUsers && caseInsensitiveUsers.length > 0) {
-            users = caseInsensitiveUsers;
-          }
-        }
-        
-        // Create hardcoded test users for development if needed
-        if ((!users || users.length === 0) && 
-            (usernameOrEmail === "kobi_lengacher@hotmail.com" || 
-             usernameOrEmail === "erwinvogel@hotmail.com" ||
-             usernameOrEmail === "erwin.vogel@hotmail.com")) {
-          
-          console.log('Creating hard-coded test user for', usernameOrEmail);
-          
-          // Return mock user for testing
-          return {
-            id: usernameOrEmail === "kobi_lengacher@hotmail.com" ? 523 : 408,
-            name: usernameOrEmail === "kobi_lengacher@hotmail.com" ? "Köbu Lengacher" : "Erwin Vogel",
-            username: usernameOrEmail,
-            role: "admin" as UserRole,
-            passwordHash: "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi",
-            assignedCriteria: {
-              individual: undefined,
-              group: undefined
-            },
-            tournamentIds: []
-          };
-        }
       }
       
       if (!users || users.length === 0) {
@@ -83,21 +27,9 @@ export class AuthService extends BaseSupabaseService {
       
       const user = users[0];
       console.log('Found user with username:', user.username);
-      console.log('Stored password hash:', user.password_hash);
-      console.log('Attempting to verify password');
       
-      // Password verification with bypass for development
-      let passwordVerified = false;
-      
-      // Hard-coded bypass for development environments
-      if (password === "Leistung980ADMxy!" || password === "password" || password === "Hallo1234") {
-        console.log('Using development credentials bypass');
-        passwordVerified = true;
-      } else {
-        // Regular password verification with the verifyPassword function
-        passwordVerified = verifyPassword(password, user.password_hash);
-      }
-      
+      // Verify password
+      const passwordVerified = verifyPassword(password, user.password_hash);
       console.log('Password verification result:', passwordVerified);
       
       if (passwordVerified) {
