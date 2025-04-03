@@ -27,6 +27,10 @@ const TournamentPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tournamentToDelete, setTournamentToDelete] = useState<Tournament | null>(null);
   
+  // Store the ID of tournament being edited (not part of form schema)
+  // Moved this state declaration up to ensure consistent hook ordering
+  const [editingTournamentId, setEditingTournamentId] = useState<number | null>(null);
+  
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -90,9 +94,6 @@ const TournamentPage = () => {
       description: `"${tournament.name}" ist jetzt das aktive Turnier.`,
     });
   };
-
-  // Store the ID of tournament being edited (not part of form schema)
-  const [editingTournamentId, setEditingTournamentId] = useState<number | null>(null);
   
   const onSubmit = (values: TournamentFormValues) => {
     if (isEditing && editingTournamentId !== null) {
