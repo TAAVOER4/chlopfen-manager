@@ -1,4 +1,3 @@
-
 // This is a simplified version of bcrypt for browser environments
 import bcrypt from 'bcryptjs';
 
