@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Tournament } from '@/types';
 import { SupabaseService } from '@/services/SupabaseService';
@@ -91,7 +90,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Add the updateTournament method
   const updateTournament = async (tournament: Tournament) => {
     try {
       setIsLoading(true);
@@ -132,7 +130,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Add the addTournament method
   const addTournament = async (tournament: Tournament) => {
     try {
       setIsLoading(true);
@@ -170,7 +167,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Add the deleteTournament method
   const deleteTournament = async (tournamentId: number) => {
     try {
       setIsLoading(true);

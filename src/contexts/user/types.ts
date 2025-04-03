@@ -17,3 +17,13 @@ export interface UserContextType {
   selectedTournament: Tournament | null;
   setSelectedTournament: (tournament: Tournament) => void;
 }
+
+export interface TournamentContextType {
+  tournaments: Tournament[];
+  activeTournament: Tournament | null;
+  setActiveTournament: (tournament: Tournament) => Promise<void>;
+  updateTournament: (tournament: Tournament) => Promise<void>;
+  addTournament: (tournament: Tournament) => Promise<void>;
+  deleteTournament: (tournamentId: number) => Promise<void>;
+  isLoading: boolean;
+}
