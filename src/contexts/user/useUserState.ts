@@ -11,7 +11,6 @@ export const useUserState = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [availableTournaments, setAvailableTournaments] = useState<Tournament[]>([]);
 
-  // Load tournaments from database
   useEffect(() => {
     const loadTournaments = async () => {
       try {
@@ -35,7 +34,6 @@ export const useUserState = () => {
           }));
           setAvailableTournaments(formattedTournaments);
           
-          // Set active tournament
           const activeTournament = formattedTournaments.find(t => t.isActive);
           const storedTournamentId = sessionStorage.getItem('activeTournamentId');
           
@@ -93,7 +91,6 @@ export const useUserState = () => {
   const isEditor = !!currentUser && currentUser.role === 'editor';
   const isImpersonating = !!originalAdmin;
 
-  // Calculate available tournaments based on user role and tournament assignments
   const userTournaments = useMemo(() => {
     if (!currentUser) return [];
     
@@ -111,19 +108,15 @@ export const useUserState = () => {
       console.log('Login attempt with:', username);
       setIsLoading(true);
       
-      // Initialize users if needed (first check if we need to create default users)
       try {
         await SupabaseService.initializeUsers();
       } catch (initError) {
         console.error('Initialization error:', initError);
-        // Continue with login attempt even if initialization fails
       }
       
-      // Authenticate user
       const authenticatedUser = await SupabaseService.authenticateUser(username, password);
       
       if (authenticatedUser) {
-        // Load user tournament assignments if they exist
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
             const { data: userTournaments, error } = await SupabaseService.supabase
@@ -146,7 +139,6 @@ export const useUserState = () => {
         
         localStorage.setItem('currentUser', JSON.stringify(userToStore));
         
-        // Find active tournament
         const activeTournament = availableTournaments.find(t => t.isActive);
         if (activeTournament) {
           setSelectedTournament(activeTournament);

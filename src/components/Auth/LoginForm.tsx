@@ -43,6 +43,10 @@ const LoginForm: React.FC = () => {
     
     try {
       console.log('Attempting login with:', username);
+      
+      // First initialize users to ensure we have test users available
+      await SupabaseService.initializeUsers();
+      
       const success = await login(username, password);
       
       if (success) {
