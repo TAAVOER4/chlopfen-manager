@@ -6,7 +6,7 @@ import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
 
 // Define a simple interface for the user data without recursion
-interface UserData {
+interface AuthUserData {
   id: string;
   name: string;
   username: string;
@@ -48,7 +48,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        return this.validateAndReturnUser(usernameData[0] as UserData, password);
+        return this.validateAndReturnUser(usernameData[0] as AuthUserData, password);
       }
       
       // Second try - if database has email field, try matching on that
@@ -76,7 +76,7 @@ export class AuthenticationService extends BaseSupabaseService {
           // If email match found, validate password
           if (emailData && emailData.length > 0) {
             console.log('Found user by email match');
-            return this.validateAndReturnUser(emailData[0] as UserData, password);
+            return this.validateAndReturnUser(emailData[0] as AuthUserData, password);
           }
         } else {
           console.log('Email field does not exist in users table, skipping email query');
@@ -106,7 +106,7 @@ export class AuthenticationService extends BaseSupabaseService {
         // If found, validate password
         if (usernameWithEmailData && usernameWithEmailData.length > 0) {
           console.log('Found user by username-as-email match');
-          return this.validateAndReturnUser(usernameWithEmailData[0] as UserData, password);
+          return this.validateAndReturnUser(usernameWithEmailData[0] as AuthUserData, password);
         }
       }
       
@@ -121,38 +121,22 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: UserData, password: string): User | null {
+  private static validateAndReturnUser(userData: AuthUserData, password: string): User | null {
     if (!userData) return null;
     
     console.log('Validating password for user:', userData.username);
     
-    const user = {
-      id: String(userData.id),
-      name: String(userData.name),
-      username: String(userData.username),
-      role: userData.role as UserRole,
-      password_hash: String(userData.password_hash),
-      individual_criterion: userData.individual_criterion as CriterionKey | null,
-      group_criterion: userData.group_criterion as GroupCriterionKey | null,
-      email: userData.email
-    };
-    
-    console.log('User data mapped:', {
-      ...user,
-      password_hash: '[REDACTED]'
-    });
-    
     // Debug: Log password hash format
     console.log('Password hash format:', {
-      hash: user.password_hash.substring(0, 10) + '...',
-      length: user.password_hash.length,
-      startsWithBcrypt: user.password_hash.startsWith('$2')
+      hash: userData.password_hash.substring(0, 10) + '...',
+      length: userData.password_hash.length,
+      startsWithBcrypt: userData.password_hash.startsWith('$2')
     });
     
     // First, check if hash is actually a bcrypt hash (starts with $2a, $2b, $2y)
-    const isBcryptHash = user.password_hash.startsWith('$2a$') || 
-                         user.password_hash.startsWith('$2b$') || 
-                         user.password_hash.startsWith('$2y$');
+    const isBcryptHash = userData.password_hash.startsWith('$2a$') || 
+                        userData.password_hash.startsWith('$2b$') || 
+                        userData.password_hash.startsWith('$2y$');
     
     let passwordVerified = false;
     
@@ -161,7 +145,7 @@ export class AuthenticationService extends BaseSupabaseService {
       console.log('Attempting bcrypt password verification');
       
       try {
-        passwordVerified = verifyPassword(password, user.password_hash);
+        passwordVerified = verifyPassword(password, userData.password_hash);
         console.log('Bcrypt password verification result:', passwordVerified);
       } catch (error) {
         console.error('Bcrypt verification error:', error);
@@ -171,21 +155,31 @@ export class AuthenticationService extends BaseSupabaseService {
       // which is part of our default password hash
       console.log('Hash is not in bcrypt format, checking for default hash pattern');
       
-      if (user.password_hash.includes('DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI')) {
+      if (userData.password_hash.includes('DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI')) {
         console.log('Default hash pattern found, checking if password is "password"');
         passwordVerified = password === 'password';
         console.log('Default password verification result:', passwordVerified);
       } else {
         // Direct comparison as fallback for testing
         console.log('Attempting direct password comparison');
-        passwordVerified = password === user.password_hash;
+        passwordVerified = password === userData.password_hash;
         console.log('Direct comparison password verification result:', passwordVerified);
       }
     }
     
     if (passwordVerified) {
       console.log('Password matches, allowing login');
-      const mappedUser = mapDatabaseUserToUser(user as DatabaseUser);
+      const mappedUser = mapDatabaseUserToUser({
+        id: userData.id,
+        name: userData.name,
+        username: userData.username,
+        role: userData.role as UserRole,
+        password_hash: userData.password_hash,
+        individual_criterion: userData.individual_criterion as CriterionKey | null,
+        group_criterion: userData.group_criterion as GroupCriterionKey | null,
+        email: userData.email
+      } as DatabaseUser);
+      
       console.log('User mapped to application User type:', {
         ...mappedUser,
         passwordHash: '[REDACTED]'

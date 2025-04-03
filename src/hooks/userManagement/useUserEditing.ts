@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { hashPassword } from '@/utils/authUtils';
 import { UserService } from '@/services/UserService';
 
 export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
@@ -22,28 +21,8 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
     if (!user) return;
     
     try {
-      // Hash password before sending to API
-      const passwordHash = hashPassword(newPassword);
+      // Pass plain password to service which will hash it before saving
       await UserService.changePassword(user.username, newPassword);
-      
-      setUsers(prevUsers => {
-        return prevUsers.map(u => {
-          if (u.id === userId) {
-            return {
-              ...u,
-              passwordHash: passwordHash
-            };
-          }
-          return u;
-        });
-      });
-
-      if (editingUser && editingUser.id === userId) {
-        setEditingUser({
-          ...editingUser,
-          passwordHash: passwordHash
-        });
-      }
       
       toast({
         title: "Passwort geändert",

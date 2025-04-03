@@ -17,7 +17,13 @@ export class UserMutationService extends BaseSupabaseService {
       
       // Make sure we have a password hash
       if (!userData.password_hash) {
-        throw new Error('Password is required for new users');
+        if (!user.password) {
+          throw new Error('Password is required for new users');
+        }
+        
+        // Hash the password if a plain password was provided
+        console.log('Hashing provided password for new user');
+        userData.password_hash = hashPassword(user.password);
       }
       
       const { data, error } = await this.supabase
@@ -117,6 +123,8 @@ export class UserMutationService extends BaseSupabaseService {
   static async changePassword(username: string, newPassword: string): Promise<void> {
     try {
       console.log('Changing password for user:', username);
+      
+      // Always hash the password before storing it
       const passwordHash = hashPassword(newPassword);
       
       console.log('Generated password hash:', passwordHash);
