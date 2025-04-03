@@ -23,9 +23,11 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
   tournamentName,
   groups = []
 }) => {
-  // Create and download CSV file
+  // Create and download CSV file with proper encoding for umlauts
   const downloadCSV = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    // Add BOM (Byte Order Mark) for UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
