@@ -36,6 +36,7 @@ export class InitializationService extends BaseSupabaseService {
       if (!existingUsers || existingUsers.length === 0) {
         console.log('No users found, adding default users...');
         
+        // Use a string that we know our validation will accept (either for bcrypt or direct comparison)
         const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi"; // Hash for "password"
         
         const defaultUsers = [
