@@ -1,11 +1,25 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import LoginForm from '@/components/Auth/LoginForm';
+import { SupabaseService } from '@/services/SupabaseService';
 
 const LoginPage: React.FC = () => {
   const { currentUser } = useUser();
+
+  useEffect(() => {
+    // Initialize users in the database if needed
+    const initializeDatabase = async () => {
+      try {
+        await SupabaseService.initializeUsers();
+      } catch (error) {
+        console.error('Error initializing users:', error);
+      }
+    };
+
+    initializeDatabase();
+  }, []);
 
   // Redirect to home if already logged in
   if (currentUser) {

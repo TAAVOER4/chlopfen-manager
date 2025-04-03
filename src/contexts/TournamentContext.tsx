@@ -1,93 +1,116 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Tournament } from '@/types';
-import { getActiveTournament, mockTournaments } from '@/data/mockTournaments';
+import { SupabaseService } from '@/services/SupabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 interface TournamentContextType {
-  activeTournament: Tournament | null;
   tournaments: Tournament[];
-  setActiveTournament: (tournament: Tournament) => void;
-  updateTournament: (updatedTournament: Tournament) => void;
-  addTournament: (tournament: Tournament) => void;
+  activeTournament: Tournament | null;
+  setActiveTournament: (tournament: Tournament) => Promise<void>;
+  isLoading: boolean;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [tournaments, setTournaments] = useState<Tournament[]>(mockTournaments);
-  const [activeTournament, setActiveTournamentState] = useState<Tournament | null>(null);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [activeTournament, setActive] = useState<Tournament | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize with the active tournament from mock data
-    const active = getActiveTournament();
-    setActiveTournamentState(active || null);
+    const fetchTournaments = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedTournaments = await SupabaseService.getAllTournaments();
+        setTournaments(fetchedTournaments);
+        
+        // Get active tournament
+        const storedTournamentId = sessionStorage.getItem('activeTournamentId');
+        if (storedTournamentId) {
+          const storedTournament = fetchedTournaments.find(
+            t => t.id.toString() === storedTournamentId
+          );
+          if (storedTournament) {
+            setActive(storedTournament);
+          }
+        }
+        
+        // If no stored tournament, use the one marked as active
+        if (!activeTournament) {
+          const active = fetchedTournaments.find(t => t.isActive);
+          if (active) {
+            setActive(active);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching tournaments:', error);
+        toast({
+          title: "Fehler",
+          description: "Die Turniere konnten nicht geladen werden.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Store active tournament in session storage, if one exists
-    if (active) {
-      sessionStorage.setItem('activeTournamentId', active.id.toString());
-    }
+    fetchTournaments();
   }, []);
 
-  const setActiveTournament = (tournament: Tournament) => {
-    setTournaments(prevTournaments => 
-      prevTournaments.map(t => ({
-        ...t,
-        isActive: t.id === tournament.id
-      }))
-    );
-    setActiveTournamentState(tournament);
-    
-    // Store the active tournament ID in session storage
-    sessionStorage.setItem('activeTournamentId', tournament.id.toString());
-  };
-
-  const updateTournament = (updatedTournament: Tournament) => {
-    setTournaments(prevTournaments => 
-      prevTournaments.map(tournament => 
-        tournament.id === updatedTournament.id ? updatedTournament : tournament
-      )
-    );
-    
-    if (updatedTournament.isActive) {
-      setActiveTournamentState(updatedTournament);
-      sessionStorage.setItem('activeTournamentId', updatedTournament.id.toString());
-    } else if (activeTournament?.id === updatedTournament.id && !updatedTournament.isActive) {
-      setActiveTournamentState(null);
-      sessionStorage.removeItem('activeTournamentId');
-    }
-  };
-
-  const addTournament = (newTournament: Tournament) => {
-    setTournaments(prevTournaments => [...prevTournaments, newTournament]);
-    
-    if (newTournament.isActive) {
+  const setActiveTournament = async (tournament: Tournament) => {
+    try {
+      setIsLoading(true);
+      
+      // Update in database
+      await SupabaseService.setActiveTournament(tournament.id);
+      
+      // Update local state
+      setActive(tournament);
+      
+      // Store in session storage
+      sessionStorage.setItem('activeTournamentId', tournament.id.toString());
+      
+      // Update tournaments list with new active state
       setTournaments(prevTournaments => 
         prevTournaments.map(t => ({
           ...t,
-          isActive: t.id === newTournament.id
+          isActive: t.id === tournament.id
         }))
       );
-      setActiveTournamentState(newTournament);
-      sessionStorage.setItem('activeTournamentId', newTournament.id.toString());
+      
+      toast({
+        title: "Turnier aktiviert",
+        description: `${tournament.name} ist jetzt das aktive Turnier.`
+      });
+    } catch (error) {
+      console.error('Error setting active tournament:', error);
+      toast({
+        title: "Fehler",
+        description: "Das aktive Turnier konnte nicht gesetzt werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const value = useMemo(() => ({
+    tournaments,
+    activeTournament,
+    setActiveTournament,
+    isLoading
+  }), [tournaments, activeTournament, isLoading]);
+
   return (
-    <TournamentContext.Provider 
-      value={{ 
-        activeTournament, 
-        tournaments, 
-        setActiveTournament, 
-        updateTournament, 
-        addTournament 
-      }}
-    >
+    <TournamentContext.Provider value={value}>
       {children}
     </TournamentContext.Provider>
   );
 };
 
-export const useTournament = () => {
+export const useTournament = (): TournamentContextType => {
   const context = useContext(TournamentContext);
   if (context === undefined) {
     throw new Error('useTournament must be used within a TournamentProvider');

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { SupabaseService } from '@/services/SupabaseService';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -49,7 +50,13 @@ const LoginForm: React.FC = () => {
         if (selectedTournamentId) {
           const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
           if (tournament) {
+            // Set in context and also update in database
             setActiveTournament(tournament);
+            try {
+              await SupabaseService.setActiveTournament(tournament.id);
+            } catch (updateError) {
+              console.error('Error updating active tournament:', updateError);
+            }
           }
         }
         

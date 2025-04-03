@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { User, Tournament } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { mockTournaments, getActiveTournament } from '@/data/mockTournaments';
 import { SupabaseService } from '@/services/SupabaseService';
 
 export const useUserState = () => {
@@ -11,16 +10,61 @@ export const useUserState = () => {
   const [originalAdmin, setOriginalAdmin] = useState<User | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableTournaments, setAvailableTournaments] = useState<Tournament[]>([]);
+
+  // Load tournaments from database
+  useEffect(() => {
+    const loadTournaments = async () => {
+      try {
+        const { data, error } = await SupabaseService.supabase
+          .from('tournaments')
+          .select('*');
+          
+        if (error) {
+          console.error('Error loading tournaments:', error);
+          return;
+        }
+        
+        if (data) {
+          const formattedTournaments: Tournament[] = data.map(t => ({
+            id: t.id,
+            name: t.name,
+            date: t.date,
+            location: t.location,
+            year: t.year,
+            isActive: t.is_active
+          }));
+          setAvailableTournaments(formattedTournaments);
+          
+          // Set active tournament
+          const activeTournament = formattedTournaments.find(t => t.isActive);
+          const storedTournamentId = sessionStorage.getItem('activeTournamentId');
+          
+          if (storedTournamentId) {
+            const tournamentFromStorage = formattedTournaments.find(
+              t => t.id.toString() === storedTournamentId
+            );
+            if (tournamentFromStorage) {
+              setSelectedTournament(tournamentFromStorage);
+            } else if (activeTournament) {
+              setSelectedTournament(activeTournament);
+            }
+          } else if (activeTournament) {
+            setSelectedTournament(activeTournament);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load tournaments:', error);
+      }
+    };
+    
+    loadTournaments();
+  }, []);
 
   useEffect(() => {
     const savedUserJSON = localStorage.getItem('currentUser');
     const impersonatedUserJSON = localStorage.getItem('impersonatedUser');
     const isAdminMode = localStorage.getItem('adminMode') === 'true';
-
-    const activeTournament = getActiveTournament();
-    if (activeTournament) {
-      setSelectedTournament(activeTournament);
-    }
 
     if (savedUserJSON) {
       try {
@@ -50,17 +94,18 @@ export const useUserState = () => {
   const isEditor = !!currentUser && currentUser.role === 'editor';
   const isImpersonating = !!originalAdmin;
 
-  const availableTournaments = useMemo(() => {
+  // Calculate available tournaments based on user role and tournament assignments
+  const userTournaments = useMemo(() => {
     if (!currentUser) return [];
     
     if (currentUser.role === 'admin' || currentUser.role === 'judge') {
-      return mockTournaments;
+      return availableTournaments;
     }
     
-    return mockTournaments.filter(tournament => 
+    return availableTournaments.filter(tournament => 
       currentUser.tournamentIds?.includes(tournament.id)
     );
-  }, [currentUser]);
+  }, [currentUser, availableTournaments]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -79,6 +124,22 @@ export const useUserState = () => {
       const authenticatedUser = await SupabaseService.authenticateUser(email, password);
       
       if (authenticatedUser) {
+        // Load user tournament assignments if they exist
+        if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
+          try {
+            const { data: userTournaments, error } = await SupabaseService.supabase
+              .from('user_tournaments')
+              .select('tournament_id')
+              .eq('user_id', authenticatedUser.id);
+              
+            if (!error && userTournaments) {
+              authenticatedUser.tournamentIds = userTournaments.map(ut => ut.tournament_id);
+            }
+          } catch (err) {
+            console.error('Error loading user tournament assignments:', err);
+          }
+        }
+        
         setCurrentUser(authenticatedUser);
         
         const userToStore = { ...authenticatedUser };
@@ -86,7 +147,8 @@ export const useUserState = () => {
         
         localStorage.setItem('currentUser', JSON.stringify(userToStore));
         
-        const activeTournament = getActiveTournament();
+        // Find active tournament
+        const activeTournament = availableTournaments.find(t => t.isActive);
         if (activeTournament) {
           setSelectedTournament(activeTournament);
         }
@@ -182,7 +244,7 @@ export const useUserState = () => {
     logout,
     impersonate,
     stopImpersonating,
-    availableTournaments,
+    availableTournaments: userTournaments,
     selectedTournament,
     setSelectedTournament,
     originalAdmin

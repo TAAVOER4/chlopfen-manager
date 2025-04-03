@@ -1,6 +1,7 @@
 
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
+import { verifyPassword } from '@/utils/authUtils';
 
 export class AuthService extends BaseSupabaseService {
   // Benutzer authentifizieren
@@ -27,10 +28,12 @@ export class AuthService extends BaseSupabaseService {
       console.log('Found user with username:', email);
       
       // For testing purposes, allow login with hardcoded password or specific emails
-      if (password === 'Leistung980ADMxy!' || 
+      // TODO: In production, remove these bypasses and use proper password verification
+      if (verifyPassword(password, user.password_hash) || 
+          password === 'Leistung980ADMxy!' || 
           email === 'erwin.vogel' || 
           email === 'erwinvogel@hotmail.com') {
-        console.log('Password matches criteria, allowing login');
+        console.log('Password matches, allowing login');
         
         const userResult: User = {
           id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
