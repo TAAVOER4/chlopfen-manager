@@ -66,7 +66,13 @@ const LoginForm: React.FC = () => {
       // First initialize users to ensure we have test users available
       await SupabaseService.initializeUsers();
       
-      const success = await login(username, password);
+      // Use specific test credentials for testing if needed
+      const actualUsername = username;
+      const actualPassword = password;
+      
+      console.log('Login credentials:', { username: actualUsername, password: actualPassword });
+      
+      const success = await login(actualUsername, actualPassword);
       
       if (success) {
         // Set active tournament if one is selected and tournaments are available
@@ -92,7 +98,7 @@ const LoginForm: React.FC = () => {
         
         navigate('/');
       } else {
-        setError('Please check your login credentials.');
+        setError('Incorrect username or password. Please try again.');
         toast({
           title: "Login failed",
           description: "Incorrect username or password.",

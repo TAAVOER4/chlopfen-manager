@@ -9,7 +9,7 @@ export class AuthService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Fixed query to correctly use parameterized query
+      // Query by username
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
@@ -27,9 +27,14 @@ export class AuthService extends BaseSupabaseService {
       
       const user = users[0];
       console.log('Found user with username:', user.username);
+      console.log('Stored password hash:', user.password_hash);
+      console.log('Attempting to verify password');
       
       // Password verification with the verifyPassword function
-      if (verifyPassword(password, user.password_hash)) {
+      const passwordVerified = verifyPassword(password, user.password_hash);
+      console.log('Password verification result:', passwordVerified);
+      
+      if (passwordVerified) {
         console.log('Password matches, allowing login');
         
         const userResult: User = {
