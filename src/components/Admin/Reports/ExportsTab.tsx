@@ -23,11 +23,20 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
   tournamentName,
   groups = []
 }) => {
+  // Process text for Swiss German conventions (ß → ss)
+  const processTextForSwiss = (text: string): string => {
+    if (!text) return '';
+    // Replace German eszett with 'ss' for Swiss German
+    return text.replace(/ß/g, 'ss');
+  };
+  
   // Create and download CSV file with proper encoding for umlauts
   const downloadCSV = (content: string, filename: string) => {
     // Add BOM (Byte Order Mark) for UTF-8
     const BOM = '\uFEFF';
-    const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+    // Process content for Swiss German conventions
+    const processedContent = processTextForSwiss(content);
+    const blob = new Blob([BOM + processedContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -44,7 +53,7 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
     let csvContent = "Vorname;Nachname;Kategorie;Wohnort;Geburtsjahr\n";
     
     participants.forEach(participant => {
-      csvContent += `${participant.firstName};${participant.lastName};${participant.category};${participant.location};${participant.birthYear}\n`;
+      csvContent += `${processTextForSwiss(participant.firstName)};${processTextForSwiss(participant.lastName)};${participant.category};${processTextForSwiss(participant.location)};${participant.birthYear}\n`;
     });
     
     // Download the file
@@ -69,10 +78,10 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
       const groupParticipants = group.participantIds
         .map(id => participants.find(p => p.id === id))
         .filter(p => p !== undefined)
-        .map(p => `${p.firstName} ${p.lastName}`)
+        .map(p => `${processTextForSwiss(p.firstName)} ${processTextForSwiss(p.lastName)}`)
         .join(", ");
         
-      csvContent += `${group.name};${group.category};${group.size === 'three' ? '3' : '4'};${groupParticipants}\n`;
+      csvContent += `${processTextForSwiss(group.name)};${group.category};${group.size === 'three' ? '3' : '4'};${groupParticipants}\n`;
     });
     
     // Download the file
@@ -93,7 +102,7 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
       const mockScore = Math.floor(Math.random() * 10) + 1;
       const mockTimestamp = new Date().toISOString().split('T')[0];
       
-      csvContent += `${participant.firstName} ${participant.lastName};${participant.category};${mockJudge};${mockScore};${mockTimestamp}\n`;
+      csvContent += `${processTextForSwiss(participant.firstName)} ${processTextForSwiss(participant.lastName)};${participant.category};${mockJudge};${mockScore};${mockTimestamp}\n`;
     });
     
     // Download the file
