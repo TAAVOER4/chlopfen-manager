@@ -1,27 +1,58 @@
 
 import { useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { mockParticipants, mockIndividualScores, mockSponsors, mockGroups, mockGroupScores } from '@/data/mockData';
-import { mockTournaments } from '@/data/mockTournaments';
+import { useQuery } from '@tanstack/react-query';
+import { DatabaseService } from '@/services/DatabaseService';
 import { generateResults, generateGroupResults } from '@/services/ResultsService';
 import { Tournament, ScheduleItem } from '@/types';
 
 export const useReportsData = () => {
   const { selectedTournament } = useUser();
   
-  // Generate data for reports
-  const allIndividualResults = useMemo(() => ({
-    'kids': generateResults('kids', mockParticipants, mockIndividualScores),
-    'juniors': generateResults('juniors', mockParticipants, mockIndividualScores),
-    'active': generateResults('active', mockParticipants, mockIndividualScores)
-  }), []);
+  // Fetch data from database
+  const { data: participants = [] } = useQuery({
+    queryKey: ['participants'],
+    queryFn: DatabaseService.getAllParticipants,
+  });
   
-  const groupResults = useMemo(() => generateGroupResults(mockGroups, mockParticipants, mockGroupScores), []);
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: DatabaseService.getAllGroups,
+  });
+  
+  const { data: individualScores = [] } = useQuery({
+    queryKey: ['individualScores'],
+    queryFn: DatabaseService.getIndividualScores,
+  });
+  
+  const { data: groupScores = [] } = useQuery({
+    queryKey: ['groupScores'],
+    queryFn: DatabaseService.getGroupScores,
+  });
+  
+  // Generate results using the fetched data
+  const allIndividualResults = useMemo(() => ({
+    'kids': generateResults('kids', participants, individualScores),
+    'juniors': generateResults('juniors', participants, individualScores),
+    'active': generateResults('active', participants, individualScores)
+  }), [participants, individualScores]);
+  
+  const groupResults = useMemo(() => 
+    generateGroupResults(groups, participants, groupScores), 
+    [groups, participants, groupScores]
+  );
   
   const tournamentName = selectedTournament?.name || "Schweiz. Peitschenclub Turnier";
-  const tournament = selectedTournament || mockTournaments[0];
+  const tournament = selectedTournament || {
+    id: 1,
+    name: "Schweiz. Peitschenclub Turnier",
+    date: new Date().toISOString().split('T')[0],
+    location: "Default Location",
+    year: new Date().getFullYear(),
+    isActive: true
+  };
   
-  // Mock schedule data
+  // Mock schedule data - this could be replaced with data from the database in future
   const mockSchedule: ScheduleItem[] = [
     {
       id: 1,
@@ -53,16 +84,24 @@ export const useReportsData = () => {
     }
   ];
   
+  // Fetch sponsors
+  const { data: sponsors = [] } = useQuery({
+    queryKey: ['sponsors'],
+    // This would ideally come from a DatabaseService.getSponsors method
+    // For now, we'll use the mock data
+    queryFn: () => Promise.resolve([]), // Empty for now until we implement sponsor fetching
+  });
+  
   return {
     allIndividualResults,
     groupResults,
     tournamentName,
     tournament,
     mockSchedule,
-    mockParticipants,
-    mockGroups,
-    mockIndividualScores,
-    mockGroupScores,
-    mockSponsors
+    participants,
+    groups,
+    individualScores,
+    groupScores,
+    sponsors
   };
 };
