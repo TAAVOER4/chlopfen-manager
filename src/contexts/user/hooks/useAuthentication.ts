@@ -3,37 +3,30 @@ import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { SupabaseService } from '@/services/SupabaseService';
+import { useLocalStorage } from './useLocalStorage';
 
 export const useAuthentication = () => {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [originalAdmin, setOriginalAdmin] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const {
+    saveUserToLocalStorage,
+    saveImpersonatedUserToLocalStorage,
+    loadUserFromLocalStorage,
+    loadImpersonatedUserFromLocalStorage,
+    clearUserFromLocalStorage
+  } = useLocalStorage();
 
   // Initialize from localStorage
   const initFromLocalStorage = () => {
-    const savedUserJSON = localStorage.getItem('currentUser');
-    const impersonatedUserJSON = localStorage.getItem('impersonatedUser');
-    const isAdminMode = localStorage.getItem('adminMode') === 'true';
-
-    if (savedUserJSON) {
-      try {
-        const savedUser = JSON.parse(savedUserJSON) as User;
-        setCurrentUser(savedUser);
-        
-        if (isAdminMode && impersonatedUserJSON) {
-          try {
-            const impersonatedUser = JSON.parse(impersonatedUserJSON) as User;
-            if (savedUser.id !== impersonatedUser.id) {
-              setOriginalAdmin(savedUser);
-            }
-          } catch (e) {
-            console.error('Error parsing impersonated user:', e);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing saved user:', e);
-        localStorage.removeItem('currentUser');
+    const savedUser = loadUserFromLocalStorage();
+    if (savedUser) {
+      setCurrentUser(savedUser);
+      
+      const impersonatedUser = loadImpersonatedUserFromLocalStorage();
+      if (impersonatedUser && savedUser.id !== impersonatedUser.id) {
+        setOriginalAdmin(savedUser);
       }
     }
   };
@@ -68,11 +61,7 @@ export const useAuthentication = () => {
         }
         
         setCurrentUser(authenticatedUser);
-        
-        const userToStore = { ...authenticatedUser };
-        delete (userToStore as any).passwordHash;
-        
-        localStorage.setItem('currentUser', JSON.stringify(userToStore));
+        saveUserToLocalStorage(authenticatedUser);
         
         toast({
           title: "Anmeldung erfolgreich",
@@ -105,9 +94,7 @@ export const useAuthentication = () => {
   const logout = () => {
     setCurrentUser(null);
     setOriginalAdmin(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('impersonatedUser');
-    localStorage.removeItem('adminMode');
+    clearUserFromLocalStorage();
     
     toast({
       title: "Abmeldung erfolgreich",
@@ -118,15 +105,10 @@ export const useAuthentication = () => {
   const impersonate = (user: User) => {
     if (!originalAdmin && currentUser?.role === 'admin') {
       setOriginalAdmin(currentUser);
-      localStorage.setItem('adminMode', 'true');
     }
     
     setCurrentUser(user);
-    
-    const userToStore = { ...user };
-    delete (userToStore as any).passwordHash;
-    
-    localStorage.setItem('impersonatedUser', JSON.stringify(userToStore));
+    saveImpersonatedUserToLocalStorage(user);
     
     toast({
       title: "Benutzer wechseln",
