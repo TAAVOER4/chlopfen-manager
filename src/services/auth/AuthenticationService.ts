@@ -142,10 +142,22 @@ export class AuthenticationService extends BaseSupabaseService {
       password_hash: '[REDACTED]'
     });
     
-    // TEMPORÄRE ÄNDERUNG: Direkter Passwort-Vergleich statt Hashing für Testzwecke
-    // const passwordVerified = verifyPassword(password, user.password_hash);
-    const passwordVerified = password === user.password_hash;
-    console.log('Password verification result (direct comparison):', passwordVerified);
+    // Try both approaches - first secure password verification, then fallback to direct comparison
+    let passwordVerified = false;
+    
+    // First try secure password verification (bcrypt) if the password hash looks like a hash
+    if (user.password_hash.startsWith('$2') || user.password_hash.length > 20) {
+      console.log('Attempting bcrypt password verification');
+      passwordVerified = verifyPassword(password, user.password_hash);
+      console.log('Bcrypt password verification result:', passwordVerified);
+    } 
+    
+    // If secure verification failed or wasn't attempted, try direct comparison for testing
+    if (!passwordVerified) {
+      console.log('Attempting direct password comparison for testing');
+      passwordVerified = password === user.password_hash;
+      console.log('Direct comparison password verification result:', passwordVerified);
+    }
     
     if (passwordVerified) {
       console.log('Password matches, allowing login');
