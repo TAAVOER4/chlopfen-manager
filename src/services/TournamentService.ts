@@ -1,4 +1,3 @@
-
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { Tournament } from '@/types';
 
@@ -32,7 +31,7 @@ export class TournamentService extends BaseSupabaseService {
       const { data: tournamentFromStorage, error } = await this.supabase
         .from('tournaments')
         .select('*')
-        .eq('id', storedTournamentId)
+        .eq('id', parseInt(storedTournamentId)) // Convert string to number
         .single();
         
       if (!error && tournamentFromStorage) {

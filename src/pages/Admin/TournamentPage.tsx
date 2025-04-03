@@ -53,8 +53,8 @@ import { useTournament } from '@/contexts/TournamentContext';
 import { Tournament } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
+import { TournamentContextType } from '@/contexts/user/types';
 
-// Form schema for tournament validation
 const tournamentSchema = z.object({
   name: z.string().min(3, { message: 'Der Turniername muss mindestens 3 Zeichen lang sein.' }),
   date: z.date({ required_error: 'Bitte wählen Sie ein Datum aus.' }),

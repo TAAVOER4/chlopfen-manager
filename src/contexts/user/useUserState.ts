@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { User, Tournament } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -130,7 +129,7 @@ export const useUserState = () => {
             const { data: userTournaments, error } = await SupabaseService.supabase
               .from('user_tournaments')
               .select('tournament_id')
-              .eq('user_id', authenticatedUser.id);
+              .eq('user_id', authenticatedUser.id.toString());
               
             if (!error && userTournaments) {
               authenticatedUser.tournamentIds = userTournaments.map(ut => ut.tournament_id);
