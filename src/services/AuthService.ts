@@ -1,4 +1,3 @@
-
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
@@ -15,58 +14,54 @@ export class AuthService extends BaseSupabaseService {
         return null;
       }
       
-      // More robust query for the user - check both username and email fields
-      // Use separate queries for exact match and case-insensitive search
-      const { data: exactMatchUsers, error: exactMatchError } = await this.supabase
+      // First try - exact match on username
+      const { data: usernameUsers, error: usernameError } = await this.supabase
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail)
         .limit(1);
-        
-      // If exact match error, log and continue with case-insensitive search
-      if (exactMatchError) {
-        console.error('Error during exact match query:', exactMatchError);
+      
+      if (usernameError) {
+        console.error('Error during username query:', usernameError);
       }
       
-      // If we found an exact match, use that
-      if (exactMatchUsers && exactMatchUsers.length > 0) {
-        return this.validateAndReturnUser(exactMatchUsers[0], password);
+      // If username match found, validate password
+      if (usernameUsers && usernameUsers.length > 0) {
+        return this.validateAndReturnUser(usernameUsers[0], password);
       }
       
-      // If no exact match, try case-insensitive search
-      const { data: caseInsensitiveUsers, error: caseInsensitiveError } = await this.supabase
-        .from('users')
-        .select('*')
-        .ilike('username', usernameOrEmail)
-        .limit(1);
-        
-      // If case-insensitive match error, log and return null
-      if (caseInsensitiveError) {
-        console.error('Error during case-insensitive query:', caseInsensitiveError);
-        return null;
-      }
-      
-      // If we found a case-insensitive match, use that
-      if (caseInsensitiveUsers && caseInsensitiveUsers.length > 0) {
-        return this.validateAndReturnUser(caseInsensitiveUsers[0], password);
-      }
-      
-      // If still no match, try as email
+      // Second try - match on email field
       const { data: emailUsers, error: emailError } = await this.supabase
         .from('users')
         .select('*')
-        .eq('username', usernameOrEmail)
+        .eq('email', usernameOrEmail)
         .limit(1);
-        
-      // If email match error, log and return null
+      
       if (emailError) {
         console.error('Error during email query:', emailError);
-        return null;
       }
       
-      // If we found an email match, use that
+      // If email match found, validate password
       if (emailUsers && emailUsers.length > 0) {
         return this.validateAndReturnUser(emailUsers[0], password);
+      }
+      
+      // Last try - check if username field contains an email that matches
+      if (usernameOrEmail.includes('@')) {
+        const { data: usernameWithEmailUsers, error: usernameWithEmailError } = await this.supabase
+          .from('users')
+          .select('*')
+          .eq('username', usernameOrEmail)
+          .limit(1);
+        
+        if (usernameWithEmailError) {
+          console.error('Error during username-with-email query:', usernameWithEmailError);
+        }
+        
+        // If found, validate password
+        if (usernameWithEmailUsers && usernameWithEmailUsers.length > 0) {
+          return this.validateAndReturnUser(usernameWithEmailUsers[0], password);
+        }
       }
       
       console.log('No user found with username or email:', usernameOrEmail);
