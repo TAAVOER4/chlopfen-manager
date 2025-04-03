@@ -94,25 +94,12 @@ export class UserService extends BaseSupabaseService {
   static async updateUser(user: User): Promise<User> {
     try {
       console.log('Updating user:', user.username);
-      // Lade den Original-Benutzer, um die UUID zu erhalten
-      const { data: originalUsers, error: fetchError } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('username', user.username)
-        .limit(1);
-        
-      if (fetchError || !originalUsers || originalUsers.length === 0) {
-        console.error('Fehler beim Finden des Benutzers:', fetchError);
-        throw fetchError || new Error('Benutzer nicht gefunden');
-      }
       
-      const originalUser = originalUsers[0];
-      
-      // Aktualisiere den Benutzer
+      // Instead of querying for the user first to get the original UUID, we'll directly update by username
       const { data, error } = await this.supabase
         .from('users')
         .update(this.convertToSupabaseFormat(user))
-        .eq('id', originalUser.id)
+        .eq('username', user.username)
         .select()
         .single();
         

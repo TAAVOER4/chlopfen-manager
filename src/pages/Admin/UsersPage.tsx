@@ -143,28 +143,39 @@ const UsersPage = () => {
   };
 
   const handleSave = async () => {
-    if (editingUser) {
-      try {
-        const updatedUser = await SupabaseService.updateUser(editingUser);
-        
-        setUsers(prevUsers => 
-          prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
-        );
-        
-        setEditingUser(null);
-        
-        toast({
-          title: "Benutzer aktualisiert",
-          description: `Daten für ${updatedUser.name} wurden gespeichert.`
-        });
-      } catch (error) {
-        console.error('Fehler beim Aktualisieren des Benutzers:', error);
-        toast({
-          title: "Fehler",
-          description: "Beim Aktualisieren des Benutzers ist ein Fehler aufgetreten.",
-          variant: "destructive"
-        });
+    if (!editingUser) return;
+    
+    try {
+      const isNewUser = !users.some(u => u.id === editingUser.id);
+      
+      let updatedUser: User;
+      
+      if (isNewUser) {
+        const { id, ...userWithoutId } = editingUser;
+        updatedUser = await SupabaseService.createUser(userWithoutId);
+      } else {
+        updatedUser = await SupabaseService.updateUser(editingUser);
       }
+      
+      setUsers(prevUsers => 
+        isNewUser 
+          ? [...prevUsers, updatedUser] 
+          : prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
+      );
+      
+      setEditingUser(null);
+      
+      toast({
+        title: isNewUser ? "Benutzer erstellt" : "Benutzer aktualisiert",
+        description: `Daten für ${updatedUser.name} wurden gespeichert.`
+      });
+    } catch (error) {
+      console.error('Fehler beim Speichern des Benutzers:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Speichern des Benutzers ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -172,7 +183,8 @@ const UsersPage = () => {
     try {
       const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
       
-      const newUser = {
+      const newUser: User = {
+        id: Math.floor(Math.random() * 1000),
         name: 'Neuer Benutzer',
         username: `neuer.benutzer.${Date.now()}`,
         role: 'judge' as UserRole,
@@ -183,10 +195,7 @@ const UsersPage = () => {
         tournamentIds: []
       };
       
-      const createdUser = await SupabaseService.createUser(newUser);
-      
-      setUsers(prevUsers => [...prevUsers, createdUser]);
-      setEditingUser(createdUser);
+      setEditingUser(newUser);
       
       toast({
         title: "Neuer Benutzer",
