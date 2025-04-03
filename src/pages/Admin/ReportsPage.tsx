@@ -114,12 +114,7 @@ const ReportsPage: React.FC = () => {
         
         {/* Statistics Tab */}
         <TabsContent value="statistics">
-          <StatisticsTab 
-            participants={mockParticipants}
-            groups={mockGroups}
-            individualScores={mockIndividualScores}
-            groupScores={mockGroupScores}
-          />
+          <StatisticsTab />
         </TabsContent>
       </Tabs>
     </div>

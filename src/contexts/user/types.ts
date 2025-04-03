@@ -8,7 +8,7 @@ export interface UserContextType {
   isReader: boolean;
   isEditor: boolean;
   isImpersonating: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>; // Changed to Promise<boolean>
   logout: () => void;
   impersonate: (user: User) => void;
   stopImpersonating: () => void;

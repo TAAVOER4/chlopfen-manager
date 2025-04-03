@@ -298,7 +298,7 @@ const UsersPage = () => {
         <CardContent>
           {loading ? (
             <div className="flex justify-center items-center h-40">
-              <Spinner size="lg" />
+              <Spinner size="large" />
               <span className="ml-2 text-muted-foreground">Benutzer werden geladen...</span>
             </div>
           ) : (
