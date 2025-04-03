@@ -4,7 +4,7 @@ import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { SupabaseService } from '@/services/SupabaseService';
 
-export const useUserDeletion = (users: User[], setUsers: (users: User[]) => void) => {
+export const useUserDeletion = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
   const { toast } = useToast();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

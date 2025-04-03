@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { hashPassword } from '@/utils/authUtils';
+import { UserService } from '@/services/UserService';
 
-export const useUserEditing = (users: User[], setUsers: (users: User[]) => void) => {
+export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -66,6 +67,3 @@ export const useUserEditing = (users: User[], setUsers: (users: User[]) => void)
     handlePasswordChange
   };
 };
-
-// Add missing import at the top
-import { UserService } from '@/services/UserService';

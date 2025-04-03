@@ -1,12 +1,11 @@
 
-import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { SupabaseService } from '@/services/SupabaseService';
 
 export const useUserMutations = (
   users: User[], 
-  setUsers: (users: User[]) => void,
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>,
   editingUser: User | null,
   setEditingUser: (user: User | null) => void
 ) => {
@@ -81,7 +80,7 @@ export const useUserMutations = (
     }
   };
 
-  const handleAddUser = async () => {
+  const handleAddUser = () => {
     try {
       // New users start with an empty password that must be set during creation
       
