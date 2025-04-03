@@ -71,32 +71,38 @@ const UserForm: React.FC<UserFormProps> = ({
   const canSeeAllTournaments = user.role === 'admin' || user.role === 'judge';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name" className="text-sm font-medium">Name</Label>
         <Input 
           id="name"
-          value={user.name}
+          value={user.name || ''}
           onChange={handleNameChange}
+          className="w-full mt-1"
+          placeholder="Name eingeben"
+          required
         />
       </div>
       
       <div>
-        <Label htmlFor="username">Benutzername</Label>
+        <Label htmlFor="username" className="text-sm font-medium">Benutzername</Label>
         <Input 
           id="username"
-          value={user.username}
+          value={user.username || ''}
           onChange={handleUsernameChange}
+          className="w-full mt-1"
+          placeholder="E-Mail-Adresse oder Benutzername eingeben"
+          required
         />
       </div>
       
       <div>
-        <Label htmlFor="role">Rolle</Label>
+        <Label htmlFor="role" className="text-sm font-medium">Rolle</Label>
         <Select 
           value={user.role}
           onValueChange={handleRoleChange}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full mt-1">
             <SelectValue placeholder="Rolle auswählen" />
           </SelectTrigger>
           <SelectContent>
@@ -109,14 +115,14 @@ const UserForm: React.FC<UserFormProps> = ({
       </div>
       
       {user.role === 'judge' && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div>
-            <Label htmlFor="individual-criterion">Einzelwertung</Label>
+            <Label htmlFor="individual-criterion" className="text-sm font-medium">Einzelwertung</Label>
             <Select 
               value={user.assignedCriteria?.individual || ''}
               onValueChange={handleIndividualCriterionChange}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Kriterium auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -130,12 +136,12 @@ const UserForm: React.FC<UserFormProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="group-criterion">Gruppenwertung</Label>
+            <Label htmlFor="group-criterion" className="text-sm font-medium">Gruppenwertung</Label>
             <Select 
               value={user.assignedCriteria?.group || ''}
               onValueChange={handleGroupCriterionChange}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Kriterium auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +158,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
       {(user.role === 'reader' || user.role === 'editor') && (
         <div className="space-y-2">
-          <Label>Zugewiesene Turniere</Label>
+          <Label className="text-sm font-medium">Zugewiesene Turniere</Label>
           <p className="text-sm text-muted-foreground">
             Wählen Sie aus, auf welche Turniere dieser Benutzer Zugriff hat
           </p>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Users, Lock, Filter } from 'lucide-react';
@@ -145,12 +146,23 @@ const UsersPage = () => {
   const handleSave = async () => {
     if (!editingUser) return;
     
+    // Validate required fields
+    if (!editingUser.name || !editingUser.username) {
+      toast({
+        title: "Fehler",
+        description: "Bitte füllen Sie alle Pflichtfelder aus (Name und Benutzername).",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       const isNewUser = !users.some(u => u.id === editingUser.id);
       
       let updatedUser: User;
       
       if (isNewUser) {
+        // For new users, we need to remove the temporary ID before sending to API
         const { id, ...userWithoutId } = editingUser;
         updatedUser = await SupabaseService.createUser(userWithoutId);
       } else {
@@ -183,14 +195,16 @@ const UsersPage = () => {
     try {
       const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
       
+      // Create a temporary new user with default values
       const newUser: User = {
         id: Math.floor(Math.random() * 1000),
-        name: 'Neuer Benutzer',
-        username: `neuer.benutzer.${Date.now()}`,
+        name: '',
+        username: '',
         role: 'judge' as UserRole,
         passwordHash: defaultPasswordHash,
         assignedCriteria: {
-          individual: 'rhythm' as CriterionKey
+          individual: undefined,
+          group: undefined
         },
         tournamentIds: []
       };

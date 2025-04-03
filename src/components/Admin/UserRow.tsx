@@ -103,103 +103,101 @@ const UserRow: React.FC<UserRowProps> = ({
   return (
     <>
       <TableRow>
-        <TableCell>
+        <TableCell colSpan={isEditing ? 7 : undefined}>
           {isEditing ? (
-            <UserForm 
-              user={editingUser}
-              onUserChange={onUserChange}
-              individualCriteria={individualCriteria}
-              groupCriteria={groupCriteria}
-              tournaments={tournaments}
-            />
+            <div className="py-4">
+              <UserForm 
+                user={editingUser}
+                onUserChange={onUserChange}
+                individualCriteria={individualCriteria}
+                groupCriteria={groupCriteria}
+                tournaments={tournaments}
+              />
+              <div className="flex justify-end mt-4">
+                <Button onClick={onSave} className="ml-2">
+                  <Save className="h-4 w-4 mr-2" />
+                  Speichern
+                </Button>
+              </div>
+            </div>
           ) : (
             user.name
           )}
         </TableCell>
-        <TableCell>
-          {isEditing ? null : user.username}
-        </TableCell>
-        <TableCell>
-          {isEditing ? null : (
-            <Badge variant={
-              user.role === 'admin' ? 'destructive' : 
-              user.role === 'judge' ? 'default' :
-              user.role === 'editor' ? 'secondary' : 
-              'outline'
-            }>
-              {getRoleName(user.role)}
-            </Badge>
-          )}
-        </TableCell>
-        <TableCell>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePasswordDialogOpen}
-          >
-            <Key className="h-4 w-4 mr-2" />
-            Passwort ändern
-          </Button>
-        </TableCell>
-        <TableCell>
-          {isEditing ? null : (
-            user.role === 'judge' ? (
-              <JudgeDisplay 
-                judge={user}
-                individualCriteriaMap={individualCriteriaMap}
-                groupCriteriaMap={groupCriteriaMap}
-              />
-            ) : null
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? null : (
-            (user.role === 'reader' || user.role === 'editor') && displayTournaments ? (
-              <div className="flex flex-wrap gap-1">
-                {userTournaments.length > 0 ? (
-                  userTournaments.map((name, index) => (
-                    <Badge key={index} variant="outline">{name}</Badge>
-                  ))
-                ) : (
-                  <span className="text-yellow-600 text-sm">Keine Turniere zugewiesen</span>
-                )}
+        
+        {!isEditing && (
+          <>
+            <TableCell>{user.username}</TableCell>
+            <TableCell>
+              <Badge variant={
+                user.role === 'admin' ? 'destructive' : 
+                user.role === 'judge' ? 'default' :
+                user.role === 'editor' ? 'secondary' : 
+                'outline'
+              }>
+                {getRoleName(user.role)}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePasswordDialogOpen}
+              >
+                <Key className="h-4 w-4 mr-2" />
+                Passwort ändern
+              </Button>
+            </TableCell>
+            <TableCell>
+              {user.role === 'judge' ? (
+                <JudgeDisplay 
+                  judge={user}
+                  individualCriteriaMap={individualCriteriaMap}
+                  groupCriteriaMap={groupCriteriaMap}
+                />
+              ) : null}
+            </TableCell>
+            <TableCell>
+              {(user.role === 'reader' || user.role === 'editor') && displayTournaments ? (
+                <div className="flex flex-wrap gap-1">
+                  {userTournaments.length > 0 ? (
+                    userTournaments.map((name, index) => (
+                      <Badge key={index} variant="outline">{name}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-yellow-600 text-sm">Keine Turniere zugewiesen</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  {(user.role === 'admin' || user.role === 'judge') ? 'Alle Turniere' : ''}
+                </span>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Bearbeiten
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => onImpersonate(user.id)}
+                >
+                  Als Benutzer anmelden
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={() => onDeleteClick(user)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <span className="text-muted-foreground text-sm">
-                {(user.role === 'admin' || user.role === 'judge') ? 'Alle Turniere' : ''}
-              </span>
-            )
-          )}
-        </TableCell>
-        <TableCell className="text-right">
-          <div className="flex justify-end gap-2">
-            {isEditing ? (
-              <Button size="sm" onClick={onSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Speichern
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Bearbeiten
-              </Button>
-            )}
-            <Button 
-              size="sm" 
-              variant="secondary" 
-              onClick={() => onImpersonate(user.id)}
-            >
-              Als Benutzer anmelden
-            </Button>
-            <Button 
-              size="sm" 
-              variant="destructive" 
-              onClick={() => onDeleteClick(user)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </TableCell>
+            </TableCell>
+          </>
+        )}
       </TableRow>
 
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>

@@ -68,22 +68,21 @@ export class UserService extends BaseSupabaseService {
       const { data, error } = await this.supabase
         .from('users')
         .insert([this.convertToSupabaseFormat(user)])
-        .select()
-        .single();
+        .select();
         
       if (error) {
         console.error('Fehler beim Erstellen des Benutzers:', error);
         throw error;
       }
       
-      if (!data) {
+      if (!data || data.length === 0) {
         throw new Error('No data returned after user creation');
       }
       
-      console.log('User created successfully:', data.username);
+      console.log('User created successfully:', data[0].username);
       
       // Konvertieren und zurückgeben
-      return this.convertToUserModel(data);
+      return this.convertToUserModel(data[0]);
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -95,27 +94,25 @@ export class UserService extends BaseSupabaseService {
     try {
       console.log('Updating user:', user.username);
       
-      // Instead of querying for the user first to get the original UUID, we'll directly update by username
       const { data, error } = await this.supabase
         .from('users')
         .update(this.convertToSupabaseFormat(user))
         .eq('username', user.username)
-        .select()
-        .single();
+        .select();
         
       if (error) {
         console.error('Fehler beim Aktualisieren des Benutzers:', error);
         throw error;
       }
       
-      if (!data) {
+      if (!data || data.length === 0) {
         throw new Error('No data returned after user update');
       }
       
-      console.log('User updated successfully:', data.username);
+      console.log('User updated successfully:', data[0].username);
       
       // Konvertieren und zurückgeben
-      const updatedUser = this.convertToUserModel(data);
+      const updatedUser = this.convertToUserModel(data[0]);
       updatedUser.id = user.id; // Behalte die lokale ID bei
       updatedUser.tournamentIds = user.tournamentIds; // Behalte die Turnierzuordnung bei
       
