@@ -2,10 +2,9 @@
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { User } from '@/types';
 import { hashPassword } from '@/utils/authUtils';
-import { DatabaseUser } from './DatabaseUserTypes';
-import { mapDatabaseUserToUser } from './UserMapper';
 import { AuthValidator } from './AuthValidator';
 import { AuthUserData } from './types/AuthTypes';
+import { mapDatabaseUserToUser } from './UserMapper';
 
 /**
  * Service for handling user authentication
@@ -139,16 +138,7 @@ export class AuthenticationService extends BaseSupabaseService {
     
     if (AuthValidator.verifyPassword(password, userData.password_hash)) {
       console.log('Password matches, allowing login');
-      const mappedUser = mapDatabaseUserToUser({
-        id: userData.id,
-        name: userData.name,
-        username: userData.username,
-        role: userData.role,
-        password_hash: userData.password_hash,
-        individual_criterion: userData.individual_criterion,
-        group_criterion: userData.group_criterion,
-        email: userData.email
-      } as DatabaseUser);
+      const mappedUser = mapDatabaseUserToUser(userData);
       
       console.log('User mapped to application User type:', {
         ...mappedUser,

@@ -1,5 +1,5 @@
 
-import { User } from '@/types';
+import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { AuthUserData } from './types/AuthTypes';
 
 /**
@@ -10,11 +10,11 @@ export function mapDatabaseUserToUser(userData: AuthUserData): User {
     id: parseInt(userData.id.toString().substring(0, 8), 16) % 1000,
     name: userData.name,
     username: userData.username,
-    role: userData.role,
+    role: userData.role as UserRole,
     passwordHash: userData.password_hash,
     assignedCriteria: {
-      individual: userData.individual_criterion,
-      group: userData.group_criterion
+      individual: userData.individual_criterion as CriterionKey | undefined,
+      group: userData.group_criterion as GroupCriterionKey | undefined
     },
     tournamentIds: []
   };
