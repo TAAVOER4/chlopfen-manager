@@ -9,11 +9,12 @@ export class AuthService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Query for the user
+      // Query for the user - try both username and email fields
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
-        .eq('username', usernameOrEmail);
+        .or(`username.eq.${usernameOrEmail},username.ilike.${usernameOrEmail}`)
+        .limit(1);
         
       if (error) {
         console.error('Error during authentication query:', error);
