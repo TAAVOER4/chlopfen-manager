@@ -25,6 +25,32 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Load tournaments at component mount
+  useEffect(() => {
+    const loadTournaments = async () => {
+      try {
+        const { data, error } = await SupabaseService.supabase
+          .from('tournaments')
+          .select('*');
+          
+        if (error) {
+          console.error('Error loading tournaments:', error);
+          return;
+        }
+        
+        // Set default tournament if available
+        if (data && data.length > 0) {
+          const activeTournament = data.find((t: any) => t.is_active);
+          setSelectedTournamentId(activeTournament?.id.toString() || data[0].id.toString());
+        }
+      } catch (error) {
+        console.error('Error loading tournaments:', error);
+      }
+    };
+    
+    loadTournaments();
+  }, []);
+
   // Select active tournament from session storage if available
   useEffect(() => {
     const storedTournamentId = sessionStorage.getItem('activeTournamentId');
@@ -97,7 +123,7 @@ const LoginForm: React.FC = () => {
     setShowPassword(!showPassword);
   };
 
-  // Beispielbenutzer für einfaches Testen
+  // Hidden function to fill test user credentials
   const fillTestUser = () => {
     setUsername('hans.mueller');
     setPassword('password');
@@ -174,7 +200,7 @@ const LoginForm: React.FC = () => {
               type="button" 
               variant="outline" 
               size="sm" 
-              className="text-xs mt-2" 
+              className="hidden text-xs mt-2" 
               onClick={fillTestUser}
             >
               Test-Benutzer verwenden

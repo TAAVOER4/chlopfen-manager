@@ -17,6 +17,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isReader: userState.isReader,
         isEditor: userState.isEditor,
         isImpersonating: userState.isImpersonating,
+        isLoading: userState.isLoading,
         login: userState.login,
         logout: userState.logout,
         impersonate: userState.impersonate,

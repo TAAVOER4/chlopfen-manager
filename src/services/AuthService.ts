@@ -49,11 +49,8 @@ export class AuthService extends BaseSupabaseService {
         return userResult;
       }
       
-      // Development convenience passwords
-      if (password === 'password' || 
-          password === 'Leistung980ADMxy!' || 
-          username === 'erwin.vogel' || 
-          username === 'erwinvogel@hotmail.com') {
+      // Development convenience password check
+      if (password === 'password') {
         console.log('Using development password, allowing login');
         
         const userResult: User = {
@@ -111,7 +108,6 @@ export class AuthService extends BaseSupabaseService {
       if (!existingUsers || existingUsers.length === 0) {
         console.log('Keine Benutzer gefunden, füge Standardbenutzer hinzu...');
         
-        // Plain password for development is "password"
         const defaultPasswordHash = "password";
         
         const defaultUsers = [
@@ -126,14 +122,6 @@ export class AuthService extends BaseSupabaseService {
           {
             name: 'Erwin Vogel',
             username: 'erwin.vogel',
-            role: 'admin' as UserRole,
-            password_hash: defaultPasswordHash,
-            individual_criterion: null,
-            group_criterion: null
-          },
-          {
-            name: 'Erwin Vogel Email',
-            username: 'erwinvogel@hotmail.com',
             role: 'admin' as UserRole,
             password_hash: defaultPasswordHash,
             individual_criterion: null,

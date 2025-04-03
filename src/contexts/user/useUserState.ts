@@ -13,7 +13,7 @@ export const useUserState = () => {
   const {
     currentUser,
     originalAdmin,
-    isLoading,
+    isLoading: authLoading,
     initFromLocalStorage,
     login,
     logout,
@@ -25,6 +25,7 @@ export const useUserState = () => {
   const {
     availableTournaments,
     selectedTournament,
+    isLoading: tournamentsLoading,
     setSelectedTournament
   } = useTournaments(currentUser);
 
@@ -55,7 +56,7 @@ export const useUserState = () => {
     isImpersonating,
     
     // Loading state
-    isLoading,
+    isLoading: authLoading || tournamentsLoading,
     
     // Auth methods
     login,

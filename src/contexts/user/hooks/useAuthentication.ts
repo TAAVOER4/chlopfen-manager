@@ -37,6 +37,7 @@ export const useAuthentication = () => {
       setIsLoading(true);
       
       try {
+        // Make sure users table is initialized
         await SupabaseService.initializeUsers();
       } catch (initError) {
         console.error('Initialization error:', initError);
@@ -47,6 +48,7 @@ export const useAuthentication = () => {
       if (authenticatedUser) {
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
+            // Fetch user's assigned tournaments
             const { data: userTournaments, error } = await SupabaseService.supabase
               .from('user_tournaments')
               .select('tournament_id')
@@ -54,6 +56,7 @@ export const useAuthentication = () => {
               
             if (!error && userTournaments) {
               authenticatedUser.tournamentIds = userTournaments.map(ut => ut.tournament_id);
+              console.log('User tournament assignments loaded:', authenticatedUser.tournamentIds);
             }
           } catch (err) {
             console.error('Error loading user tournament assignments:', err);
