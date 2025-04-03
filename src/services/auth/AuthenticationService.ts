@@ -1,11 +1,11 @@
 
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
-import { verifyPassword } from '@/utils/authUtils';
+import { verifyPassword, hashPassword } from '@/utils/authUtils';
 import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
 
-// Define a simple type for the user data without recursion
+// Define a simple interface for the user data without recursion
 interface UserData {
   id: string;
   name: string;
@@ -202,13 +202,10 @@ export class AuthenticationService extends BaseSupabaseService {
    */
   static generatePasswordHash(password: string): string {
     try {
-      // Import the hashPassword utility
-      const { hashPassword } = require('@/utils/authUtils');
-      
-      // Generate hash
+      // Generate hash using the hashPassword utility function directly
       const hash = hashPassword(password);
       
-      // Log the hash
+      // Log the hash for debugging
       console.log('Generated password hash for debugging:');
       console.log('Password:', password);
       console.log('Hash:', hash);
