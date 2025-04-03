@@ -80,7 +80,16 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: Record<string, any>, password: string): User | null {
+  private static validateAndReturnUser(userData: {
+    id: any;
+    name: any;
+    username: any;
+    role: any;
+    password_hash: any;
+    individual_criterion: any;
+    group_criterion: any;
+    email?: any;
+  }, password: string): User | null {
     if (!userData) return null;
     
     const user: DatabaseUser = {
