@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { User, Tournament } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -63,10 +64,18 @@ export const useUserState = () => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Login attempt with:', email);
       setIsLoading(true);
       
-      await SupabaseService.initializeUsers();
+      // Initialize users if needed
+      try {
+        await SupabaseService.initializeUsers();
+      } catch (initError) {
+        console.error('Initialization error:', initError);
+        // Continue with login attempt even if initialization fails
+      }
       
+      // Authenticate user
       const authenticatedUser = await SupabaseService.authenticateUser(email, password);
       
       if (authenticatedUser) {
@@ -89,6 +98,7 @@ export const useUserState = () => {
         
         return true;
       } else {
+        console.log('Authentication failed');
         toast({
           title: "Anmeldung fehlgeschlagen",
           description: "Falsche E-Mail oder falsches Passwort.",

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useUser();
   const { tournaments, setActiveTournament } = useTournament();
@@ -39,6 +41,7 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with:', email, password.substring(0, 3) + '***');
       const success = await login(email, password);
       
       if (success) {
@@ -79,6 +82,10 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -105,14 +112,24 @@ const LoginForm: React.FC = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Passwort</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Passwort eingeben"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Passwort eingeben"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="tournament">Aktives Turnier</Label>

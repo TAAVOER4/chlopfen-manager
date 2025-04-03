@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, CriterionKey, GroupCriterionKey, UserRole } from '@/types';
 import { hashPassword } from '@/utils/authUtils';
@@ -146,22 +147,31 @@ export class SupabaseService {
   // Benutzer authentifizieren
   static async authenticateUser(email: string, password: string): Promise<User | null> {
     try {
+      console.log('Authenticating user:', email);
+      
       const { data: users, error } = await supabase
         .from('users')
         .select('*')
-        .eq('username', email)
-        .limit(1);
+        .eq('username', email);
         
-      if (error || !users || users.length === 0) {
-        console.error('Error during authentication:', error);
+      if (error) {
+        console.error('Error during authentication query:', error);
+        return null;
+      }
+      
+      if (!users || users.length === 0) {
+        console.log('No user found with username:', email);
         return null;
       }
       
       const user = users[0];
+      console.log('Found user with username:', email);
       
-      // For the given password, we'll allow login
+      // For specific hardcoded password, allow login
       if (password === 'Leistung980ADMxy!') {
-        return {
+        console.log('Password matches hardcoded value, allowing login');
+        
+        const userResult: User = {
           id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
           name: user.name,
           username: user.username,
@@ -173,8 +183,11 @@ export class SupabaseService {
           },
           tournamentIds: []
         };
+        
+        return userResult;
       }
       
+      console.log('Password did not match');
       return null;
     } catch (error) {
       console.error('Authentication error:', error);
@@ -184,115 +197,119 @@ export class SupabaseService {
 
   // Initialisierung: Füge Standardbenutzer hinzu, wenn noch keine vorhanden sind
   static async initializeUsers(): Promise<void> {
-    const { data: existingUsers, error } = await supabase
-      .from('users')
-      .select('*');
-      
-    if (error) {
-      console.error('Fehler beim Prüfen vorhandener Benutzer:', error);
-      return;
-    }
-    
-    // Wenn keine Benutzer vorhanden sind, füge die Standardbenutzer hinzu
-    if (!existingUsers || existingUsers.length === 0) {
-      const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi"; // "password"
-      
-      const defaultUsers = [
-        {
-          name: 'Hans Müller',
-          username: 'hans.mueller',
-          role: 'admin' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: null,
-          group_criterion: null
-        },
-        {
-          name: 'Erwin Vogel',
-          username: 'erwin.vogel',
-          role: 'admin' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: null,
-          group_criterion: null
-        },
-        {
-          name: 'Maria Schmidt',
-          username: 'maria.schmidt',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: 'rhythm',
-          group_criterion: 'rhythm'
-        },
-        {
-          name: 'Peter Meier',
-          username: 'peter.meier',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: 'whipStrikes',
-          group_criterion: 'whipStrikes'
-        },
-        {
-          name: 'Anna Weber',
-          username: 'anna.weber',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: 'stance',
-          group_criterion: null
-        },
-        {
-          name: 'Stefan Keller',
-          username: 'stefan.keller',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: 'posture',
-          group_criterion: null
-        },
-        {
-          name: 'Lisa Schmid',
-          username: 'lisa.schmid',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: null,
-          group_criterion: 'tempo'
-        },
-        {
-          name: 'Thomas Brunner',
-          username: 'thomas.brunner',
-          role: 'judge' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: 'whipControl',
-          group_criterion: null
-        },
-        {
-          name: 'Christina Huber',
-          username: 'christina.huber',
-          role: 'reader' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: null,
-          group_criterion: null
-        },
-        {
-          name: 'Michael Wagner',
-          username: 'michael.wagner',
-          role: 'editor' as UserRole,
-          password_hash: defaultPasswordHash,
-          individual_criterion: null,
-          group_criterion: null
-        }
-      ];
-      
-      try {
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert(defaultUsers);
-          
-        if (insertError) {
-          console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
-        } else {
-          console.log('Standardbenutzer wurden erfolgreich hinzugefügt.');
-        }
-      } catch (insertError) {
-        console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
+    try {
+      const { data: existingUsers, error } = await supabase
+        .from('users')
+        .select('*');
+        
+      if (error) {
+        console.error('Fehler beim Prüfen vorhandener Benutzer:', error);
+        return;
       }
+      
+      // Wenn keine Benutzer vorhanden sind, füge die Standardbenutzer hinzu
+      if (!existingUsers || existingUsers.length === 0) {
+        const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi"; // "password"
+        
+        const defaultUsers = [
+          {
+            name: 'Hans Müller',
+            username: 'hans.mueller',
+            role: 'admin' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: null
+          },
+          {
+            name: 'Erwin Vogel',
+            username: 'erwin.vogel',
+            role: 'admin' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: null
+          },
+          {
+            name: 'Maria Schmidt',
+            username: 'maria.schmidt',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: 'rhythm',
+            group_criterion: 'rhythm'
+          },
+          {
+            name: 'Peter Meier',
+            username: 'peter.meier',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: 'whipStrikes',
+            group_criterion: 'whipStrikes'
+          },
+          {
+            name: 'Anna Weber',
+            username: 'anna.weber',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: 'stance',
+            group_criterion: null
+          },
+          {
+            name: 'Stefan Keller',
+            username: 'stefan.keller',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: 'posture',
+            group_criterion: null
+          },
+          {
+            name: 'Lisa Schmid',
+            username: 'lisa.schmid',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: 'tempo'
+          },
+          {
+            name: 'Thomas Brunner',
+            username: 'thomas.brunner',
+            role: 'judge' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: 'whipControl',
+            group_criterion: null
+          },
+          {
+            name: 'Christina Huber',
+            username: 'christina.huber',
+            role: 'reader' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: null
+          },
+          {
+            name: 'Michael Wagner',
+            username: 'michael.wagner',
+            role: 'editor' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: null
+          }
+        ];
+        
+        try {
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert(defaultUsers);
+            
+          if (insertError) {
+            console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
+          } else {
+            console.log('Standardbenutzer wurden erfolgreich hinzugefügt.');
+          }
+        } catch (insertError) {
+          console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error in initializeUsers:', error);
     }
   }
 }
