@@ -25,11 +25,15 @@ const LoginForm: React.FC = () => {
   useEffect(() => {
     const loadTournaments = async () => {
       try {
+        console.log('Loading tournaments...');
         const tournamentData = await SupabaseService.getAllTournaments();
+        console.log('Loaded tournaments:', tournamentData);
         if (tournamentData && tournamentData.length > 0) {
           // Set default tournament if available
           const activeTournament = tournamentData.find(t => t.isActive);
-          setSelectedTournamentId(activeTournament?.id.toString() || tournamentData[0].id.toString());
+          const selectedId = activeTournament?.id.toString() || tournamentData[0].id.toString();
+          console.log('Setting default tournament ID:', selectedId);
+          setSelectedTournamentId(selectedId);
         }
       } catch (error) {
         console.error('Error loading tournaments:', error);
@@ -42,35 +46,42 @@ const LoginForm: React.FC = () => {
   // Select active tournament from session storage if available
   useEffect(() => {
     const storedTournamentId = sessionStorage.getItem('activeTournamentId');
+    console.log('Tournament ID from session storage:', storedTournamentId);
     if (storedTournamentId) {
       setSelectedTournamentId(storedTournamentId);
     } else if (tournaments && tournaments.length > 0) {
       const activeTournament = tournaments.find(t => t.isActive);
-      setSelectedTournamentId(activeTournament?.id.toString() || tournaments[0].id.toString());
+      const selectedId = activeTournament?.id.toString() || tournaments[0].id.toString();
+      console.log('Setting tournament ID from context:', selectedId);
+      setSelectedTournamentId(selectedId);
     }
   }, [tournaments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted with username:', username);
     setError('');
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with:', username);
-      
       // First initialize users to ensure we have data in the database
+      console.log('Initializing users...');
       await SupabaseService.initializeUsers();
       
+      console.log('Starting login process with username:', username);
       const success = await login(username, password);
+      console.log('Login process completed, success:', success);
       
       if (success) {
         // Set active tournament if one is selected and tournaments are available
         if (selectedTournamentId && tournaments.length > 0) {
+          console.log('Setting active tournament with ID:', selectedTournamentId);
           const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
           if (tournament) {
             // Set in context and also update in database
             setActiveTournament(tournament);
             try {
+              console.log('Updating active tournament in database:', tournament.id);
               await SupabaseService.setActiveTournament(tournament.id);
             } catch (updateError) {
               console.error('Error updating active tournament:', updateError);
@@ -78,15 +89,20 @@ const LoginForm: React.FC = () => {
           }
         }
         
+        const tournamentName = tournaments.find(t => t.id.toString() === selectedTournamentId)?.name || '';
+        console.log('Selected tournament name:', tournamentName);
+        
         toast({
           title: "Login successful",
           description: selectedTournamentId && tournaments.length > 0
-            ? `You are now working with tournament: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
+            ? `You are now working with tournament: ${tournamentName}`
             : "Please select a tournament in the tournament management.",
         });
         
+        console.log('Navigating to home page');
         navigate('/');
       } else {
+        console.log('Login failed');
         setError('Incorrect username or password. Please try again.');
         toast({
           title: "Login failed",

@@ -20,14 +20,19 @@ export const useAuthentication = () => {
 
   // Initialize from localStorage
   const initFromLocalStorage = () => {
+    console.log('Initializing user from local storage');
     const savedUser = loadUserFromLocalStorage();
     if (savedUser) {
+      console.log('User loaded from local storage:', savedUser.username);
       setCurrentUser(savedUser);
       
       const impersonatedUser = loadImpersonatedUserFromLocalStorage();
       if (impersonatedUser && savedUser.id !== impersonatedUser.id) {
+        console.log('Admin is impersonating a user');
         setOriginalAdmin(savedUser);
       }
+    } else {
+      console.log('No user found in local storage');
     }
   };
 
@@ -38,18 +43,23 @@ export const useAuthentication = () => {
       
       try {
         // Make sure users table is initialized
+        console.log('Ensuring users are initialized');
         await AuthService.initializeUsers();
       } catch (initError) {
         console.error('Initialization error:', initError);
       }
 
       // Authentication flow
+      console.log('Starting authentication process');
       const authenticatedUser = await AuthService.authenticateUser(username, password);
       
       if (authenticatedUser) {
+        console.log('Authentication successful for user:', authenticatedUser.username);
+        
         // For readers and editors, fetch their assigned tournaments
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
+            console.log('Fetching tournament assignments for user');
             const { data: userTournaments, error } = await AuthService.supabase
               .from('user_tournaments')
               .select('tournament_id')
@@ -64,6 +74,7 @@ export const useAuthentication = () => {
           }
         }
         
+        console.log('Setting current user and saving to local storage');
         setCurrentUser(authenticatedUser);
         saveUserToLocalStorage(authenticatedUser);
         

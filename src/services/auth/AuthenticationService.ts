@@ -20,11 +20,14 @@ export class AuthenticationService extends BaseSupabaseService {
       }
       
       // First try - exact match on username
+      console.log('Querying by username:', usernameOrEmail);
       const { data: usernameData, error: usernameError } = await this.supabase
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail)
         .limit(1);
+      
+      console.log('Username query result:', { data: usernameData, error: usernameError });
       
       if (usernameError) {
         console.error('Error during username query:', usernameError);
@@ -32,32 +35,57 @@ export class AuthenticationService extends BaseSupabaseService {
       
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
+        console.log('Found user by username match');
         return this.validateAndReturnUser(usernameData[0], password);
       }
       
-      // Second try - match on email field
-      const { data: emailData, error: emailError } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('email', usernameOrEmail)
-        .limit(1);
-      
-      if (emailError) {
-        console.error('Error during email query:', emailError);
-      }
-      
-      // If email match found, validate password
-      if (emailData && emailData.length > 0) {
-        return this.validateAndReturnUser(emailData[0], password);
+      // Second try - if database has email field, try matching on that
+      try {
+        console.log('Checking if email field exists in users table...');
+        const { error: checkEmailFieldError } = await this.supabase
+          .from('users')
+          .select('email')
+          .limit(1);
+        
+        if (!checkEmailFieldError) {
+          console.log('Email field exists, querying by email:', usernameOrEmail);
+          const { data: emailData, error: emailError } = await this.supabase
+            .from('users')
+            .select('*')
+            .eq('email', usernameOrEmail)
+            .limit(1);
+          
+          console.log('Email query result:', { data: emailData, error: emailError });
+          
+          if (emailError) {
+            console.error('Error during email query:', emailError);
+          }
+          
+          // If email match found, validate password
+          if (emailData && emailData.length > 0) {
+            console.log('Found user by email match');
+            return this.validateAndReturnUser(emailData[0], password);
+          }
+        } else {
+          console.log('Email field does not exist in users table, skipping email query');
+        }
+      } catch (emailQueryError) {
+        console.error('Error checking for email field:', emailQueryError);
       }
       
       // Last try - check if username field contains an email that matches
       if (usernameOrEmail.includes('@')) {
+        console.log('Input looks like email, trying username-as-email match');
         const { data: usernameWithEmailData, error: usernameWithEmailError } = await this.supabase
           .from('users')
           .select('*')
           .eq('username', usernameOrEmail)
           .limit(1);
+        
+        console.log('Username-as-email query result:', { 
+          data: usernameWithEmailData, 
+          error: usernameWithEmailError 
+        });
         
         if (usernameWithEmailError) {
           console.error('Error during username-with-email query:', usernameWithEmailError);
@@ -65,6 +93,7 @@ export class AuthenticationService extends BaseSupabaseService {
         
         // If found, validate password
         if (usernameWithEmailData && usernameWithEmailData.length > 0) {
+          console.log('Found user by username-as-email match');
           return this.validateAndReturnUser(usernameWithEmailData[0], password);
         }
       }
@@ -81,16 +110,18 @@ export class AuthenticationService extends BaseSupabaseService {
    * Helper method to validate password and return user
    */
   private static validateAndReturnUser(userData: {
-    id: any;
-    name: any;
-    username: any;
-    role: any;
-    password_hash: any;
-    individual_criterion: any;
-    group_criterion: any;
-    email?: any;
+    id: string;
+    name: string;
+    username: string;
+    role: string;
+    password_hash: string;
+    individual_criterion?: string | null;
+    group_criterion?: string | null;
+    email?: string;
   }, password: string): User | null {
     if (!userData) return null;
+    
+    console.log('Validating password for user:', userData.username);
     
     const user: DatabaseUser = {
       id: String(userData.id),
@@ -98,12 +129,15 @@ export class AuthenticationService extends BaseSupabaseService {
       username: String(userData.username),
       role: userData.role,
       password_hash: String(userData.password_hash),
-      individual_criterion: userData.individual_criterion,
-      group_criterion: userData.group_criterion,
+      individual_criterion: userData.individual_criterion || null,
+      group_criterion: userData.group_criterion || null,
       email: userData.email
     };
     
-    console.log('Found user with username:', user.username);
+    console.log('User data mapped to DatabaseUser type:', {
+      ...user,
+      password_hash: '[REDACTED]'
+    });
     
     // Verify password
     const passwordVerified = verifyPassword(password, user.password_hash);
@@ -111,7 +145,12 @@ export class AuthenticationService extends BaseSupabaseService {
     
     if (passwordVerified) {
       console.log('Password matches, allowing login');
-      return mapDatabaseUserToUser(user);
+      const mappedUser = mapDatabaseUserToUser(user);
+      console.log('User mapped to application User type:', {
+        ...mappedUser,
+        passwordHash: '[REDACTED]'
+      });
+      return mappedUser;
     }
     
     console.log('Password did not match');
