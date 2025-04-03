@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { AuthService } from '@/services/AuthService';
+import { BaseSupabaseService } from '@/services/BaseSupabaseService';
 import { useLocalStorage } from './useLocalStorage';
 
 export const useAuthentication = () => {
@@ -60,7 +61,7 @@ export const useAuthentication = () => {
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
             console.log('Fetching tournament assignments for user');
-            const { data: userTournaments, error } = await AuthService.supabase
+            const { data: userTournaments, error } = await BaseSupabaseService.getClient()
               .from('user_tournaments')
               .select('tournament_id')
               .eq('user_id', authenticatedUser.id.toString());

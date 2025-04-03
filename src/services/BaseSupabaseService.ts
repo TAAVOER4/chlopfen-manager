@@ -5,8 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
  * Base class for all Supabase services
  */
 export class BaseSupabaseService {
-  // Get the Supabase client instance
+  // Protected access to the Supabase client instance
   protected static get supabase() {
+    return supabase;
+  }
+
+  // Public method to get the Supabase client for use in hooks and components
+  public static getClient() {
     return supabase;
   }
 

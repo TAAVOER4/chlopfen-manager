@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Tournament, User } from '@/types';
-import { SupabaseService } from '@/services/SupabaseService';
+import { BaseSupabaseService } from '@/services/BaseSupabaseService';
 
 export const useTournaments = (currentUser: User | null) => {
   const [availableTournaments, setAvailableTournaments] = useState<Tournament[]>([]);
@@ -13,7 +13,7 @@ export const useTournaments = (currentUser: User | null) => {
     const loadTournaments = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await SupabaseService.supabase
+        const { data, error } = await BaseSupabaseService.getClient()
           .from('tournaments')
           .select('*');
           
@@ -77,7 +77,7 @@ export const useTournaments = (currentUser: User | null) => {
         try {
           // For non-admin users, fetch their specific tournament assignments
           if (currentUser.role === 'reader' || currentUser.role === 'editor') {
-            const { data, error } = await SupabaseService.supabase
+            const { data, error } = await BaseSupabaseService.getClient()
               .from('user_tournaments')
               .select('tournament_id')
               .eq('user_id', currentUser.id.toString());
