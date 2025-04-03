@@ -56,7 +56,7 @@ const LoginForm: React.FC = () => {
     const storedTournamentId = sessionStorage.getItem('activeTournamentId');
     if (storedTournamentId) {
       setSelectedTournamentId(storedTournamentId);
-    } else if (tournaments.length > 0) {
+    } else if (tournaments && tournaments.length > 0) {
       const activeTournament = tournaments.find(t => t.isActive);
       setSelectedTournamentId(activeTournament?.id.toString() || tournaments[0].id.toString());
     }
@@ -76,8 +76,8 @@ const LoginForm: React.FC = () => {
       const success = await login(username, password);
       
       if (success) {
-        // Set active tournament if one is selected
-        if (selectedTournamentId) {
+        // Set active tournament if one is selected and tournaments are available
+        if (selectedTournamentId && tournaments.length > 0) {
           const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
           if (tournament) {
             // Set in context and also update in database
@@ -92,7 +92,7 @@ const LoginForm: React.FC = () => {
         
         toast({
           title: "Anmeldung erfolgreich",
-          description: selectedTournamentId 
+          description: selectedTournamentId && tournaments.length > 0
             ? `Sie arbeiten jetzt mit dem Turnier: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
             : "Bitte wählen Sie ein Turnier in der Turnierverwaltung aus.",
         });
@@ -121,12 +121,6 @@ const LoginForm: React.FC = () => {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
-  };
-
-  // Hidden function to fill test user credentials
-  const fillTestUser = () => {
-    setUsername('hans.mueller');
-    setPassword('password');
   };
 
   return (
@@ -174,38 +168,29 @@ const LoginForm: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tournament">Aktives Turnier</Label>
-            <Select 
-              value={selectedTournamentId} 
-              onValueChange={setSelectedTournamentId}
-            >
-              <SelectTrigger id="tournament">
-                <SelectValue placeholder="Turnier auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {tournaments.map((tournament) => (
-                  <SelectItem 
-                    key={tournament.id} 
-                    value={tournament.id.toString()}
-                  >
-                    {tournament.name} ({tournament.year})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              className="hidden text-xs mt-2" 
-              onClick={fillTestUser}
-            >
-              Test-Benutzer verwenden
-            </Button>
-          </div>
+          {tournaments && tournaments.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="tournament">Aktives Turnier</Label>
+              <Select 
+                value={selectedTournamentId} 
+                onValueChange={setSelectedTournamentId}
+              >
+                <SelectTrigger id="tournament">
+                  <SelectValue placeholder="Turnier auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tournaments.map((tournament) => (
+                    <SelectItem 
+                      key={tournament.id} 
+                      value={tournament.id.toString()}
+                    >
+                      {tournament.name} ({tournament.year})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex-col space-y-2">
           <Button type="submit" className="w-full" disabled={isLoading}>

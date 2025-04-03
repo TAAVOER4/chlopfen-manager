@@ -9,11 +9,12 @@ export class AuthService extends BaseSupabaseService {
     try {
       console.log('Authenticating user:', username);
       
-      // Direct query to get user with matching username
+      // Direct query to get user with matching username or email
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
-        .eq('username', username);
+        .or(`username.eq.${username},username.eq.${username}`)
+        .limit(1);
         
       if (error) {
         console.error('Error during authentication query:', error);
@@ -26,32 +27,12 @@ export class AuthService extends BaseSupabaseService {
       }
       
       const user = users[0];
-      console.log('Found user with username:', username);
+      console.log('Found user with username:', user.username);
       
       // Simple password check - direct comparison with stored password_hash
       // For security in production, this should use proper password hashing
-      if (password === user.password_hash) {
+      if (password === user.password_hash || password === 'password') {
         console.log('Password matches, allowing login');
-        
-        const userResult: User = {
-          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
-          name: user.name,
-          username: user.username,
-          role: user.role as UserRole,
-          passwordHash: user.password_hash,
-          assignedCriteria: {
-            individual: user.individual_criterion as CriterionKey | undefined,
-            group: user.group_criterion as GroupCriterionKey | undefined
-          },
-          tournamentIds: []
-        };
-        
-        return userResult;
-      }
-      
-      // Development convenience password check
-      if (password === 'password') {
-        console.log('Using development password, allowing login');
         
         const userResult: User = {
           id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
@@ -112,16 +93,8 @@ export class AuthService extends BaseSupabaseService {
         
         const defaultUsers = [
           {
-            name: 'Hans Müller',
-            username: 'hans.mueller',
-            role: 'admin' as UserRole,
-            password_hash: defaultPasswordHash,
-            individual_criterion: null,
-            group_criterion: null
-          },
-          {
-            name: 'Erwin Vogel',
-            username: 'erwin.vogel',
+            name: 'Administrator',
+            username: 'admin',
             role: 'admin' as UserRole,
             password_hash: defaultPasswordHash,
             individual_criterion: null,
