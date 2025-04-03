@@ -17,7 +17,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
     setEditingUser(updatedUser);
   };
 
-  const handlePasswordChange = async (userId: number, newPassword: string) => {
+  const handlePasswordChange = async (userId: number, newPassword: string): Promise<boolean> => {
     try {
       setIsChangingPassword(true);
       
@@ -37,6 +37,17 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
           title: "Passwort geändert",
           description: "Das Passwort wurde erfolgreich geändert."
         });
+        
+        // Update the local user state to reflect the password change
+        const updatedUsers = users.map(u => {
+          if (u.id === userId) {
+            return { ...u, passwordUpdated: true };
+          }
+          return u;
+        });
+        setUsers(updatedUsers);
+        
+        return true;
       } else {
         console.error('Password change failed');
         throw new Error('Password update failed');
@@ -48,6 +59,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
         description: "Beim Ändern des Passworts ist ein Fehler aufgetreten.",
         variant: "destructive"
       });
+      return false;
     } finally {
       setIsChangingPassword(false);
     }

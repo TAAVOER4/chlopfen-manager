@@ -29,7 +29,7 @@ export class PasswordService extends BaseSupabaseService {
       
       console.log('User found, updating password hash');
       
-      // Perform the update with the direct statement
+      // Perform the update
       const { error } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })

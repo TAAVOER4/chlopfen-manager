@@ -11,7 +11,6 @@ import UserRoleBadge from './UserRoleBadge';
 import UserTournaments from './UserTournaments';
 import UserRowActions from './UserRowActions';
 import { Save } from 'lucide-react';
-import { useUserEditing } from '@/hooks/userManagement/useUserEditing';
 
 interface UserRowProps {
   user: User;
@@ -21,7 +20,7 @@ interface UserRowProps {
   onImpersonate: (userId: number) => void;
   onDeleteClick: (user: User) => void;
   onUserChange: (user: User) => void;
-  onPasswordChange: (userId: number, newPassword: string) => void;
+  onPasswordChange: (userId: number, newPassword: string) => Promise<boolean>;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
   tournaments: Tournament[];
@@ -60,8 +59,8 @@ const UserRow: React.FC<UserRowProps> = ({
     setPasswordDialogOpen(true);
   };
 
-  const handlePasswordSubmit = (newPassword: string) => {
-    onPasswordChange(user.id, newPassword);
+  const handlePasswordSubmit = async (newPassword: string): Promise<boolean> => {
+    return await onPasswordChange(user.id, newPassword);
   };
 
   return (

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,7 @@ interface UserPasswordDialogProps {
   userName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPasswordChange: (newPassword: string) => void;
+  onPasswordChange: (newPassword: string) => Promise<boolean>;
   isLoading?: boolean;
 }
 
@@ -32,8 +32,16 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [internalLoading, setInternalLoading] = useState(false);
 
-  const handlePasswordSubmit = () => {
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+    }
+  }, [open]);
+
+  const handlePasswordSubmit = async () => {
     if (newPassword !== confirmPassword) {
       setPasswordError('Die Passwörter stimmen nicht überein.');
       return;
@@ -43,8 +51,19 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
       setPasswordError('Das Passwort muss mindestens 6 Zeichen lang sein.');
       return;
     }
+
+    setInternalLoading(true);
     
-    onPasswordChange(newPassword);
+    try {
+      const success = await onPasswordChange(newPassword);
+      
+      if (success) {
+        resetForm();
+        onOpenChange(false);
+      }
+    } finally {
+      setInternalLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -53,10 +72,13 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
     setPasswordError('');
   };
 
+  // Use either the prop loading state or our internal loading state
+  const isCurrentlyLoading = isLoading || internalLoading;
+
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
       if (!newOpen) resetForm();
-      if (!isLoading) onOpenChange(newOpen);
+      if (!isCurrentlyLoading) onOpenChange(newOpen);
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -74,7 +96,7 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Neues Passwort"
-              disabled={isLoading}
+              disabled={isCurrentlyLoading}
             />
           </div>
           <div className="space-y-2">
@@ -85,17 +107,17 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Passwort wiederholen"
-              disabled={isLoading}
+              disabled={isCurrentlyLoading}
             />
           </div>
           {passwordError && <p className="text-destructive text-sm">{passwordError}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCurrentlyLoading}>
             Abbrechen
           </Button>
-          <Button onClick={handlePasswordSubmit} disabled={isLoading}>
-            {isLoading ? (
+          <Button onClick={handlePasswordSubmit} disabled={isCurrentlyLoading}>
+            {isCurrentlyLoading ? (
               <>
                 <Spinner size="small" className="mr-2" />
                 Wird geändert...

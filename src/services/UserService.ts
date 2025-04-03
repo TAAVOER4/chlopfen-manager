@@ -28,8 +28,8 @@ export class UserService {
 
   static async changePassword(username: string, newPassword: string): Promise<boolean> {
     try {
-      await PasswordService.updateUserPassword(username, newPassword);
-      return true;
+      const success = await PasswordService.updateUserPassword(username, newPassword);
+      return success;
     } catch (error) {
       console.error('Error changing password in UserService:', error);
       return false;
