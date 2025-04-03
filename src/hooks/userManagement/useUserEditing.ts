@@ -18,14 +18,18 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
   };
 
   const handlePasswordChange = async (userId: number, newPassword: string) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return;
-    
     try {
       setIsChangingPassword(true);
+      
+      // Find the user in our local state
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
       console.log('Attempting to change password for user:', user.username);
       
-      // Pass plain password to service which will hash it before saving
+      // Use the dedicated service for password changes
       const success = await UserService.changePassword(user.username, newPassword);
       
       if (success) {
@@ -34,7 +38,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
           description: "Das Passwort wurde erfolgreich geändert."
         });
       } else {
-        console.error('Password change returned false');
+        console.error('Password change failed');
         throw new Error('Password update failed');
       }
     } catch (error) {

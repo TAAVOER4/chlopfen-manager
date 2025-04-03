@@ -27,7 +27,7 @@ export class UserMutationService extends BaseSupabaseService {
       const { data, error } = await this.supabase
         .from('users')
         .insert([userData])
-        .select() as any;
+        .select();
         
       if (error) {
         console.error('Error creating user:', error);
@@ -61,7 +61,7 @@ export class UserMutationService extends BaseSupabaseService {
       if (user.password) {
         console.log('Hashing new password for user update');
         userData.password_hash = hashPassword(user.password);
-      } else if (!userData.password_hash) {
+      } else {
         // If updating without changing password, remove password_hash 
         // to avoid overwriting with empty value
         delete userData.password_hash;
@@ -71,7 +71,7 @@ export class UserMutationService extends BaseSupabaseService {
         .from('users')
         .update(userData)
         .eq('username', user.username)
-        .select() as any;
+        .select();
         
       if (error) {
         console.error('Error updating user:', error);
@@ -105,7 +105,7 @@ export class UserMutationService extends BaseSupabaseService {
       const { error } = await this.supabase
         .from('users')
         .delete()
-        .eq('username', username) as any;
+        .eq('username', username);
         
       if (error) {
         console.error('Error deleting user:', error);
@@ -115,65 +115,6 @@ export class UserMutationService extends BaseSupabaseService {
       console.log('User deleted successfully:', username);
     } catch (error) {
       console.error('Error deleting user:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Changes a user's password
-   */
-  static async changePassword(username: string, newPassword: string): Promise<void> {
-    try {
-      console.log('Changing password for user:', username);
-      
-      // Always hash the password before storing it
-      const passwordHash = hashPassword(newPassword);
-      
-      console.log('Generated password hash:', passwordHash);
-      
-      // Log the SQL query that will be executed
-      console.log('Executing update query with username:', username);
-      
-      // Add more detailed logging for debugging
-      const beforeUpdate = await this.supabase
-        .from('users')
-        .select('username, password_hash')
-        .eq('username', username)
-        .single();
-      
-      console.log('Current user data before update:', beforeUpdate);
-      
-      // Update the password hash directly with more debug info
-      const { data, error, status, statusText, count } = await this.supabase
-        .from('users')
-        .update({ password_hash: passwordHash })
-        .eq('username', username);
-      
-      console.log('Update response:', { data, error, status, statusText, count });
-        
-      if (error) {
-        console.error('Error changing password:', error);
-        throw error;
-      }
-      
-      // Verify the update was successful by fetching the updated record
-      const afterUpdate = await this.supabase
-        .from('users')
-        .select('username, password_hash')
-        .eq('username', username)
-        .single();
-      
-      console.log('User data after update:', afterUpdate);
-      
-      if (afterUpdate.error) {
-        console.warn('Could not verify password update:', afterUpdate.error);
-      } else if (beforeUpdate.data?.password_hash === afterUpdate.data?.password_hash) {
-        console.warn('Password hash did not change despite no error');
-      } else {
-        console.log('Password changed successfully for user:', username);
-      }
-    } catch (error) {
-      console.error('Error changing password:', error);
       throw error;
     }
   }

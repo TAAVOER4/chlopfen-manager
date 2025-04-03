@@ -28,8 +28,8 @@ export class UserService {
 
   static async changePassword(username: string, newPassword: string): Promise<boolean> {
     try {
-      // Use the dedicated PasswordService instead of UserMutationService
-      return await PasswordService.updateUserPassword(username, newPassword);
+      await PasswordService.updateUserPassword(username, newPassword);
+      return true;
     } catch (error) {
       console.error('Error changing password in UserService:', error);
       return false;

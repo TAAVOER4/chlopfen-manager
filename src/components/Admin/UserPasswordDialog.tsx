@@ -44,12 +44,7 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
       return;
     }
     
-    // Pass the plain password to the handler which will hash it
     onPasswordChange(newPassword);
-    if (!isLoading) {
-      onOpenChange(false);
-      resetForm();
-    }
   };
 
   const resetForm = () => {
