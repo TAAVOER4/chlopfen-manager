@@ -5,7 +5,7 @@ import { verifyPassword } from '@/utils/authUtils';
 import { DatabaseUser } from './DatabaseUserTypes';
 import { mapDatabaseUserToUser } from './UserMapper';
 
-// Separate interface for the raw database user data to prevent type recursion
+// Separate interface for the raw database user data without type recursion
 interface UserData {
   id: string;
   name: string;
