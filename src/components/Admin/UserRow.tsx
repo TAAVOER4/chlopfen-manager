@@ -1,22 +1,15 @@
 
 import React, { useState } from 'react';
-import { Edit, Save, Trash2, Key } from 'lucide-react';
+import { Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from "@/components/ui/table";
 import { User, CriterionKey, GroupCriterionKey, Tournament } from '@/types';
 import UserForm from './UserForm';
 import JudgeDisplay from './JudgeDisplay';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import UserPasswordDialog from './UserPasswordDialog';
+import UserRoleBadge from './UserRoleBadge';
+import UserTournaments from './UserTournaments';
+import UserRowActions from './UserRowActions';
 
 interface UserRowProps {
   user: User;
@@ -49,9 +42,6 @@ const UserRow: React.FC<UserRowProps> = ({
 }) => {
   const isEditing = editingUser?.id === user.id;
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   
   // Create maps for quick lookup
   const individualCriteriaMap = Object.fromEntries(
@@ -62,42 +52,12 @@ const UserRow: React.FC<UserRowProps> = ({
     groupCriteria.map(c => [c.value, c.label])
   );
 
-  // Get tournament names for display
-  const userTournaments = tournaments
-    .filter(t => user.tournamentIds?.includes(t.id))
-    .map(t => t.name);
-
   const handlePasswordDialogOpen = () => {
-    setNewPassword('');
-    setConfirmPassword('');
-    setPasswordError('');
     setPasswordDialogOpen(true);
   };
 
-  const handlePasswordSubmit = () => {
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Die Passwörter stimmen nicht überein.');
-      return;
-    }
-    
-    if (newPassword.length < 6) {
-      setPasswordError('Das Passwort muss mindestens 6 Zeichen lang sein.');
-      return;
-    }
-    
+  const handlePasswordSubmit = (newPassword: string) => {
     onPasswordChange(user.id, newPassword);
-    setPasswordDialogOpen(false);
-  };
-
-  // Helper function to display user role in German
-  const getRoleName = (role: string): string => {
-    switch (role) {
-      case 'admin': return 'Administrator';
-      case 'judge': return 'Richter';
-      case 'reader': return 'Nur Lesen';
-      case 'editor': return 'Bearbeiter';
-      default: return role;
-    }
   };
 
   return (
@@ -114,7 +74,7 @@ const UserRow: React.FC<UserRowProps> = ({
                 tournaments={tournaments}
               />
               <div className="flex justify-end mt-4">
-                <Button onClick={onSave} className="ml-2">
+                <Button onClick={onSave}>
                   <Save className="h-4 w-4 mr-2" />
                   Speichern
                 </Button>
@@ -129,14 +89,7 @@ const UserRow: React.FC<UserRowProps> = ({
           <>
             <TableCell>{user.username}</TableCell>
             <TableCell>
-              <Badge variant={
-                user.role === 'admin' ? 'destructive' : 
-                user.role === 'judge' ? 'default' :
-                user.role === 'editor' ? 'secondary' : 
-                'outline'
-              }>
-                {getRoleName(user.role)}
-              </Badge>
+              <UserRoleBadge role={user.role} />
             </TableCell>
             <TableCell>
               <Button
@@ -159,15 +112,11 @@ const UserRow: React.FC<UserRowProps> = ({
             </TableCell>
             <TableCell>
               {(user.role === 'reader' || user.role === 'editor') && displayTournaments ? (
-                <div className="flex flex-wrap gap-1">
-                  {userTournaments.length > 0 ? (
-                    userTournaments.map((name, index) => (
-                      <Badge key={index} variant="outline">{name}</Badge>
-                    ))
-                  ) : (
-                    <span className="text-yellow-600 text-sm">Keine Turniere zugewiesen</span>
-                  )}
-                </div>
+                <UserTournaments 
+                  tournamentIds={user.tournamentIds || []} 
+                  tournaments={tournaments}
+                  role={user.role}
+                />
               ) : (
                 <span className="text-muted-foreground text-sm">
                   {(user.role === 'admin' || user.role === 'judge') ? 'Alle Turniere' : ''}
@@ -175,72 +124,26 @@ const UserRow: React.FC<UserRowProps> = ({
               )}
             </TableCell>
             <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Bearbeiten
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={() => onImpersonate(user.id)}
-                >
-                  Als Benutzer anmelden
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="destructive" 
-                  onClick={() => onDeleteClick(user)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <UserRowActions
+                user={user}
+                isEditing={isEditing}
+                onEdit={onEdit}
+                onSave={onSave}
+                onImpersonate={onImpersonate}
+                onDeleteClick={onDeleteClick}
+                onPasswordDialogOpen={handlePasswordDialogOpen}
+              />
             </TableCell>
           </>
         )}
       </TableRow>
 
-      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Passwort ändern</DialogTitle>
-            <DialogDescription>
-              Geben Sie ein neues Passwort für {user.name} ein.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">Neues Passwort</Label>
-              <Input 
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Neues Passwort"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Passwort bestätigen</Label>
-              <Input 
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Passwort wiederholen"
-              />
-            </div>
-            {passwordError && <p className="text-destructive text-sm">{passwordError}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handlePasswordSubmit}>
-              Passwort ändern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UserPasswordDialog
+        userName={user.name}
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+        onPasswordChange={handlePasswordSubmit}
+      />
     </>
   );
 };
