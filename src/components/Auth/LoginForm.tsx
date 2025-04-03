@@ -41,7 +41,7 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with:', email, password.substring(0, 3) + '***');
+      console.log('Attempting login with:', email);
       const success = await login(email, password);
       
       if (success) {

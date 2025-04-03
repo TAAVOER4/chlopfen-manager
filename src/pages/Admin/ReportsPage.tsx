@@ -24,11 +24,12 @@ const ReportsPage: React.FC = () => {
     tournamentName,
     tournament,
     mockSchedule,
-    mockParticipants,
-    mockGroups,
-    mockIndividualScores,
-    mockGroupScores,
-    mockSponsors
+    mockSponsors,
+    participants,
+    groups,
+    individualScores,
+    groupScores,
+    sponsors
   } = useReportsData();
 
   // If not admin, show access denied
@@ -106,9 +107,9 @@ const ReportsPage: React.FC = () => {
         {/* Data Exports Tab */}
         <TabsContent value="exports">
           <ExportsTab 
-            participants={mockParticipants}
+            participants={participants}
             tournamentName={tournamentName}
-            groups={mockGroups}
+            groups={groups}
           />
         </TabsContent>
         
