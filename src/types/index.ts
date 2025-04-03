@@ -57,6 +57,7 @@ export interface User {
   username: string;
   role: UserRole;
   passwordHash: string; // Hashed password for authentication
+  password?: string; // Optional plain text password field for new user creation
   assignedCriteria?: {
     individual?: CriterionKey;
     group?: GroupCriterionKey;

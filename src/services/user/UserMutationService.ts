@@ -17,13 +17,14 @@ export class UserMutationService extends BaseSupabaseService {
       
       // Make sure we have a password hash
       if (!userData.password_hash) {
-        if (!user.password) {
+        // Check for plain password first (should be added to User interface)
+        if (user.password) {
+          // Hash the password if a plain password was provided
+          console.log('Hashing provided password for new user');
+          userData.password_hash = hashPassword(user.password);
+        } else {
           throw new Error('Password is required for new users');
         }
-        
-        // Hash the password if a plain password was provided
-        console.log('Hashing provided password for new user');
-        userData.password_hash = hashPassword(user.password);
       }
       
       const { data, error } = await this.supabase
