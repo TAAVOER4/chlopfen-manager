@@ -1,3 +1,4 @@
+
 // This is a simplified version of bcrypt for browser environments
 import bcrypt from 'bcryptjs';
 
@@ -10,17 +11,19 @@ export function hashPassword(password: string): string {
   }
   
   try {
-    // Verwende bcryptjs mit einem Saltrunden-Wert von 10
+    // Use bcryptjs with a salt rounds value of 10
     const salt = bcrypt.genSaltSync(10);
     return bcrypt.hashSync(password, salt);
   } catch (error) {
     console.error('Password hashing error:', error);
     
-    // Fallback für Entwicklungszwecke
+    // Fallback for development purposes
     if (password === "password") {
       return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
     }
     
+    // If bcrypt fails (in browser environments), use a simple hash alternative
+    // Note: This is NOT secure for production, only a fallback for development
     const salt = Date.now().toString(36) + Math.random().toString(36).substring(2);
     return `hashed_${password}_${salt}`;
   }
@@ -40,15 +43,17 @@ export function verifyPassword(password: string, hash: string): boolean {
   }
   
   try {
-    // Versuche mit bcryptjs zu validieren
+    // Try to validate with bcryptjs
     return bcrypt.compareSync(password, hash);
   } catch (error) {
     console.error('Password verification error:', error);
     
-    // Fallback für das vereinfachte Hashformat
-    const parts = hash.split('_');
-    if (parts.length >= 2 && parts[0] === 'hashed') {
-      return parts[1] === password;
+    // Fallback for the simplified hash format
+    if (hash.startsWith('hashed_')) {
+      const parts = hash.split('_');
+      if (parts.length >= 2) {
+        return parts[1] === password;
+      }
     }
     
     return false;

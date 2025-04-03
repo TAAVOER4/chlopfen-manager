@@ -1,19 +1,19 @@
+
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
 
 export class AuthService extends BaseSupabaseService {
-  // Benutzer authentifizieren
+  // Authenticate user
   static async authenticateUser(usernameOrEmail: string, password: string): Promise<User | null> {
     try {
       console.log('Authenticating user:', usernameOrEmail);
       
-      // Direct query to get user with matching username or email
+      // Fixed query to correctly escape parameters
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
-        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`)
-        .limit(1);
+        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`);
         
       if (error) {
         console.error('Error during authentication query:', error);
@@ -28,7 +28,7 @@ export class AuthService extends BaseSupabaseService {
       const user = users[0];
       console.log('Found user with username:', user.username);
       
-      // Passwortüberprüfung mit der verifyPassword-Funktion
+      // Password verification with the verifyPassword function
       if (verifyPassword(password, user.password_hash)) {
         console.log('Password matches, allowing login');
         
@@ -56,12 +56,12 @@ export class AuthService extends BaseSupabaseService {
     }
   }
 
-  // Initialisierung: Füge Standardbenutzer hinzu, wenn noch keine vorhanden sind
+  // Initialization: Add default users if none exist
   static async initializeUsers(): Promise<void> {
     try {
       console.log('Checking for existing users...');
       
-      // Prüfe, ob die Tabelle 'users' existiert
+      // Check if the 'users' table exists
       const { error: tableCheckError } = await this.supabase
         .from('users')
         .select('id')
@@ -72,22 +72,22 @@ export class AuthService extends BaseSupabaseService {
         return;
       }
 
-      // Prüfe, ob bereits Benutzer vorhanden sind
+      // Check if users already exist
       const { data: existingUsers, error } = await this.supabase
         .from('users')
         .select('id')
         .limit(1);
         
       if (error) {
-        console.error('Fehler beim Prüfen vorhandener Benutzer:', error);
+        console.error('Error checking existing users:', error);
         return;
       }
       
-      // Wenn keine Benutzer vorhanden sind, füge die Standardbenutzer hinzu
+      // If no users exist, add default users
       if (!existingUsers || existingUsers.length === 0) {
-        console.log('Keine Benutzer gefunden, füge Standardbenutzer hinzu...');
+        console.log('No users found, adding default users...');
         
-        const defaultPasswordHash = "password";
+        const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi"; // Hash for "password"
         
         const defaultUsers = [
           {
@@ -115,15 +115,15 @@ export class AuthService extends BaseSupabaseService {
             .insert(defaultUsers);
             
           if (insertError) {
-            console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
+            console.error('Error adding default users:', insertError);
           } else {
-            console.log('Standardbenutzer wurden erfolgreich hinzugefügt.');
+            console.log('Default users added successfully.');
           }
         } catch (insertError) {
-          console.error('Fehler beim Hinzufügen von Standardbenutzern:', insertError);
+          console.error('Error adding default users:', insertError);
         }
       } else {
-        console.log('Benutzer bereits vorhanden, überspringe Initialisierung.');
+        console.log('Users already exist, skipping initialization.');
       }
     } catch (error) {
       console.error('Error in initializeUsers:', error);

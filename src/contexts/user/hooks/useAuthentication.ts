@@ -46,9 +46,9 @@ export const useAuthentication = () => {
       const authenticatedUser = await SupabaseService.authenticateUser(username, password);
       
       if (authenticatedUser) {
+        // For readers and editors, fetch their assigned tournaments
         if (authenticatedUser.role === 'reader' || authenticatedUser.role === 'editor') {
           try {
-            // Fetch user's assigned tournaments
             const { data: userTournaments, error } = await SupabaseService.supabase
               .from('user_tournaments')
               .select('tournament_id')
@@ -67,24 +67,24 @@ export const useAuthentication = () => {
         saveUserToLocalStorage(authenticatedUser);
         
         toast({
-          title: "Anmeldung erfolgreich",
-          description: `Willkommen, ${authenticatedUser.name}!`
+          title: "Login successful",
+          description: `Welcome, ${authenticatedUser.name}!`
         });
         
         return true;
       } else {
         console.log('Authentication failed');
         toast({
-          title: "Anmeldung fehlgeschlagen",
-          description: "Falscher Benutzername oder falsches Passwort.",
+          title: "Login failed",
+          description: "Incorrect username or password.",
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Anmeldung fehlgeschlagen",
-        description: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+        title: "Login failed",
+        description: "An error occurred. Please try again later.",
         variant: "destructive"
       });
     } finally {

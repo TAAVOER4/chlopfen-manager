@@ -29,19 +29,11 @@ const LoginForm: React.FC = () => {
   useEffect(() => {
     const loadTournaments = async () => {
       try {
-        const { data, error } = await SupabaseService.supabase
-          .from('tournaments')
-          .select('*');
-          
-        if (error) {
-          console.error('Error loading tournaments:', error);
-          return;
-        }
-        
-        // Set default tournament if available
-        if (data && data.length > 0) {
-          const activeTournament = data.find((t: any) => t.is_active);
-          setSelectedTournamentId(activeTournament?.id.toString() || data[0].id.toString());
+        const tournamentData = await SupabaseService.getAllTournaments();
+        if (tournamentData && tournamentData.length > 0) {
+          // Set default tournament if available
+          const activeTournament = tournamentData.find(t => t.isActive);
+          setSelectedTournamentId(activeTournament?.id.toString() || tournamentData[0].id.toString());
         }
       } catch (error) {
         console.error('Error loading tournaments:', error);
@@ -91,27 +83,27 @@ const LoginForm: React.FC = () => {
         }
         
         toast({
-          title: "Anmeldung erfolgreich",
+          title: "Login successful",
           description: selectedTournamentId && tournaments.length > 0
-            ? `Sie arbeiten jetzt mit dem Turnier: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
-            : "Bitte wählen Sie ein Turnier in der Turnierverwaltung aus.",
+            ? `You are now working with tournament: ${tournaments.find(t => t.id.toString() === selectedTournamentId)?.name}`
+            : "Please select a tournament in the tournament management.",
         });
         
         navigate('/');
       } else {
-        setError('Bitte überprüfen Sie Ihre Anmeldedaten.');
+        setError('Please check your login credentials.');
         toast({
-          title: "Anmeldung fehlgeschlagen",
-          description: "Falscher Benutzername oder falsches Passwort.",
+          title: "Login failed",
+          description: "Incorrect username or password.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      setError('An error occurred. Please try again later.');
       toast({
-        title: "Anmeldung fehlgeschlagen",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        title: "Login failed",
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -126,8 +118,8 @@ const LoginForm: React.FC = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Anmelden</CardTitle>
-        <CardDescription>Melden Sie sich an, um fortzufahren</CardDescription>
+        <CardTitle>Login</CardTitle>
+        <CardDescription>Log in to continue</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -137,18 +129,18 @@ const LoginForm: React.FC = () => {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="username">Benutzername</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="Benutzername eingeben"
+              placeholder="Enter username"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Passwort</Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -156,7 +148,7 @@ const LoginForm: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Passwort eingeben"
+                placeholder="Enter password"
                 className="pr-10"
               />
               <button
@@ -170,13 +162,13 @@ const LoginForm: React.FC = () => {
           </div>
           {tournaments && tournaments.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="tournament">Aktives Turnier</Label>
+              <Label htmlFor="tournament">Active Tournament</Label>
               <Select 
                 value={selectedTournamentId} 
                 onValueChange={setSelectedTournamentId}
               >
                 <SelectTrigger id="tournament">
-                  <SelectValue placeholder="Turnier auswählen" />
+                  <SelectValue placeholder="Select tournament" />
                 </SelectTrigger>
                 <SelectContent>
                   {tournaments.map((tournament) => (
@@ -194,7 +186,7 @@ const LoginForm: React.FC = () => {
         </CardContent>
         <CardFooter className="flex-col space-y-2">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
         </CardFooter>
       </form>
