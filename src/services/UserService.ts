@@ -150,17 +150,27 @@ export class UserService extends BaseSupabaseService {
       console.log('Changing password for user:', username);
       const passwordHash = hashPassword(newPassword);
       
-      const { error } = await this.supabase
+      // Debug logging to verify the hash is generated correctly
+      console.log('Generated password hash:', passwordHash);
+      
+      const { data, error } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })
-        .eq('username', username);
+        .eq('username', username)
+        .select();
         
       if (error) {
         console.error('Fehler beim Ändern des Passworts:', error);
         throw error;
       }
       
-      console.log('Password changed successfully for user:', username);
+      // Add debug logging to verify the update was successful
+      if (data && data.length > 0) {
+        console.log('Password changed successfully for user:', username);
+        console.log('Updated user data:', data[0]);
+      } else {
+        console.warn('No data returned after password update, user might not exist:', username);
+      }
     } catch (error) {
       console.error('Error changing password:', error);
       throw error;

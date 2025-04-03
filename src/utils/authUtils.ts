@@ -1,18 +1,22 @@
-
 // This is a simplified version of bcrypt for browser environments
 
 /**
  * Hash a password for storing.
  */
 export function hashPassword(password: string): string {
+  if (!password || password.trim() === '') {
+    throw new Error('Password cannot be empty');
+  }
+  
   if (password === "password") {
     // Return a predefined hash for the default password to simplify development
     return "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
   }
   
-  // For simplicity, we're not actually hashing in this example.
-  // In a real application, you would use a proper hashing algorithm.
-  return `hashed_${password}_${Date.now()}`;
+  // For simplicity in this demo, we're creating a more unique hash
+  // In a real application, you would use a proper hashing algorithm like bcrypt
+  const salt = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  return `hashed_${password}_${salt}`;
 }
 
 /**
@@ -24,9 +28,14 @@ export function verifyPassword(password: string, hash: string): boolean {
     return true;
   }
   
-  // For simplicity, we're just checking if the hash starts with "hashed_" followed by the password
+  // Extract the original password from the hash (for this simplified demo)
   // In a real application, you would use a proper verification method
-  return hash.startsWith(`hashed_${password}_`);
+  const parts = hash.split('_');
+  if (parts.length >= 2 && parts[0] === 'hashed') {
+    return parts[1] === password;
+  }
+  
+  return false;
 }
 
 /**
