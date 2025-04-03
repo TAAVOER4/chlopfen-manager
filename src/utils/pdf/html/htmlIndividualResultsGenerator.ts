@@ -1,11 +1,11 @@
 
-import { Category, ParticipantResult, Sponsor } from '@/types';
-import { getCategoryDisplay } from '../categoryUtils';
+import { Category } from '@/types';
+import { getCategoryDisplay } from '../../categoryUtils';
 
-// Helper function to generate HTML content for individual results
+// Helper function for individual results HTML
 export const generateIndividualResultsHTMLContent = (
-  individualResults: Record<Category, ParticipantResult[]>,
-  sponsors: Sponsor[]
+  individualResults: Record<Category, any[]>,
+  sponsors: any[]
 ): string => {
   let content = `<h2>Einzelbewertungen</h2>`;
   
@@ -24,7 +24,6 @@ export const generateIndividualResultsHTMLContent = (
               <th>Rang</th>
               <th>Name</th>
               <th>Wohnort</th>
-              <th>Jahrgang</th>
               <th>Punkte</th>
             </tr>
           </thead>
@@ -41,12 +40,12 @@ export const generateIndividualResultsHTMLContent = (
         <tr>
           <td${medalClass}>${result.rank}</td>
           <td>
-            ${result.participant.firstName} ${result.participant.lastName}
+            ${result.name || `${result.participant?.firstName || ''} ${result.participant?.lastName || ''}`}
             ${rankSponsor ? `<div class="rank-sponsor">Sponsor: ${rankSponsor.name}</div>` : ''}
           </td>
-          <td>${result.participant.location}</td>
-          <td>${result.participant.birthYear}</td>
-          <td>${Math.round(result.totalScore * 10) / 10}</td>
+          <td>${result.location || result.participant?.location || ''}</td>
+          <td>${typeof result.score === 'number' ? Math.round(result.score * 10) / 10 : 
+               typeof result.totalScore === 'number' ? Math.round(result.totalScore * 10) / 10 : 'N/A'}</td>
         </tr>
       `;
     });

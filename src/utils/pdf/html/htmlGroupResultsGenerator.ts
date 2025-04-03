@@ -1,11 +1,11 @@
 
-import { GroupCategory, GroupResult, Sponsor } from '@/types';
-import { getCategoryDisplay } from '../categoryUtils';
+import { GroupCategory } from '@/types';
+import { getCategoryDisplay } from '../../categoryUtils';
 
-// Helper function to generate HTML content for group results
+// Helper function for group results HTML
 export const generateGroupResultsHTMLContent = (
-  groupResults: Record<string, GroupResult[]>,
-  sponsors: Sponsor[]
+  groupResults: Record<string, any[]>,
+  sponsors: any[]
 ): string => {
   let content = `<h2>Gruppenbewertungen</h2>`;
   
@@ -38,20 +38,31 @@ export const generateGroupResultsHTMLContent = (
       
       results.forEach(result => {
         const medalClass = result.rank <= 3 ? ` class="medal-position medal-${result.rank}"` : '';
-        const members = result.members.map(m => `${m.firstName} ${m.lastName}`).join(', ');
+        
+        // Get members string based on available data
+        let members = '';
+        if (typeof result.location === 'string') {
+          members = result.location;
+        } else if (result.members && Array.isArray(result.members)) {
+          members = result.members
+            .map((m: any) => `${m.firstName || ''} ${m.lastName || ''}`.trim())
+            .join(', ');
+        }
         
         // Find sponsor for this rank and group category
         const rankSponsor = sponsors.find(s => s.category === category && s.rank === result.rank);
+        const groupName = result.name || `Gruppe ${result.groupId || ''}`;
         
         content += `
           <tr>
             <td${medalClass}>${result.rank}</td>
             <td>
-              Gruppe ${result.groupId}
+              ${groupName}
               ${rankSponsor ? `<div class="rank-sponsor">Sponsor: ${rankSponsor.name}</div>` : ''}
             </td>
             <td>${members}</td>
-            <td>${Math.round(result.totalScore * 10) / 10}</td>
+            <td>${typeof result.score === 'number' ? Math.round(result.score * 10) / 10 : 
+                 typeof result.totalScore === 'number' ? Math.round(result.totalScore * 10) / 10 : 'N/A'}</td>
           </tr>
         `;
       });
