@@ -37,7 +37,8 @@ const UsersPage = () => {
     handleSave,
     handleAddUser,
     handleDeleteClick,
-    handleDeleteUser
+    handleDeleteUser,
+    isChangingPassword
   } = useUserManagement();
   
   const { individualCriteria, groupCriteria, tournaments } = useUserCriteriaData();
@@ -111,6 +112,7 @@ const UsersPage = () => {
             individualCriteria={individualCriteria}
             groupCriteria={groupCriteria}
             tournaments={tournaments}
+            isChangingPassword={isChangingPassword}
           />
         </CardContent>
         <CardFooter className="justify-between">

@@ -17,17 +17,27 @@ export class PasswordService extends BaseSupabaseService {
       // Log more details about the update operation
       console.log('Updating password for user with username:', username);
       
-      // Update the password directly - NOTE: Using PATCH instead of UPDATE to avoid potential RLS issues
-      // When using the PATCH method, Supabase sends the request differently which may bypass certain RLS limitations
-      const { error } = await this.supabase
+      // First try direct UPDATE statement - this is the most straightforward approach
+      const { error: updateError } = await this.supabase
         .from('users')
         .update({ password_hash: passwordHash })
-        .eq('username', username)
-        .select(); // Force a select to get proper response
+        .eq('username', username);
         
-      if (error) {
-        console.error('Error updating password:', error);
-        return false;
+      if (updateError) {
+        console.error('Error using UPDATE approach:', updateError);
+        console.log('Trying alternative approach with PATCH...');
+        
+        // Alternative: try PATCH approach which might bypass certain RLS configurations
+        const { error: patchError } = await this.supabase
+          .from('users')
+          .update({ password_hash: passwordHash })
+          .eq('username', username)
+          .select();
+          
+        if (patchError) {
+          console.error('Error using PATCH approach:', patchError);
+          return false;
+        }
       }
       
       // Verify the update was successful
@@ -43,6 +53,13 @@ export class PasswordService extends BaseSupabaseService {
       }
       
       // Check if the password hash was actually updated
+      // Just log the data instead of comparing directly - this helps us debug
+      console.log('Password verification data:', {
+        received: verifyData?.password_hash?.substring(0, 10) + '...',
+        expected: passwordHash.substring(0, 10) + '...',
+        match: verifyData?.password_hash === passwordHash
+      });
+      
       if (!verifyData || verifyData.password_hash !== passwordHash) {
         console.error('Password not updated in database. Verification failed.');
         return false;

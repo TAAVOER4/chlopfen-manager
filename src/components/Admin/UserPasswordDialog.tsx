@@ -12,19 +12,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 interface UserPasswordDialogProps {
   userName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPasswordChange: (newPassword: string) => void;
+  isLoading?: boolean;
 }
 
 const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({ 
   userName, 
   open, 
   onOpenChange, 
-  onPasswordChange 
+  onPasswordChange,
+  isLoading = false
 }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -43,8 +46,10 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
     
     // Pass the plain password to the handler which will hash it
     onPasswordChange(newPassword);
-    onOpenChange(false);
-    resetForm();
+    if (!isLoading) {
+      onOpenChange(false);
+      resetForm();
+    }
   };
 
   const resetForm = () => {
@@ -56,7 +61,7 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
       if (!newOpen) resetForm();
-      onOpenChange(newOpen);
+      if (!isLoading) onOpenChange(newOpen);
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -74,6 +79,7 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Neues Passwort"
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -84,16 +90,24 @@ const UserPasswordDialog: React.FC<UserPasswordDialogProps> = ({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Passwort wiederholen"
+              disabled={isLoading}
             />
           </div>
           {passwordError && <p className="text-destructive text-sm">{passwordError}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Abbrechen
           </Button>
-          <Button onClick={handlePasswordSubmit}>
-            Passwort ändern
+          <Button onClick={handlePasswordSubmit} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Spinner size="small" className="mr-2" />
+                Wird geändert...
+              </>
+            ) : (
+              'Passwort ändern'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

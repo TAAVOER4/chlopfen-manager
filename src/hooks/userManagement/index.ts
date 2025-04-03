@@ -9,7 +9,7 @@ export const useUserManagement = () => {
   const { users, setUsers, loading, loadUsers } = useUserLoading();
   
   // User editing operations
-  const { editingUser, setEditingUser, handleEdit, handleUserChange, handlePasswordChange } = 
+  const { editingUser, setEditingUser, handleEdit, handleUserChange, handlePasswordChange, isChangingPassword } = 
     useUserEditing(users, setUsers);
   
   // User deletion operations
@@ -33,7 +33,8 @@ export const useUserManagement = () => {
     handleSave,
     handleAddUser,
     handleDeleteClick,
-    handleDeleteUser
+    handleDeleteUser,
+    isChangingPassword
   };
 };
 

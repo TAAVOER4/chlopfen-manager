@@ -7,6 +7,7 @@ import { UserService } from '@/services/UserService';
 export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const handleEdit = (user: User) => {
     setEditingUser({ ...user });
@@ -21,6 +22,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
     if (!user) return;
     
     try {
+      setIsChangingPassword(true);
       console.log('Attempting to change password for user:', user.username);
       
       // Pass plain password to service which will hash it before saving
@@ -42,6 +44,8 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
         description: "Beim Ändern des Passworts ist ein Fehler aufgetreten.",
         variant: "destructive"
       });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -50,6 +54,7 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
     setEditingUser,
     handleEdit,
     handleUserChange,
-    handlePasswordChange
+    handlePasswordChange,
+    isChangingPassword
   };
 };

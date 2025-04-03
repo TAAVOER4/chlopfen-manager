@@ -20,6 +20,7 @@ interface UserListContentProps {
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
   tournaments: Tournament[];
+  isChangingPassword?: boolean;
 }
 
 const UserListContent: React.FC<UserListContentProps> = ({
@@ -36,7 +37,8 @@ const UserListContent: React.FC<UserListContentProps> = ({
   onAddUser,
   individualCriteria,
   groupCriteria,
-  tournaments
+  tournaments,
+  isChangingPassword = false
 }) => {
   if (loading) {
     return (
@@ -65,6 +67,7 @@ const UserListContent: React.FC<UserListContentProps> = ({
       groupCriteria={groupCriteria}
       tournaments={tournaments}
       displayTournaments={true}
+      isChangingPassword={isChangingPassword}
     />
   );
 };

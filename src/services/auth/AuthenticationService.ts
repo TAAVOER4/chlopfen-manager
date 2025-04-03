@@ -40,16 +40,13 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        const userData = usernameData[0] as AuthUserData;
+        const userData = usernameData[0] as unknown as AuthUserData;
         return this.validateAndReturnUser(userData, password);
       }
       
       // Try alternative lookup methods
       const user = await this.findUserByAlternativeMethods(usernameOrEmail, password);
-      if (user) return user;
-      
-      console.log('No user found with username or email:', usernameOrEmail);
-      return null;
+      return user;
     } catch (error) {
       console.error('Authentication error:', error);
       return null;
