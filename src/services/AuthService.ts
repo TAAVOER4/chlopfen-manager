@@ -1,6 +1,17 @@
+
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { verifyPassword } from '@/utils/authUtils';
+
+interface DatabaseUser {
+  id: string;
+  name: string;
+  username: string;
+  role: UserRole;
+  password_hash: string;
+  individual_criterion: CriterionKey | null;
+  group_criterion: GroupCriterionKey | null;
+}
 
 export class AuthService extends BaseSupabaseService {
   // Authenticate user
@@ -27,7 +38,7 @@ export class AuthService extends BaseSupabaseService {
       
       // If username match found, validate password
       if (usernameUsers && usernameUsers.length > 0) {
-        return this.validateAndReturnUser(usernameUsers[0], password);
+        return this.validateAndReturnUser(usernameUsers[0] as DatabaseUser, password);
       }
       
       // Second try - match on email field
@@ -43,7 +54,7 @@ export class AuthService extends BaseSupabaseService {
       
       // If email match found, validate password
       if (emailUsers && emailUsers.length > 0) {
-        return this.validateAndReturnUser(emailUsers[0], password);
+        return this.validateAndReturnUser(emailUsers[0] as DatabaseUser, password);
       }
       
       // Last try - check if username field contains an email that matches
@@ -60,7 +71,7 @@ export class AuthService extends BaseSupabaseService {
         
         // If found, validate password
         if (usernameWithEmailUsers && usernameWithEmailUsers.length > 0) {
-          return this.validateAndReturnUser(usernameWithEmailUsers[0], password);
+          return this.validateAndReturnUser(usernameWithEmailUsers[0] as DatabaseUser, password);
         }
       }
       
@@ -73,7 +84,7 @@ export class AuthService extends BaseSupabaseService {
   }
   
   // Helper method to validate password and return user
-  private static validateAndReturnUser(user: any, password: string): User | null {
+  private static validateAndReturnUser(user: DatabaseUser, password: string): User | null {
     if (!user) return null;
     
     console.log('Found user with username:', user.username);
