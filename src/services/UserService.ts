@@ -25,7 +25,13 @@ export class UserService {
     return UserMutationService.deleteUser(username);
   }
 
-  static async changePassword(username: string, newPassword: string): Promise<void> {
-    return UserMutationService.changePassword(username, newPassword);
+  static async changePassword(username: string, newPassword: string): Promise<boolean> {
+    try {
+      await UserMutationService.changePassword(username, newPassword);
+      return true;
+    } catch (error) {
+      console.error('Error changing password in UserService:', error);
+      return false;
+    }
   }
 }

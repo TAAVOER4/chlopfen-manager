@@ -8,29 +8,25 @@ export class PasswordService extends BaseSupabaseService {
    */
   static async updateUserPassword(username: string, newPassword: string): Promise<boolean> {
     try {
+      console.log('Starting password update for user:', username);
+      
       // Hash the new password
       const passwordHash = hashPassword(newPassword);
+      console.log('Password hash generated successfully');
       
-      // Find the user
-      const { data: users, error: findError } = await this.supabase
+      // Update the password directly
+      const { error, count } = await this.supabase
         .from('users')
-        .select('id')
-        .eq('username', username)
-        .limit(1) as any;
-      
-      if (findError || !users || users.length === 0) {
-        console.error('User not found for password update:', username);
+        .update({ password_hash: passwordHash })
+        .eq('username', username);
+        
+      if (error) {
+        console.error('Error updating password:', error);
         return false;
       }
       
-      // Update the password
-      const { error: updateError } = await this.supabase
-        .from('users')
-        .update({ password_hash: passwordHash })
-        .eq('username', username) as any;
-        
-      if (updateError) {
-        console.error('Error updating password:', updateError);
+      if (count === 0) {
+        console.warn('No rows updated. User might not exist:', username);
         return false;
       }
       

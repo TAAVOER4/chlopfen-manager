@@ -40,7 +40,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If username match found, validate password
       if (usernameData && usernameData.length > 0) {
         console.log('Found user by username match');
-        return this.validateAndReturnUser(usernameData[0] as AuthUserData, password);
+        return this.validateAndReturnUser(usernameData[0], password);
       }
       
       // Try alternative lookup methods
@@ -84,7 +84,7 @@ export class AuthenticationService extends BaseSupabaseService {
         // If email match found, validate password
         if (emailData && emailData.length > 0) {
           console.log('Found user by email match');
-          return this.validateAndReturnUser(emailData[0] as AuthUserData, password);
+          return this.validateAndReturnUser(emailData[0], password);
         }
       } else {
         console.log('Email field does not exist in users table, skipping email query');
@@ -114,7 +114,7 @@ export class AuthenticationService extends BaseSupabaseService {
       // If found, validate password
       if (usernameWithEmailData && usernameWithEmailData.length > 0) {
         console.log('Found user by username-as-email match');
-        return this.validateAndReturnUser(usernameWithEmailData[0] as AuthUserData, password);
+        return this.validateAndReturnUser(usernameWithEmailData[0], password);
       }
     }
     
@@ -124,7 +124,7 @@ export class AuthenticationService extends BaseSupabaseService {
   /**
    * Helper method to validate password and return user
    */
-  private static validateAndReturnUser(userData: AuthUserData, password: string): User | null {
+  private static validateAndReturnUser(userData: any, password: string): User | null {
     if (!userData) return null;
     
     console.log('Validating password for user:', userData.username);

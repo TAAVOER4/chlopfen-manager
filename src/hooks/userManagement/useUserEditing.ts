@@ -21,13 +21,19 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
     if (!user) return;
     
     try {
-      // Pass plain password to service which will hash it before saving
-      await UserService.changePassword(user.username, newPassword);
+      console.log('Attempting to change password for user:', user.username);
       
-      toast({
-        title: "Passwort geändert",
-        description: "Das Passwort wurde erfolgreich geändert."
-      });
+      // Pass plain password to service which will hash it before saving
+      const success = await UserService.changePassword(user.username, newPassword);
+      
+      if (success) {
+        toast({
+          title: "Passwort geändert",
+          description: "Das Passwort wurde erfolgreich geändert."
+        });
+      } else {
+        throw new Error('Password update failed');
+      }
     } catch (error) {
       console.error('Fehler beim Ändern des Passworts:', error);
       toast({
