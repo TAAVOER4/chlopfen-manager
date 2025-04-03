@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Users, Lock, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,23 +13,51 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { mockJudges, updateMockJudges } from '@/data/mockJudges';
-import { mockTournaments } from '@/data/mockTournaments';
 import { User, CriterionKey, GroupCriterionKey, UserRole, Tournament } from '@/types';
 import { useUser } from '@/contexts/UserContext';
 import DeleteUserDialog from '@/components/Admin/DeleteUserDialog';
 import UserTable from '@/components/Admin/UserTable';
 import { hashPassword } from '@/utils/authUtils';
+import { SupabaseService } from '@/services/SupabaseService';
+import { mockTournaments } from '@/data/mockTournaments';
+import { Spinner } from '@/components/ui/spinner';
 
 const UsersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(mockJudges);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
   const { impersonate } = useUser();
+  
+  // Benutzer laden
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        // Zuerst prüfen, ob Standardbenutzer hinzugefügt werden müssen
+        await SupabaseService.initializeUsers();
+        
+        // Dann alle Benutzer laden
+        const loadedUsers = await SupabaseService.getAllUsers();
+        setUsers(loadedUsers);
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzer:', error);
+        toast({
+          title: "Fehler",
+          description: "Beim Laden der Benutzer ist ein Fehler aufgetreten.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUsers();
+  }, [toast]);
   
   // Available criteria for assignment
   const individualCriteria: { value: CriterionKey; label: string }[] = [
@@ -74,79 +102,111 @@ const UsersPage = () => {
     setEditingUser(updatedUser);
   };
 
-  const handlePasswordChange = (userId: number, newPassword: string) => {
-    setUsers(prevUsers => {
-      return prevUsers.map(user => {
-        if (user.id === userId) {
-          return {
-            ...user,
-            passwordHash: hashPassword(newPassword)
-          };
-        }
-        return user;
-      });
-    });
-
-    if (editingUser && editingUser.id === userId) {
-      setEditingUser({
-        ...editingUser,
-        passwordHash: hashPassword(newPassword)
-      });
-    }
+  const handlePasswordChange = async (userId: number, newPassword: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
     
-    toast({
-      title: "Passwort geändert",
-      description: "Das Passwort wurde erfolgreich geändert."
-    });
-  };
-
-  const handleSave = () => {
-    if (editingUser) {
-      const updatedUsers = users.map(u => 
-        u.id === editingUser.id ? editingUser : u
-      );
+    try {
+      // Passwort in Supabase aktualisieren
+      await SupabaseService.changePassword(user.username, newPassword);
       
-      setUsers(updatedUsers);
-      // Update the mockJudges in the data file
-      updateMockJudges(updatedUsers);
-      setEditingUser(null);
+      // Lokalen Status aktualisieren
+      setUsers(prevUsers => {
+        return prevUsers.map(u => {
+          if (u.id === userId) {
+            return {
+              ...u,
+              passwordHash: hashPassword(newPassword)
+            };
+          }
+          return u;
+        });
+      });
+
+      if (editingUser && editingUser.id === userId) {
+        setEditingUser({
+          ...editingUser,
+          passwordHash: hashPassword(newPassword)
+        });
+      }
       
       toast({
-        title: "Benutzer aktualisiert",
-        description: `Daten für ${editingUser.name} wurden gespeichert.`
+        title: "Passwort geändert",
+        description: "Das Passwort wurde erfolgreich geändert."
+      });
+    } catch (error) {
+      console.error('Fehler beim Ändern des Passworts:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Ändern des Passworts ist ein Fehler aufgetreten.",
+        variant: "destructive"
       });
     }
   };
 
-  const handleAddUser = () => {
-    // Default password is "password"
-    const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
-    
-    // Generate a new ID (highest existing ID + 1)
-    const newId = Math.max(...users.map(user => user.id), 0) + 1;
-    
-    const newUser: User = {
-      id: newId,
-      name: 'Neuer Benutzer',
-      username: 'neuer.benutzer',
-      role: 'judge' as UserRole,
-      passwordHash: defaultPasswordHash,
-      assignedCriteria: {
-        individual: 'rhythm'
-      },
-      tournamentIds: []
-    };
-    
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    // Update the mockJudges in the data file
-    updateMockJudges(updatedUsers);
-    setEditingUser(newUser);
-    
-    toast({
-      title: "Neuer Benutzer",
-      description: "Bitte vervollständigen Sie die Daten des neuen Benutzers."
-    });
+  const handleSave = async () => {
+    if (editingUser) {
+      try {
+        // Benutzer in Supabase aktualisieren
+        const updatedUser = await SupabaseService.updateUser(editingUser);
+        
+        // Lokalen Status aktualisieren
+        setUsers(prevUsers => 
+          prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
+        );
+        
+        setEditingUser(null);
+        
+        toast({
+          title: "Benutzer aktualisiert",
+          description: `Daten für ${updatedUser.name} wurden gespeichert.`
+        });
+      } catch (error) {
+        console.error('Fehler beim Aktualisieren des Benutzers:', error);
+        toast({
+          title: "Fehler",
+          description: "Beim Aktualisieren des Benutzers ist ein Fehler aufgetreten.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleAddUser = async () => {
+    try {
+      // Default password is "password"
+      const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+      
+      const newUser = {
+        name: 'Neuer Benutzer',
+        username: `neuer.benutzer.${Date.now()}`, // Einzigartiger Benutzername
+        role: 'judge' as UserRole,
+        passwordHash: defaultPasswordHash,
+        assignedCriteria: {
+          individual: 'rhythm' as CriterionKey
+        },
+        tournamentIds: []
+      };
+      
+      // Benutzer in Supabase erstellen
+      const createdUser = await SupabaseService.createUser(newUser);
+      
+      // Lokalen Status aktualisieren
+      setUsers(prevUsers => [...prevUsers, createdUser]);
+      setEditingUser(createdUser);
+      
+      toast({
+        title: "Neuer Benutzer",
+        description: "Bitte vervollständigen Sie die Daten des neuen Benutzers."
+      });
+    } catch (error) {
+      console.error('Fehler beim Erstellen des Benutzers:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Erstellen des Benutzers ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteClick = (user: User) => {
@@ -154,16 +214,29 @@ const UsersPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteUser = (userId: number) => {
-    const updatedUsers = users.filter(u => u.id !== userId);
-    setUsers(updatedUsers);
-    // Update the mockJudges in the data file
-    updateMockJudges(updatedUsers);
+  const handleDeleteUser = async (userId: number) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
     
-    toast({
-      title: "Benutzer gelöscht",
-      description: "Der Benutzer wurde erfolgreich gelöscht."
-    });
+    try {
+      // Benutzer in Supabase löschen
+      await SupabaseService.deleteUser(user.username);
+      
+      // Lokalen Status aktualisieren
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+      
+      toast({
+        title: "Benutzer gelöscht",
+        description: "Der Benutzer wurde erfolgreich gelöscht."
+      });
+    } catch (error) {
+      console.error('Fehler beim Löschen des Benutzers:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Löschen des Benutzers ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -223,20 +296,27 @@ const UsersPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <UserTable
-            users={filteredUsers}
-            editingUser={editingUser}
-            onEdit={handleEdit}
-            onSave={handleSave}
-            onImpersonate={handleImpersonate}
-            onDeleteClick={handleDeleteClick}
-            onUserChange={handleUserChange}
-            onPasswordChange={handlePasswordChange}
-            individualCriteria={individualCriteria}
-            groupCriteria={groupCriteria}
-            tournaments={tournaments}
-            displayTournaments={true}
-          />
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <Spinner size="lg" />
+              <span className="ml-2 text-muted-foreground">Benutzer werden geladen...</span>
+            </div>
+          ) : (
+            <UserTable
+              users={filteredUsers}
+              editingUser={editingUser}
+              onEdit={handleEdit}
+              onSave={handleSave}
+              onImpersonate={handleImpersonate}
+              onDeleteClick={handleDeleteClick}
+              onUserChange={handleUserChange}
+              onPasswordChange={handlePasswordChange}
+              individualCriteria={individualCriteria}
+              groupCriteria={groupCriteria}
+              tournaments={tournaments}
+              displayTournaments={true}
+            />
+          )}
         </CardContent>
         <CardFooter className="justify-between">
           <Button variant="outline" onClick={() => navigate('/admin')}>

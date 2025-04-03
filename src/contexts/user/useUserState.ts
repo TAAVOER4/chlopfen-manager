@@ -1,16 +1,16 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { User, Tournament } from '@/types';
-import { mockJudges } from '@/data/mockJudges';
 import { useToast } from '@/hooks/use-toast';
-import { authenticateUser } from '@/utils/authUtils';
 import { mockTournaments, getActiveTournament } from '@/data/mockTournaments';
+import { SupabaseService } from '@/services/SupabaseService';
 
 export const useUserState = () => {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [originalAdmin, setOriginalAdmin] = useState<User | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // On initial load, check if we have a saved user or are impersonating
   useEffect(() => {
@@ -69,9 +69,15 @@ export const useUserState = () => {
   }, [currentUser]);
 
   // Login function
-  const login = (username: string, password: string): boolean => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const authenticatedUser = authenticateUser(mockJudges, username, password);
+      setIsLoading(true);
+      
+      // Initialisieren, falls nötig
+      await SupabaseService.initializeUsers();
+      
+      // Authentifizieren mit Supabase
+      const authenticatedUser = await SupabaseService.authenticateUser(username, password);
       
       if (authenticatedUser) {
         setCurrentUser(authenticatedUser);
@@ -94,13 +100,22 @@ export const useUserState = () => {
         });
         
         return true;
+      } else {
+        toast({
+          title: "Anmeldung fehlgeschlagen",
+          description: "Falscher Benutzername oder Passwort.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Anmeldung fehlgeschlagen",
-        description: "Falscher Benutzername oder Passwort.",
+        description: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
     
     return false;
@@ -168,6 +183,7 @@ export const useUserState = () => {
     isReader,
     isEditor,
     isImpersonating,
+    isLoading,
     login,
     logout,
     impersonate,
