@@ -1,7 +1,7 @@
 
 import { BaseSupabaseService } from './BaseSupabaseService';
 import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
-import { verifyPassword } from '@/utils/authUtils';
+import { verifyPassword, hashPassword } from '@/utils/authUtils';
 
 interface DatabaseUser {
   id: string;
@@ -27,7 +27,7 @@ export class AuthService extends BaseSupabaseService {
       }
       
       // First try - exact match on username
-      const { data: usernameUsers, error: usernameError } = await this.supabase
+      const { data: usernameData, error: usernameError } = await this.supabase
         .from('users')
         .select('*')
         .eq('username', usernameOrEmail)
@@ -38,25 +38,23 @@ export class AuthService extends BaseSupabaseService {
       }
       
       // If username match found, validate password
-      if (usernameUsers && usernameUsers.length > 0) {
-        // Using a simpler approach to extract user data and avoid type recursion
-        const rawUserData = usernameUsers[0] as any;
-        
+      if (usernameData && usernameData.length > 0) {
+        const rawData = usernameData[0];
         const user: DatabaseUser = {
-          id: rawUserData.id,
-          name: rawUserData.name,
-          username: rawUserData.username,
-          role: rawUserData.role,
-          password_hash: rawUserData.password_hash,
-          individual_criterion: rawUserData.individual_criterion,
-          group_criterion: rawUserData.group_criterion
+          id: String(rawData.id),
+          name: String(rawData.name),
+          username: String(rawData.username),
+          role: rawData.role as UserRole,
+          password_hash: String(rawData.password_hash),
+          individual_criterion: rawData.individual_criterion as CriterionKey | null,
+          group_criterion: rawData.group_criterion as GroupCriterionKey | null
         };
         
         return this.validateAndReturnUser(user, password);
       }
       
       // Second try - match on email field
-      const { data: emailUsers, error: emailError } = await this.supabase
+      const { data: emailData, error: emailError } = await this.supabase
         .from('users')
         .select('*')
         .eq('email', usernameOrEmail)
@@ -67,18 +65,16 @@ export class AuthService extends BaseSupabaseService {
       }
       
       // If email match found, validate password
-      if (emailUsers && emailUsers.length > 0) {
-        // Using a simpler approach to extract user data and avoid type recursion
-        const rawUserData = emailUsers[0] as any;
-        
+      if (emailData && emailData.length > 0) {
+        const rawData = emailData[0];
         const user: DatabaseUser = {
-          id: rawUserData.id,
-          name: rawUserData.name,
-          username: rawUserData.username,
-          role: rawUserData.role,
-          password_hash: rawUserData.password_hash,
-          individual_criterion: rawUserData.individual_criterion,
-          group_criterion: rawUserData.group_criterion
+          id: String(rawData.id),
+          name: String(rawData.name),
+          username: String(rawData.username),
+          role: rawData.role as UserRole,
+          password_hash: String(rawData.password_hash),
+          individual_criterion: rawData.individual_criterion as CriterionKey | null,
+          group_criterion: rawData.group_criterion as GroupCriterionKey | null
         };
         
         return this.validateAndReturnUser(user, password);
@@ -86,7 +82,7 @@ export class AuthService extends BaseSupabaseService {
       
       // Last try - check if username field contains an email that matches
       if (usernameOrEmail.includes('@')) {
-        const { data: usernameWithEmailUsers, error: usernameWithEmailError } = await this.supabase
+        const { data: usernameWithEmailData, error: usernameWithEmailError } = await this.supabase
           .from('users')
           .select('*')
           .eq('username', usernameOrEmail)
@@ -97,18 +93,16 @@ export class AuthService extends BaseSupabaseService {
         }
         
         // If found, validate password
-        if (usernameWithEmailUsers && usernameWithEmailUsers.length > 0) {
-          // Using a simpler approach to extract user data and avoid type recursion
-          const rawUserData = usernameWithEmailUsers[0] as any;
-          
+        if (usernameWithEmailData && usernameWithEmailData.length > 0) {
+          const rawData = usernameWithEmailData[0];
           const user: DatabaseUser = {
-            id: rawUserData.id,
-            name: rawUserData.name,
-            username: rawUserData.username,
-            role: rawUserData.role,
-            password_hash: rawUserData.password_hash,
-            individual_criterion: rawUserData.individual_criterion,
-            group_criterion: rawUserData.group_criterion
+            id: String(rawData.id),
+            name: String(rawData.name),
+            username: String(rawData.username),
+            role: rawData.role as UserRole,
+            password_hash: String(rawData.password_hash),
+            individual_criterion: rawData.individual_criterion as CriterionKey | null,
+            group_criterion: rawData.group_criterion as GroupCriterionKey | null
           };
           
           return this.validateAndReturnUser(user, password);
@@ -154,6 +148,43 @@ export class AuthService extends BaseSupabaseService {
     
     console.log('Password did not match');
     return null;
+  }
+
+  // Add a new user or update user's password
+  static async updateUserPassword(username: string, newPassword: string): Promise<boolean> {
+    try {
+      // Hash the new password
+      const passwordHash = hashPassword(newPassword);
+      
+      // Find the user
+      const { data: users, error: findError } = await this.supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .limit(1);
+      
+      if (findError || !users || users.length === 0) {
+        console.error('User not found for password update:', username);
+        return false;
+      }
+      
+      // Update the password
+      const { error: updateError } = await this.supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('username', username);
+        
+      if (updateError) {
+        console.error('Error updating password:', updateError);
+        return false;
+      }
+      
+      console.log('Password updated successfully for user:', username);
+      return true;
+    } catch (error) {
+      console.error('Error in updateUserPassword:', error);
+      return false;
+    }
   }
 
   // Initialization: Add default users if none exist

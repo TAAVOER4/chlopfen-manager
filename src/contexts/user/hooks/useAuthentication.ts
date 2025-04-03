@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +43,7 @@ export const useAuthentication = () => {
         console.error('Initialization error:', initError);
       }
 
-      // Standard authentication flow
+      // Authentication flow
       const authenticatedUser = await AuthService.authenticateUser(username, password);
       
       if (authenticatedUser) {
