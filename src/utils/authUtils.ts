@@ -1,3 +1,4 @@
+
 // This is a simplified version of bcrypt for browser environments
 import bcrypt from 'bcryptjs';
 
@@ -40,6 +41,22 @@ export function verifyPassword(password: string, hash: string): boolean {
   } catch (error) {
     console.error('Password verification error:', error);
     return false;
+  }
+}
+
+// Expose the standard default hash for "password" that we use in initialization
+export const DEFAULT_PASSWORD_HASH = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
+
+// Debug function to print a hash for a given password
+export function printPasswordHash(password: string): void {
+  try {
+    const hash = hashPassword(password);
+    console.log('Password:', password);
+    console.log('Hash:', hash);
+    console.log('Length:', hash.length);
+    console.log('Is bcrypt format:', hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$'));
+  } catch (error) {
+    console.error('Error generating password hash:', error);
   }
 }
 

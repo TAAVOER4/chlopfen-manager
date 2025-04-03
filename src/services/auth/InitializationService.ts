@@ -1,6 +1,7 @@
 
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { UserRole } from '@/types';
+import { DEFAULT_PASSWORD_HASH } from '@/utils/authUtils';
 
 export class InitializationService extends BaseSupabaseService {
   /**
@@ -36,8 +37,9 @@ export class InitializationService extends BaseSupabaseService {
       if (!existingUsers || existingUsers.length === 0) {
         console.log('No users found, adding default users...');
         
-        // Use a string that we know our validation will accept (either for bcrypt or direct comparison)
-        const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi"; // Hash for "password"
+        // Use the default password hash from authUtils
+        const defaultPasswordHash = DEFAULT_PASSWORD_HASH; // Hash for "password"
+        console.log('Using default password hash:', defaultPasswordHash);
         
         const defaultUsers = [
           {

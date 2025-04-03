@@ -185,7 +185,7 @@ export class AuthenticationService extends BaseSupabaseService {
     
     if (passwordVerified) {
       console.log('Password matches, allowing login');
-      const mappedUser = mapDatabaseUserToUser(user);
+      const mappedUser = mapDatabaseUserToUser(user as DatabaseUser);
       console.log('User mapped to application User type:', {
         ...mappedUser,
         passwordHash: '[REDACTED]'
@@ -196,4 +196,32 @@ export class AuthenticationService extends BaseSupabaseService {
     console.log('Password did not match');
     return null;
   }
+
+  /**
+   * Generate and return a bcrypt hash for a password
+   */
+  static generatePasswordHash(password: string): string {
+    try {
+      // Import the hashPassword utility
+      const { hashPassword } = require('@/utils/authUtils');
+      
+      // Generate hash
+      const hash = hashPassword(password);
+      
+      // Log the hash
+      console.log('Generated password hash for debugging:');
+      console.log('Password:', password);
+      console.log('Hash:', hash);
+      console.log('Hash length:', hash.length);
+      console.log('Is bcrypt format:', hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$'));
+      
+      return hash;
+    } catch (error) {
+      console.error('Error generating password hash:', error);
+      return 'Error generating hash';
+    }
+  }
 }
+
+// Generate and log a hash for "password" for debugging
+// Call this line in the browser console to see the hash: AuthenticationService.generatePasswordHash('password')

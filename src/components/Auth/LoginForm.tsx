@@ -1,154 +1,114 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useUser } from '@/contexts/UserContext';
-import { useTournament } from '@/contexts/TournamentContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { SupabaseService } from '@/services/SupabaseService';
 import LoginFormFields from './LoginFormFields';
+import { AuthenticationService } from '@/services/auth/AuthenticationService';
+
+type FormValues = {
+  username: string;
+  password: string;
+};
 
 const LoginForm: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
-  
   const { login } = useUser();
-  const { tournaments, setActiveTournament } = useTournament();
-  const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Load tournaments at component mount
-  useEffect(() => {
-    const loadTournaments = async () => {
-      try {
-        console.log('Loading tournaments...');
-        const tournamentData = await SupabaseService.getAllTournaments();
-        console.log('Loaded tournaments:', tournamentData);
-        if (tournamentData && tournamentData.length > 0) {
-          // Set default tournament if available
-          const activeTournament = tournamentData.find(t => t.isActive);
-          const selectedId = activeTournament?.id.toString() || tournamentData[0].id.toString();
-          console.log('Setting default tournament ID:', selectedId);
-          setSelectedTournamentId(selectedId);
-        }
-      } catch (error) {
-        console.error('Error loading tournaments:', error);
-      }
-    };
-    
-    loadTournaments();
-  }, []);
-
-  // Select active tournament from session storage if available
-  useEffect(() => {
-    const storedTournamentId = sessionStorage.getItem('activeTournamentId');
-    console.log('Tournament ID from session storage:', storedTournamentId);
-    if (storedTournamentId) {
-      setSelectedTournamentId(storedTournamentId);
-    } else if (tournaments && tournaments.length > 0) {
-      const activeTournament = tournaments.find(t => t.isActive);
-      const selectedId = activeTournament?.id.toString() || tournaments[0].id.toString();
-      console.log('Setting tournament ID from context:', selectedId);
-      setSelectedTournamentId(selectedId);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showHashTool, setShowHashTool] = useState(false);
+  const [passwordToHash, setPasswordToHash] = useState('');
+  const [generatedHash, setGeneratedHash] = useState('');
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    defaultValues: {
+      username: '',
+      password: ''
     }
-  }, [tournaments]);
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Login form submitted with username:', username);
-    setError('');
+  const onSubmit = async (data: FormValues) => {
+    console.log('Login form submitted with username:', data.username);
     setIsLoading(true);
     
     try {
-      // First initialize users to ensure we have data in the database
-      console.log('Initializing users...');
-      await SupabaseService.initializeUsers();
-      
-      console.log('Starting login process with username:', username);
-      const success = await login(username, password);
-      console.log('Login process completed, success:', success);
-      
-      if (success) {
-        // Set active tournament if one is selected and tournaments are available
-        if (selectedTournamentId && tournaments.length > 0) {
-          console.log('Setting active tournament with ID:', selectedTournamentId);
-          const tournament = tournaments.find(t => t.id.toString() === selectedTournamentId);
-          if (tournament) {
-            // Set in context and also update in database
-            setActiveTournament(tournament);
-            try {
-              console.log('Updating active tournament in database:', tournament.id);
-              await SupabaseService.setActiveTournament(tournament.id);
-            } catch (updateError) {
-              console.error('Error updating active tournament:', updateError);
-            }
-          }
-        }
-        
-        const tournamentName = tournaments.find(t => t.id.toString() === selectedTournamentId)?.name || '';
-        console.log('Selected tournament name:', tournamentName);
-        
-        toast({
-          title: "Login successful",
-          description: selectedTournamentId && tournaments.length > 0
-            ? `You are now working with tournament: ${tournamentName}`
-            : "Please select a tournament in the tournament management.",
-        });
-        
-        console.log('Navigating to home page');
-        navigate('/');
-      } else {
+      const success = await login(data.username, data.password);
+      if (!success) {
         console.log('Login failed');
-        setError('Incorrect username or password. Please try again.');
-        toast({
-          title: "Login failed",
-          description: "Incorrect username or password.",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An error occurred. Please try again later.');
       toast({
-        title: "Login failed",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
+        title: "Login error",
+        description: "There was an error while trying to log in. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleGenerateHash = () => {
+    try {
+      const hash = AuthenticationService.generatePasswordHash(passwordToHash);
+      setGeneratedHash(hash);
+    } catch (error) {
+      console.error('Error generating hash:', error);
+      setGeneratedHash('Error generating hash');
+    }
+  };
+
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Log in to continue</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent>
-          <LoginFormFields 
-            username={username}
-            setUsername={setUsername}
-            password={password}
-            setPassword={setPassword}
-            error={error}
-            selectedTournamentId={selectedTournamentId}
-            setSelectedTournamentId={setSelectedTournamentId}
-            tournaments={tournaments}
-          />
-        </CardContent>
-        <CardFooter className="flex-col space-y-2">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
+    <div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <LoginFormFields register={register} errors={errors} />
+        
+        <div>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </Button>
-        </CardFooter>
+        </div>
       </form>
-    </Card>
+      
+      {/* Developer Tool - Toggle with double click on the form title */}
+      <div className="mt-8 pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500 cursor-pointer" onDoubleClick={() => setShowHashTool(!showHashTool)}>
+          {showHashTool ? "Hide Hash Generator" : "Developer Tools (Double-click to show)"}
+        </p>
+        
+        {showHashTool && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-md">
+            <h3 className="text-sm font-medium mb-2">Password Hash Generator</h3>
+            <div className="space-y-2">
+              <Input 
+                placeholder="Enter password to hash" 
+                value={passwordToHash} 
+                onChange={(e) => setPasswordToHash(e.target.value)}
+              />
+              <Button 
+                type="button" 
+                onClick={handleGenerateHash} 
+                size="sm"
+              >
+                Generate Hash
+              </Button>
+              
+              {generatedHash && (
+                <div className="mt-2">
+                  <p className="text-xs font-bold">Generated Hash:</p>
+                  <p className="text-xs break-all bg-gray-200 p-2 rounded">{generatedHash}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
