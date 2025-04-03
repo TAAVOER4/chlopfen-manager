@@ -13,6 +13,7 @@ import {
 import { User } from '@/types';
 import { useUser } from '@/contexts/UserContext';
 import DeleteUserDialog from '@/components/Admin/DeleteUserDialog';
+import AddUserDialog from '@/components/Admin/AddUserDialog';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { useUserCriteriaData } from '@/hooks/useUserCriteriaData';
 import UserFilterTabs from '@/components/Admin/UserFilterTabs';
@@ -21,6 +22,7 @@ import UserListContent from '@/components/Admin/UserListContent';
 const UsersPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const { impersonate } = useUser();
   const { 
     users, 
@@ -57,6 +59,11 @@ const UsersPage = () => {
     }
   };
 
+  const handleAddButtonClick = () => {
+    handleAddUser();
+    setAddDialogOpen(true);
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -67,7 +74,7 @@ const UsersPage = () => {
           </Button>
           <h1 className="text-3xl font-bold text-swiss-blue">Benutzerverwaltung</h1>
         </div>
-        <Button onClick={handleAddUser}>
+        <Button onClick={handleAddButtonClick}>
           <UserPlus className="h-4 w-4 mr-2" />
           Neuer Benutzer
         </Button>
@@ -100,7 +107,7 @@ const UsersPage = () => {
             onDeleteClick={handleDeleteClick}
             onUserChange={handleUserChange}
             onPasswordChange={handlePasswordChange}
-            onAddUser={handleAddUser}
+            onAddUser={handleAddButtonClick}
             individualCriteria={individualCriteria}
             groupCriteria={groupCriteria}
             tournaments={tournaments}
@@ -119,6 +126,19 @@ const UsersPage = () => {
         user={userToDelete}
         onDelete={handleDeleteUser}
       />
+
+      {editingUser && (
+        <AddUserDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          onSave={handleSave}
+          user={editingUser}
+          onUserChange={handleUserChange}
+          individualCriteria={individualCriteria}
+          groupCriteria={groupCriteria}
+          tournaments={tournaments}
+        />
+      )}
     </div>
   );
 };

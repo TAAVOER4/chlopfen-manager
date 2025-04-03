@@ -12,9 +12,17 @@ export class UserMutationService extends BaseSupabaseService {
     try {
       console.log('Creating new user:', user.username);
       
+      // Map user to Supabase format, converting passwordHash to password_hash
+      const userData = UserMapper.toSupabaseFormat(user);
+      
+      // Make sure we have a password hash
+      if (!userData.password_hash) {
+        throw new Error('Password is required for new users');
+      }
+      
       const { data, error } = await this.supabase
         .from('users')
-        .insert([UserMapper.toSupabaseFormat(user)])
+        .insert([userData])
         .select() as any;
         
       if (error) {
@@ -42,9 +50,18 @@ export class UserMutationService extends BaseSupabaseService {
     try {
       console.log('Updating user:', user.username);
       
+      // Convert user to Supabase format
+      const userData = UserMapper.toSupabaseFormat(user);
+      
+      // If updating without changing password, remove password_hash 
+      // to avoid overwriting with empty value
+      if (!userData.password_hash) {
+        delete userData.password_hash;
+      }
+      
       const { data, error } = await this.supabase
         .from('users')
-        .update(UserMapper.toSupabaseFormat(user))
+        .update(userData)
         .eq('username', user.username)
         .select() as any;
         

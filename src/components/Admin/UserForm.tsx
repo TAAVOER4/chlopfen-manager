@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PasswordInput from '@/components/Auth/PasswordInput';
 import {
   Select,
   SelectContent,
@@ -43,10 +44,13 @@ const UserForm: React.FC<UserFormProps> = ({
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
     
-    // Wenn ein Passwort eingegeben wird, generieren wir den Hash
+    // Hash the password when entered
     if (e.target.value) {
       const newPasswordHash = hashPassword(e.target.value);
+      console.log('Password hashed:', e.target.value, 'to:', newPasswordHash);
       onUserChange({...user, passwordHash: newPasswordHash});
+    } else {
+      onUserChange({...user, passwordHash: ''});
     }
   };
 
@@ -87,7 +91,7 @@ const UserForm: React.FC<UserFormProps> = ({
   return (
     <div className="space-y-4 w-full">
       <div>
-        <Label htmlFor="name" className="text-sm font-medium">Name</Label>
+        <Label htmlFor="name" className="text-sm font-medium">Name *</Label>
         <Input 
           id="name"
           value={user.name || ''}
@@ -99,7 +103,7 @@ const UserForm: React.FC<UserFormProps> = ({
       </div>
       
       <div>
-        <Label htmlFor="username" className="text-sm font-medium">E-Mail Adresse</Label>
+        <Label htmlFor="username" className="text-sm font-medium">E-Mail Adresse *</Label>
         <Input 
           id="username"
           type="email"
@@ -111,23 +115,26 @@ const UserForm: React.FC<UserFormProps> = ({
         />
       </div>
 
-      {showPasswordField && (
-        <div>
-          <Label htmlFor="password" className="text-sm font-medium">Passwort</Label>
-          <Input 
-            id="password"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-            className="w-full mt-1"
-            placeholder="Passwort eingeben"
-            required={!user.passwordHash}
-          />
-        </div>
-      )}
+      <div>
+        <Label htmlFor="password" className="text-sm font-medium">
+          Passwort {!user.passwordHash ? '*' : ''}
+        </Label>
+        <PasswordInput 
+          id="password"
+          value={password}
+          onChange={handlePasswordChange}
+          placeholder={user.passwordHash ? "Neues Passwort setzen" : "Passwort eingeben"}
+          required={!user.passwordHash}
+        />
+        {user.passwordHash && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Lassen Sie dieses Feld leer, um das bestehende Passwort beizubehalten
+          </p>
+        )}
+      </div>
       
       <div>
-        <Label htmlFor="role" className="text-sm font-medium">Rolle</Label>
+        <Label htmlFor="role" className="text-sm font-medium">Rolle *</Label>
         <Select 
           value={user.role}
           onValueChange={handleRoleChange}
