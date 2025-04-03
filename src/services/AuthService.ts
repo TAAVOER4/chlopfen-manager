@@ -5,15 +5,15 @@ import { verifyPassword } from '@/utils/authUtils';
 
 export class AuthService extends BaseSupabaseService {
   // Benutzer authentifizieren
-  static async authenticateUser(username: string, password: string): Promise<User | null> {
+  static async authenticateUser(usernameOrEmail: string, password: string): Promise<User | null> {
     try {
-      console.log('Authenticating user:', username);
+      console.log('Authenticating user:', usernameOrEmail);
       
       // Direct query to get user with matching username or email
       const { data: users, error } = await this.supabase
         .from('users')
         .select('*')
-        .or(`username.eq.${username},username.eq.${username}`)
+        .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail}`)
         .limit(1);
         
       if (error) {
@@ -22,7 +22,7 @@ export class AuthService extends BaseSupabaseService {
       }
       
       if (!users || users.length === 0) {
-        console.log('No user found with username:', username);
+        console.log('No user found with username or email:', usernameOrEmail);
         return null;
       }
       
@@ -95,6 +95,15 @@ export class AuthService extends BaseSupabaseService {
           {
             name: 'Administrator',
             username: 'admin',
+            role: 'admin' as UserRole,
+            password_hash: defaultPasswordHash,
+            individual_criterion: null,
+            group_criterion: null
+          },
+          {
+            name: 'Erwin Vogel',
+            username: 'erwin.vogel',
+            email: 'erwinvogel@hotmail.com',
             role: 'admin' as UserRole,
             password_hash: defaultPasswordHash,
             individual_criterion: null,

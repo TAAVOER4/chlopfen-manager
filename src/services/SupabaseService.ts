@@ -1,34 +1,73 @@
 
-import { UserService } from './UserService';
+import { BaseSupabaseService } from './BaseSupabaseService';
+import { createClient } from '@supabase/supabase-js';
+import { User, Tournament } from '@/types';
 import { AuthService } from './AuthService';
 import { TournamentService } from './TournamentService';
+import { UserService } from './UserService';
 
-// Export a combined service for backward compatibility
-export class SupabaseService {
-  // User operations
-  static getAllUsers = UserService.getAllUsers;
-  static createUser = UserService.createUser;
-  static updateUser = UserService.updateUser;
-  static deleteUser = UserService.deleteUser;
-  static changePassword = UserService.changePassword;
-  
-  // Auth operations
-  static authenticateUser = AuthService.authenticateUser;
-  static initializeUsers = AuthService.initializeUsers;
-  
-  // Tournament operations
-  static getAllTournaments = TournamentService.getAllTournaments;
-  static getActiveTournament = TournamentService.getActiveTournament;
-  static getTournamentById = TournamentService.getTournamentById;
-  static createTournament = TournamentService.createTournament;
-  static updateTournament = TournamentService.updateTournament;
-  static setActiveTournament = TournamentService.setActiveTournament;
-  static deleteTournament = TournamentService.deleteTournament;
-  static getTournamentsByYear = TournamentService.getTournamentsByYear;
-  static assignUserToTournament = TournamentService.assignUserToTournament;
-  static removeUserFromTournament = TournamentService.removeUserFromTournament;
-  static getUserTournaments = TournamentService.getUserTournaments;
+export class SupabaseService extends BaseSupabaseService {
+  static async initializeDatabase(): Promise<void> {
+    try {
+      console.log('Initializing database...');
+      await this.initializeUsers();
+      console.log('Database initialization complete');
+    } catch (error) {
+      console.error('Database initialization error:', error);
+    }
+  }
 
-  // Access to base supabase client (for direct queries)
-  static supabase = UserService.supabase;
+  // Users
+  static async initializeUsers(): Promise<void> {
+    try {
+      await AuthService.initializeUsers();
+    } catch (error) {
+      console.error('Error initializing users:', error);
+    }
+  }
+
+  static async authenticateUser(username: string, password: string): Promise<User | null> {
+    return AuthService.authenticateUser(username, password);
+  }
+
+  static async getAllUsers(): Promise<User[]> {
+    return UserService.getAllUsers();
+  }
+
+  static async createUser(user: Omit<User, 'id'>): Promise<User> {
+    return UserService.createUser(user);
+  }
+
+  static async updateUser(user: User): Promise<User> {
+    return UserService.updateUser(user);
+  }
+
+  static async deleteUser(username: string): Promise<void> {
+    return UserService.deleteUser(username);
+  }
+
+  static async changePassword(username: string, newPassword: string): Promise<void> {
+    return UserService.changePassword(username, newPassword);
+  }
+
+  // Tournaments
+  static async getAllTournaments(): Promise<Tournament[]> {
+    return TournamentService.getAllTournaments();
+  }
+
+  static async createTournament(tournament: Omit<Tournament, 'id'>): Promise<Tournament> {
+    return TournamentService.createTournament(tournament);
+  }
+
+  static async updateTournament(tournament: Tournament): Promise<Tournament> {
+    return TournamentService.updateTournament(tournament);
+  }
+
+  static async deleteTournament(id: number): Promise<void> {
+    return TournamentService.deleteTournament(id);
+  }
+
+  static async setActiveTournament(tournamentId: number): Promise<void> {
+    return TournamentService.setActiveTournament(tournamentId);
+  }
 }

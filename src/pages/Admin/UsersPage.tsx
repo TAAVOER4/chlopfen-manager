@@ -36,8 +36,15 @@ const UsersPage = () => {
     const loadUsers = async () => {
       try {
         setLoading(true);
+        console.log('Initializing and fetching users...');
+        
+        // First make sure we have the default admin user
         await SupabaseService.initializeUsers();
+        
+        // Then load all users
         const loadedUsers = await SupabaseService.getAllUsers();
+        console.log('Loaded users:', loadedUsers);
+        
         setUsers(loadedUsers);
       } catch (error) {
         console.error('Fehler beim Laden der Benutzer:', error);
@@ -284,6 +291,17 @@ const UsersPage = () => {
             <div className="flex justify-center items-center h-40">
               <Spinner size="large" />
               <span className="ml-2 text-muted-foreground">Benutzer werden geladen...</span>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <div className="text-muted-foreground mb-4">
+                <Users className="h-12 w-12 mx-auto mb-2" />
+                <p>Keine Benutzer gefunden.</p>
+              </div>
+              <Button onClick={handleAddUser}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Benutzer hinzufügen
+              </Button>
             </div>
           ) : (
             <UserTable

@@ -34,22 +34,36 @@ export class UserService extends BaseSupabaseService {
 
   // Benutzer laden
   static async getAllUsers(): Promise<User[]> {
-    const { data: users, error } = await this.supabase
-      .from('users')
-      .select('*');
+    try {
+      console.log('Fetching all users from Supabase');
+      const { data: users, error } = await this.supabase
+        .from('users')
+        .select('*');
+        
+      if (error) {
+        console.error('Fehler beim Laden der Benutzer:', error);
+        throw error;
+      }
       
-    if (error) {
-      console.error('Fehler beim Laden der Benutzer:', error);
+      if (!users || users.length === 0) {
+        console.log('No users found in database');
+        return [];
+      }
+      
+      console.log(`Found ${users.length} users in database`);
+      
+      // Konvertieren der Supabase-Daten in das lokale User-Format
+      return users.map(this.convertToUserModel);
+    } catch (error) {
+      console.error('Error while fetching users:', error);
       throw error;
     }
-    
-    // Konvertieren der Supabase-Daten in das lokale User-Format
-    return (users || []).map(this.convertToUserModel);
   }
 
   // Benutzer erstellen
   static async createUser(user: Omit<User, 'id'>): Promise<User> {
     try {
+      console.log('Creating new user:', user.username);
       // Direct insert approach since we now have proper RLS policies
       const { data, error } = await this.supabase
         .from('users')
@@ -66,6 +80,8 @@ export class UserService extends BaseSupabaseService {
         throw new Error('No data returned after user creation');
       }
       
+      console.log('User created successfully:', data.username);
+      
       // Konvertieren und zurückgeben
       return this.convertToUserModel(data);
     } catch (error) {
@@ -76,69 +92,93 @@ export class UserService extends BaseSupabaseService {
 
   // Benutzer aktualisieren
   static async updateUser(user: User): Promise<User> {
-    // Lade den Original-Benutzer, um die UUID zu erhalten
-    const { data: originalUsers, error: fetchError } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('username', user.username)
-      .limit(1);
+    try {
+      console.log('Updating user:', user.username);
+      // Lade den Original-Benutzer, um die UUID zu erhalten
+      const { data: originalUsers, error: fetchError } = await this.supabase
+        .from('users')
+        .select('*')
+        .eq('username', user.username)
+        .limit(1);
+        
+      if (fetchError || !originalUsers || originalUsers.length === 0) {
+        console.error('Fehler beim Finden des Benutzers:', fetchError);
+        throw fetchError || new Error('Benutzer nicht gefunden');
+      }
       
-    if (fetchError || !originalUsers || originalUsers.length === 0) {
-      console.error('Fehler beim Finden des Benutzers:', fetchError);
-      throw fetchError || new Error('Benutzer nicht gefunden');
-    }
-    
-    const originalUser = originalUsers[0];
-    
-    // Aktualisiere den Benutzer
-    const { data, error } = await this.supabase
-      .from('users')
-      .update(this.convertToSupabaseFormat(user))
-      .eq('id', originalUser.id)
-      .select()
-      .single();
+      const originalUser = originalUsers[0];
       
-    if (error) {
-      console.error('Fehler beim Aktualisieren des Benutzers:', error);
+      // Aktualisiere den Benutzer
+      const { data, error } = await this.supabase
+        .from('users')
+        .update(this.convertToSupabaseFormat(user))
+        .eq('id', originalUser.id)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Fehler beim Aktualisieren des Benutzers:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No data returned after user update');
+      }
+      
+      console.log('User updated successfully:', data.username);
+      
+      // Konvertieren und zurückgeben
+      const updatedUser = this.convertToUserModel(data);
+      updatedUser.id = user.id; // Behalte die lokale ID bei
+      updatedUser.tournamentIds = user.tournamentIds; // Behalte die Turnierzuordnung bei
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user:', error);
       throw error;
     }
-    
-    if (!data) {
-      throw new Error('No data returned after user update');
-    }
-    
-    // Konvertieren und zurückgeben
-    const updatedUser = this.convertToUserModel(data);
-    updatedUser.id = user.id; // Behalte die lokale ID bei
-    updatedUser.tournamentIds = user.tournamentIds; // Behalte die Turnierzuordnung bei
-    
-    return updatedUser;
   }
 
   // Benutzer löschen
   static async deleteUser(username: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('users')
-      .delete()
-      .eq('username', username);
+    try {
+      console.log('Deleting user:', username);
+      const { error } = await this.supabase
+        .from('users')
+        .delete()
+        .eq('username', username);
+        
+      if (error) {
+        console.error('Fehler beim Löschen des Benutzers:', error);
+        throw error;
+      }
       
-    if (error) {
-      console.error('Fehler beim Löschen des Benutzers:', error);
+      console.log('User deleted successfully:', username);
+    } catch (error) {
+      console.error('Error deleting user:', error);
       throw error;
     }
   }
 
   // Passwort ändern
   static async changePassword(username: string, newPassword: string): Promise<void> {
-    const passwordHash = hashPassword(newPassword);
-    
-    const { error } = await this.supabase
-      .from('users')
-      .update({ password_hash: passwordHash })
-      .eq('username', username);
+    try {
+      console.log('Changing password for user:', username);
+      const passwordHash = hashPassword(newPassword);
       
-    if (error) {
-      console.error('Fehler beim Ändern des Passworts:', error);
+      const { error } = await this.supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('username', username);
+        
+      if (error) {
+        console.error('Fehler beim Ändern des Passworts:', error);
+        throw error;
+      }
+      
+      console.log('Password changed successfully for user:', username);
+    } catch (error) {
+      console.error('Error changing password:', error);
       throw error;
     }
   }
