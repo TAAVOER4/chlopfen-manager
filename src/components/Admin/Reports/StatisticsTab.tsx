@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const StatisticsTab: React.FC = () => {
   const generatePdf = () => {
@@ -43,7 +44,7 @@ const StatisticsTab: React.FC = () => {
     const groupHeaders = ['Gruppe', 'Mitglieder (Orte)'];
     
     // Add the participant table
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [participantHeaders],
       body: participantData,
       startY: 40,
@@ -60,7 +61,7 @@ const StatisticsTab: React.FC = () => {
         0: { fontStyle: 'bold' },
       },
       margin: { horizontal: 10 },
-      didParseCell: function(data: any) {
+      didParseCell: function(data) {
         if (data.section === 'head') {
           data.cell.styles.fontStyle = 'bold';
         }
@@ -68,10 +69,10 @@ const StatisticsTab: React.FC = () => {
     });
     
     // Add the group table
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [groupHeaders],
       body: groupData,
-      startY: (doc as any).autoTable.previous.finalY + 10,
+      startY: (doc as any).lastAutoTable.finalY + 10,
       styles: {
         textColor: 20,
         fontSize: 10,
@@ -85,7 +86,7 @@ const StatisticsTab: React.FC = () => {
         0: { fontStyle: 'bold' },
       },
       margin: { horizontal: 10 },
-      didParseCell: function(data: any) {
+      didParseCell: function(data) {
         if (data.section === 'head') {
           data.cell.styles.fontStyle = 'bold';
         }
@@ -93,11 +94,12 @@ const StatisticsTab: React.FC = () => {
     });
 
     // Add footer with page numbers
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
       doc.setFontSize(10);
       doc.setTextColor(150);
-      doc.text(`Seite ${i} von ${totalPages}`, 105, doc.internal.pageSize.height - 10, {
+      doc.text(`Seite ${i} von ${pageCount}`, 105, doc.internal.pageSize.height - 10, {
         align: 'center'
       });
     }
