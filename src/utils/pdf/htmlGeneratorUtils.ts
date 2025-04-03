@@ -1,16 +1,14 @@
 
 import { generateScheduleHTMLContent } from './html/htmlScheduleGenerator';
-import { generateResultsHTMLContent } from './html/htmlResultsGenerator';
-import { generateSponsorsHTMLContent, generateSponsorLogoHTML } from './html/htmlSponsorGenerator';
 import { generateIndividualResultsHTMLContent } from './html/htmlIndividualResultsGenerator';
 import { generateGroupResultsHTMLContent } from './html/htmlGroupResultsGenerator';
+import { generateSponsorsHTMLContent, generateSponsorLogoHTML } from './html/htmlSponsorGenerator';
 
 // Export all HTML generator utilities
 export {
   generateScheduleHTMLContent,
-  generateResultsHTMLContent,
-  generateSponsorsHTMLContent,
-  generateSponsorLogoHTML,
   generateIndividualResultsHTMLContent,
-  generateGroupResultsHTMLContent
+  generateGroupResultsHTMLContent,
+  generateSponsorsHTMLContent,
+  generateSponsorLogoHTML
 };

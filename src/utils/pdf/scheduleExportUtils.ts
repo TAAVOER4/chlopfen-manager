@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { ScheduleItem, Sponsor, Tournament } from '@/types';
 import { renderScheduleToPDF } from './pdfScheduleRenderer';
 import { downloadHTMLAsFile } from './baseUtils';
-import { generateScheduleHTMLContent } from './htmlGeneratorUtils';
+import { generateScheduleHTMLContent } from './html/htmlScheduleGenerator';
 
 // Function to generate PDF of the schedule
 export const generateSchedulePDF = (
@@ -48,7 +48,7 @@ function handlePDFGenerationError(
 ): void {
   console.error('Error generating PDF:', error);
   
-  // Fallback to HTML if PDF generation fails
+  // Fallback to HTML if PDF generation fails - use our modular HTML generator
   const content = generateScheduleHTMLContent(schedule, mainSponsors, tournament);
   const filename = `zeitplan_${tournament.name.toLowerCase().replace(/\s+/g, '-')}.html`;
   
