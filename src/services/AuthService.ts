@@ -11,6 +11,7 @@ interface DatabaseUser {
   password_hash: string;
   individual_criterion: CriterionKey | null;
   group_criterion: GroupCriterionKey | null;
+  email?: string; // Optional email field that might be present
 }
 
 export class AuthService extends BaseSupabaseService {
