@@ -134,7 +134,7 @@ const TournamentParticipantsPage = () => {
   if (isLoadingParticipants) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Spinner size="lg" />
+        <Spinner size="large" />
         <p className="mt-4 text-muted-foreground">Teilnehmer werden geladen...</p>
       </div>
     );

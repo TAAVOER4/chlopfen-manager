@@ -108,7 +108,7 @@ const ParticipantsPage = () => {
   if (isLoadingParticipants || isLoadingGroups) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <Spinner size="lg" />
+        <Spinner size="large" />
       </div>
     );
   }
