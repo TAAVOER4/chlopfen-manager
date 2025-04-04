@@ -1,5 +1,4 @@
-
-import { Category, GroupCategory, AllCategory } from '../types';
+import { Category, GroupCategory, AllCategory, Participant } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {
   const currentYear = new Date().getFullYear();

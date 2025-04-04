@@ -9,7 +9,7 @@ import { DatabaseService } from '@/services/DatabaseService';
 import { Spinner } from '@/components/ui/spinner';
 import { useTournament } from '@/contexts/TournamentContext';
 
-interface AvailableParticipantsProps {
+export interface AvailableParticipantsProps {
   availableParticipants: Participant[];
   selectedCategory: string;
   addParticipant: (participant: Participant) => void;

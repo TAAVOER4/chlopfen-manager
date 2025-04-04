@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash } from 'lucide-react';
@@ -85,7 +84,7 @@ const EditGroup = () => {
   } = useGroupForm({ 
     form, 
     initialParticipants,
-    mockParticipants 
+    currentGroupId: group?.id
   });
 
   const handleDeleteGroup = () => {
@@ -245,7 +244,6 @@ const EditGroup = () => {
           availableParticipants={availableParticipants}
           selectedCategory={selectedCategory}
           addParticipant={addParticipant}
-          mockGroups={mockGroups}
           selectedParticipants={selectedParticipants}
           currentGroupId={group.id}
         />
