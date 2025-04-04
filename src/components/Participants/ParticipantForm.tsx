@@ -17,16 +17,22 @@ interface ParticipantFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCheckboxChange: (checked: boolean) => void;
+  title?: string;
+  description?: string;
+  submitButtonText?: string;
 }
 
-const ParticipantForm: React.FC<ParticipantFormProps> = ({
+export const ParticipantForm: React.FC<ParticipantFormProps> = ({
   participant,
   isSubmitting,
   activeTournamentName,
   onCancel,
   onSubmit,
   onInputChange,
-  onCheckboxChange
+  onCheckboxChange,
+  title = "Neuer Teilnehmer",
+  description = "Erfassen Sie die Informationen des Teilnehmers für das aktuelle Turnier. Die Kategorie wird automatisch basierend auf dem Jahrgang bestimmt.",
+  submitButtonText = "Teilnehmer speichern"
 }) => {
   const determineParticipantCategory = () => {
     if (!participant.birthYear) return null;
@@ -38,10 +44,9 @@ const ParticipantForm: React.FC<ParticipantFormProps> = ({
     <Card className="max-w-2xl mx-auto">
       <form onSubmit={onSubmit}>
         <CardHeader>
-          <CardTitle>Neuer Teilnehmer</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>
-            Erfassen Sie die Informationen des Teilnehmers für {activeTournamentName || "das aktuelle Turnier"}.
-            Die Kategorie wird automatisch basierend auf dem Jahrgang bestimmt.
+            {description.replace('{activeTournamentName}', activeTournamentName || "das aktuelle Turnier")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -129,7 +134,7 @@ const ParticipantForm: React.FC<ParticipantFormProps> = ({
                 Speichern...
               </>
             ) : (
-              'Teilnehmer speichern'
+              submitButtonText
             )}
           </Button>
         </CardFooter>
@@ -137,5 +142,3 @@ const ParticipantForm: React.FC<ParticipantFormProps> = ({
     </Card>
   );
 };
-
-export default ParticipantForm;

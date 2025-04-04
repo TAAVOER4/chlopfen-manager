@@ -2,8 +2,7 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import NoActiveTournamentAlert from '@/components/Participants/NoActiveTournamentAlert';
-import ParticipantForm from '@/components/Participants/ParticipantForm';
+import { ParticipantForm } from '@/components/Participants/ParticipantForm';
 import { useParticipantRegistration } from '@/hooks/useParticipantRegistration';
 
 const RegisterParticipant = () => {
@@ -24,12 +23,10 @@ const RegisterParticipant = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Zurück
         </Button>
-        <h1 className="text-3xl font-bold text-swiss-blue">Teilnehmer erfassen</h1>
+        <h1 className="text-3xl font-bold text-swiss-blue">Neuer Teilnehmer</h1>
       </div>
 
-      {!activeTournament && <NoActiveTournamentAlert />}
-
-      <ParticipantForm 
+      <ParticipantForm
         participant={participant}
         isSubmitting={isSubmitting}
         activeTournamentName={activeTournament?.name}
@@ -37,6 +34,9 @@ const RegisterParticipant = () => {
         onSubmit={handleSubmit}
         onInputChange={handleChange}
         onCheckboxChange={handleCheckboxChange}
+        title="Neuer Teilnehmer"
+        description="Erfassen Sie die Informationen des Teilnehmers für {activeTournamentName}. Die Kategorie wird automatisch basierend auf dem Jahrgang bestimmt."
+        submitButtonText="Teilnehmer speichern"
       />
     </div>
   );
