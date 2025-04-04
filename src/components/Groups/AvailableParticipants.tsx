@@ -5,6 +5,9 @@ import { Plus } from 'lucide-react';
 import { Participant } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { Group } from '../../types';
+import { useQuery } from '@tanstack/react-query';
+import { DatabaseService } from '@/services/DatabaseService';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AvailableParticipantsProps {
   availableParticipants: Participant[];
@@ -23,6 +26,32 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
   selectedParticipants,
   currentGroupId
 }) => {
+  // This component receives the filtered available participants, but we'll also fetch all groups
+  // to show existing group memberships
+  const { 
+    data: allGroups = mockGroups, // Fallback to props if query fails
+    isLoading
+  } = useQuery({
+    queryKey: ['groups'],
+    queryFn: DatabaseService.getAllGroups,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Verfügbare Teilnehmer</CardTitle>
+          <CardDescription>Daten werden geladen...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Spinner />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -39,7 +68,7 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
               // Show existing group memberships
               const existingGroups = participant.groupIds?.map(gId => {
                 if (currentGroupId && gId === currentGroupId) return null;
-                const group = mockGroups.find(g => g.id === gId);
+                const group = allGroups.find(g => g.id === gId);
                 return group?.name || '';
               }).filter(Boolean).join(', ');
               

@@ -1,11 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlusCircle, Users, Pencil, Trash, Filter, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockParticipants, mockGroups } from '../../data/mockData';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
 import { Participant, Category, Tournament } from '../../types';
@@ -15,6 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useTournament } from '@/contexts/TournamentContext';
 import { getTournamentById } from '@/data/mockTournaments';
+import { useQuery } from '@tanstack/react-query';
+import { DatabaseService } from '@/services/DatabaseService';
+import { Spinner } from '@/components/ui/spinner';
 
 const ParticipantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -23,7 +25,34 @@ const ParticipantsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState('individual');
-  const { tournaments } = useTournament(); // Get all tournaments
+  const { tournaments } = useTournament();
+
+  // Fetch participants and groups from the database
+  const { 
+    data: participants = [], 
+    isLoading: isLoadingParticipants,
+    error: participantsError
+  } = useQuery({
+    queryKey: ['participants', refreshKey],
+    queryFn: DatabaseService.getAllParticipants,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  const { 
+    data: groups = [],
+    isLoading: isLoadingGroups,
+    error: groupsError
+  } = useQuery({
+    queryKey: ['groups', refreshKey],
+    queryFn: DatabaseService.getAllGroups,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Log any errors for debugging
+  if (participantsError) console.error('Error fetching participants:', participantsError);
+  if (groupsError) console.error('Error fetching groups:', groupsError);
 
   const handleDeleteParticipant = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -37,7 +66,7 @@ const ParticipantsPage = () => {
 
   // Function to get all group names a participant belongs to
   const getParticipantGroups = (participantId: number) => {
-    const groupsForParticipant = mockGroups.filter(group => 
+    const groupsForParticipant = groups.filter(group => 
       group.participantIds.includes(participantId)
     );
     
@@ -49,12 +78,12 @@ const ParticipantsPage = () => {
   // Function to get tournament name by ID
   const getTournamentName = (tournamentId?: number): string => {
     if (!tournamentId) return '-';
-    const tournament = getTournamentById(tournamentId);
+    const tournament = tournaments.find(t => t.id === tournamentId);
     return tournament ? tournament.name : '-';
   };
   
   // Filter participants based on selected category and search text
-  const filteredParticipants = mockParticipants
+  const filteredParticipants = participants
     .filter(participant => 
       categoryFilter === 'all' || participant.category === categoryFilter
     )
@@ -75,10 +104,14 @@ const ParticipantsPage = () => {
       );
     });
 
-  // Force update when needed
-  React.useEffect(() => {
-    // This effect ensures the component updates when refreshKey changes
-  }, [refreshKey]);
+  // Loading state
+  if (isLoadingParticipants || isLoadingGroups) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -164,51 +197,52 @@ const ParticipantsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredParticipants.map((participant) => (
-                  <TableRow key={participant.id}>
-                    <TableCell className="font-medium">
-                      {participant.firstName} {participant.lastName}
-                    </TableCell>
-                    <TableCell>{getCategoryDisplay(participant.category)}</TableCell>
-                    <TableCell>{participant.birthYear}</TableCell>
-                    <TableCell>{participant.location}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {getTournamentName(participant.tournamentId)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {getParticipantGroups(participant.id)}
-                    </TableCell>
-                    <TableCell>
-                      {participant.isGroupOnly ? 
-                        <Badge variant="outline">Nur Gruppe</Badge> : 
-                        <Badge>Einzel & Gruppe</Badge>
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Link to={`/participants/edit/${participant.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Bearbeiten
+                {filteredParticipants.length > 0 ? (
+                  filteredParticipants.map((participant) => (
+                    <TableRow key={participant.id}>
+                      <TableCell className="font-medium">
+                        {participant.firstName} {participant.lastName}
+                      </TableCell>
+                      <TableCell>{getCategoryDisplay(participant.category)}</TableCell>
+                      <TableCell>{participant.birthYear}</TableCell>
+                      <TableCell>{participant.location}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {getTournamentName(participant.tournamentId)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getParticipantGroups(participant.id)}
+                      </TableCell>
+                      <TableCell>
+                        {participant.isGroupOnly ? 
+                          <Badge variant="outline">Nur Gruppe</Badge> : 
+                          <Badge>Einzel & Gruppe</Badge>
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Link to={`/participants/edit/${participant.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Bearbeiten
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteParticipant(participant)}
+                          >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Löschen
                           </Button>
-                        </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteParticipant(participant)}
-                        >
-                          <Trash className="h-4 w-4 mr-2" />
-                          Löschen
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredParticipants.length === 0 && (
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Keine Teilnehmer vorhanden
@@ -236,34 +270,35 @@ const ParticipantsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockGroups.map((group) => (
-                  <TableRow key={group.id}>
-                    <TableCell className="font-medium">{group.name}</TableCell>
-                    <TableCell>{getCategoryDisplay(group.category)}</TableCell>
-                    <TableCell>{group.size === 'three' ? 'Dreiergruppe' : 'Vierergruppe'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {getTournamentName(group.tournamentId)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {group.participantIds.map(id => {
-                        const participant = mockParticipants.find(p => p.id === id);
-                        return participant ? `${participant.firstName} ${participant.lastName}` : '';
-                      }).join(', ')}
-                    </TableCell>
-                    <TableCell>
-                      <Link to={`/participants/edit-group/${group.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Bearbeiten
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {mockGroups.length === 0 && (
+                {groups.length > 0 ? (
+                  groups.map((group) => (
+                    <TableRow key={group.id}>
+                      <TableCell className="font-medium">{group.name}</TableCell>
+                      <TableCell>{getCategoryDisplay(group.category)}</TableCell>
+                      <TableCell>{group.size === 'three' ? 'Dreiergruppe' : 'Vierergruppe'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {getTournamentName(group.tournamentId)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {group.participantIds.map(id => {
+                          const participant = participants.find(p => p.id === id);
+                          return participant ? `${participant.firstName} ${participant.lastName}` : '';
+                        }).join(', ')}
+                      </TableCell>
+                      <TableCell>
+                        <Link to={`/participants/edit-group/${group.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Bearbeiten
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Keine Gruppen vorhanden

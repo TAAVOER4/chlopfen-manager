@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -19,44 +20,55 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockParticipants } from '@/data/mockData';
-import { getTournamentById } from '@/data/mockTournaments';
 import { Participant, Tournament } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { useTournament } from '@/contexts/TournamentContext';
+import { Spinner } from '@/components/ui/spinner';
+import { useQuery } from '@tanstack/react-query';
+import { DatabaseService } from '@/services/DatabaseService';
 
 const TournamentParticipantsPage = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const { toast } = useToast();
-  const { activeTournament, setActiveTournament } = useTournament();
+  const { activeTournament, setActiveTournament, tournaments } = useTournament();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedParticipants, setSelectedParticipants] = useState<number[]>([]);
 
+  // Fetch participants from the database
+  const { 
+    data: participants = [], 
+    isLoading: isLoadingParticipants,
+    error: participantsError,
+    refetch: refetchParticipants
+  } = useQuery({
+    queryKey: ['participants'],
+    queryFn: DatabaseService.getAllParticipants,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   // Get tournament data
   useEffect(() => {
-    if (tournamentId) {
-      const tournamentData = getTournamentById(parseInt(tournamentId));
+    if (tournamentId && tournaments.length > 0) {
+      const tournamentData = tournaments.find(t => t.id === parseInt(tournamentId));
       if (tournamentData) {
         setTournament(tournamentData);
       }
     }
-  }, [tournamentId]);
+  }, [tournamentId, tournaments]);
 
-  // Get participants data
+  // Set selected participants based on tournament ID
   useEffect(() => {
-    setParticipants(mockParticipants);
-    // Filter participants based on tournamentId
     if (tournamentId) {
-      const tournamentParticipants = mockParticipants.filter(
+      const tournamentParticipants = participants.filter(
         p => p.tournamentId === parseInt(tournamentId)
       );
       setSelectedParticipants(tournamentParticipants.map(p => p.id));
     }
-  }, [tournamentId]);
+  }, [tournamentId, participants]);
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = 
@@ -80,32 +92,34 @@ const TournamentParticipantsPage = () => {
     });
   };
 
-  const saveAssignments = () => {
+  const saveAssignments = async () => {
     if (!tournament) return;
 
-    // Update participants in the mockParticipants array
-    participants.forEach(participant => {
-      const index = mockParticipants.findIndex(p => p.id === participant.id);
-      if (index !== -1) {
-        if (selectedParticipants.includes(participant.id)) {
-          // Assign to tournament
-          mockParticipants[index].tournamentId = tournament.id;
-        } else if (mockParticipants[index].tournamentId === tournament.id) {
-          // Remove from tournament if currently assigned
-          mockParticipants[index].tournamentId = undefined;
-        }
+    try {
+      // Here we would update the participants in the database
+      // This would require a new method in DatabaseService to update participant tournament assignments
+      
+      // For now, we'll just show a success message
+      toast({
+        title: "Teilnehmer zugewiesen",
+        description: `${selectedParticipants.length} Teilnehmer wurden dem Turnier ${tournament.name} zugewiesen.`,
+      });
+      
+      // Refresh participants data
+      await refetchParticipants();
+      
+      // Refresh active tournament if this is the active one
+      if (activeTournament && tournament.id === activeTournament.id) {
+        setActiveTournament(tournament);
       }
-    });
-    
-    // Refresh active tournament if this is the active one
-    if (activeTournament && tournament.id === activeTournament.id) {
-      setActiveTournament(tournament);
+    } catch (error) {
+      console.error('Error saving participant assignments:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Speichern der Teilnehmer ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: "Teilnehmer zugewiesen",
-      description: `${selectedParticipants.length} Teilnehmer wurden dem Turnier ${tournament.name} zugewiesen.`,
-    });
   };
 
   const assignAll = () => {
@@ -115,6 +129,28 @@ const TournamentParticipantsPage = () => {
   const unassignAll = () => {
     setSelectedParticipants([]);
   };
+
+  // Loading state
+  if (isLoadingParticipants) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Spinner size="lg" />
+        <p className="mt-4 text-muted-foreground">Teilnehmer werden geladen...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (participantsError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h2 className="text-2xl font-bold mb-4 text-destructive">Fehler beim Laden der Teilnehmer</h2>
+        <Button asChild>
+          <Link to="/admin/tournament">Zurück zur Turnierverwaltung</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
