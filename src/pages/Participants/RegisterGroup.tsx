@@ -6,7 +6,6 @@ import { Button } from '@/components/ui';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { mockParticipants } from '../../data/mockData';
 import { useTournament } from '@/contexts/TournamentContext';
 import GroupInfoForm, { groupSchema, GroupFormValues } from '@/components/Groups/GroupInfoForm';
 import { useGroupForm } from '@/hooks/useGroupForm';
@@ -36,12 +35,7 @@ const RegisterGroup = () => {
     removeParticipant,
     handleNameChange,
     handleRegenerateName
-  } = useGroupForm({ 
-    form, 
-    mockParticipants: activeTournament 
-      ? mockParticipants.filter(p => p.tournamentId === activeTournament.id || p.tournamentId === undefined) 
-      : mockParticipants 
-  });
+  } = useGroupForm({ form });
 
   return (
     <div className="animate-fade-in">
@@ -64,13 +58,18 @@ const RegisterGroup = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GroupRegistrationForm />
+        <GroupRegistrationForm 
+          form={form}
+          selectedParticipants={selectedParticipants}
+          handleNameChange={handleNameChange}
+          handleRegenerateName={handleRegenerateName}
+          removeParticipant={removeParticipant}
+        />
 
         <AvailableParticipants 
           availableParticipants={availableParticipants}
           selectedCategory={selectedCategory}
           addParticipant={addParticipant}
-          mockGroups={[]}
           selectedParticipants={selectedParticipants}
         />
       </div>

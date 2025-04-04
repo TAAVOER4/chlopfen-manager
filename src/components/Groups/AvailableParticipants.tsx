@@ -1,19 +1,18 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui';
 import { Plus } from 'lucide-react';
-import { Participant } from '../../types';
+import { Participant, GroupCategory } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
-import { Group } from '../../types';
 import { useQuery } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 import { Spinner } from '@/components/ui/spinner';
+import { useTournament } from '@/contexts/TournamentContext';
 
 interface AvailableParticipantsProps {
   availableParticipants: Participant[];
   selectedCategory: string;
   addParticipant: (participant: Participant) => void;
-  mockGroups: Group[];
   selectedParticipants: Participant[];
   currentGroupId?: number;
 }
@@ -22,23 +21,30 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
   availableParticipants,
   selectedCategory,
   addParticipant,
-  mockGroups,
   selectedParticipants,
   currentGroupId
 }) => {
-  // This component receives the filtered available participants, but we'll also fetch all groups
-  // to show existing group memberships
+  const { activeTournament } = useTournament();
+  
+  // Fetch groups to show existing group memberships
   const { 
-    data: allGroups = mockGroups, // Fallback to props if query fails
-    isLoading
+    data: allGroups = [], 
+    isLoading: isLoadingGroups
   } = useQuery({
     queryKey: ['groups'],
     queryFn: DatabaseService.getAllGroups,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
+  
+  // Filter available participants by tournament and exclude already selected participants
+  const filteredParticipants = useMemo(() => {
+    return availableParticipants
+      .filter(p => !selectedParticipants.some(sp => sp.id === p.id))
+      .filter(p => !p.tournamentId || p.tournamentId === activeTournament?.id);
+  }, [availableParticipants, selectedParticipants, activeTournament]);
 
-  if (isLoading) {
+  if (isLoadingGroups) {
     return (
       <Card>
         <CardHeader>
@@ -62,18 +68,15 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {availableParticipants.length > 0 ? (
+        {filteredParticipants.length > 0 ? (
           <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-            {availableParticipants.map((participant) => {
+            {filteredParticipants.map((participant) => {
               // Show existing group memberships
               const existingGroups = participant.groupIds?.map(gId => {
                 if (currentGroupId && gId === currentGroupId) return null;
                 const group = allGroups.find(g => g.id === gId);
                 return group?.name || '';
               }).filter(Boolean).join(', ');
-              
-              const isSelected = selectedParticipants.some(p => p.id === participant.id);
-              if (isSelected) return null;
               
               return (
                 <div 

@@ -1,3 +1,4 @@
+
 import { Category, GroupCategory, AllCategory } from '../types';
 
 export const determineCategory = (birthYear: number): Category => {
@@ -65,6 +66,17 @@ export const getCategoryClass = (category: Category | GroupCategory | AllCategor
 
 export const mapToGroupCategory = (category: Category): GroupCategory => {
   return category === 'active' ? 'active' : 'kids_juniors';
+};
+
+// Determine group category based on participant categories
+export const determineGroupCategory = (participants: Participant[]): GroupCategory => {
+  if (!participants || participants.length === 0) {
+    return 'kids_juniors'; // Default
+  }
+  
+  // If any participant is 'active', the group is 'active'
+  const hasActiveParticipant = participants.some(p => p.category === 'active');
+  return hasActiveParticipant ? 'active' : 'kids_juniors';
 };
 
 // New helper function to check if category is AllCategory
