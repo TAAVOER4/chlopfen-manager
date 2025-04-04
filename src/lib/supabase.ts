@@ -1,18 +1,23 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Use the configuration from .env.local if available, otherwise use direct values
-// These values are automatically injected by Lovable when connected to Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use the direct values for the Supabase URL and API key
+const supabaseUrl = 'https://ixfgmtscvwixkojsmfrj.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4ZmdtdHNjdndpeGtvanNtZnJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODU5NzYsImV4cCI6MjA1OTI2MTk3Nn0.Mz9TMFv3G3FEuNfk6eJ8wfaIyKUQRZpvPA2UGyvHR64';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase credentials missing. Make sure you have connected your Supabase project in Lovable.');
-  // Instead of throwing an error which breaks the app, we'll create a dummy client
-  // that will gracefully fail but allow the app to load
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder-url.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+// Export a function to check if the Supabase client is correctly configured
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('tournaments').select('count');
+    if (error) {
+      console.error('Error connecting to Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error checking Supabase connection:', error);
+    return false;
+  }
+};

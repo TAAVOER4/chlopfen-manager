@@ -75,21 +75,22 @@ export const useParticipantRegistration = () => {
       return;
     }
 
-    // Check if participant already exists
-    const participantExists = await checkParticipantExists();
-    
-    if (participantExists) {
-      toast({
-        title: "Teilnehmer existiert bereits",
-        description: `${participant.firstName} ${participant.lastName} ist bereits für dieses Turnier registriert.`,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      // Check if participant already exists
+      const participantExists = await checkParticipantExists();
+      
+      if (participantExists) {
+        toast({
+          title: "Teilnehmer existiert bereits",
+          description: `${participant.firstName} ${participant.lastName} ist bereits für dieses Turnier registriert.`,
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create the new participant with category and tournament reference
       const category = determineCategory(participant.birthYear);
       const newParticipant: Omit<Participant, 'id'> = {

@@ -1,11 +1,12 @@
 
 import { BaseService } from './BaseService';
 import { Participant } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 export class ParticipantService extends BaseService {
   static async getAllParticipants() {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('participants')
         .select('*');
         
@@ -27,7 +28,7 @@ export class ParticipantService extends BaseService {
       }));
       
       // Fetch group associations for all participants
-      const { data: groupParticipants, error: groupError } = await this.supabase
+      const { data: groupParticipants, error: groupError } = await supabase
         .from('group_participants')
         .select('*');
         
@@ -48,103 +49,132 @@ export class ParticipantService extends BaseService {
   }
 
   static async createParticipant(participant: Omit<Participant, 'id'>) {
-    const { data, error } = await this.supabase
-      .from('participants')
-      .insert([{
-        first_name: participant.firstName,
-        last_name: participant.lastName,
-        location: participant.location,
-        birth_year: participant.birthYear,
-        category: participant.category,
-        is_group_only: participant.isGroupOnly || false,
-        tournament_id: participant.tournamentId
-      }])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .insert([{
+          first_name: participant.firstName,
+          last_name: participant.lastName,
+          location: participant.location,
+          birth_year: participant.birthYear,
+          category: participant.category,
+          is_group_only: participant.isGroupOnly || false,
+          tournament_id: participant.tournamentId
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    // Transform the data back to the frontend format
-    const newParticipant: Participant = {
-      id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      location: data.location,
-      birthYear: data.birth_year,
-      category: data.category,
-      isGroupOnly: data.is_group_only || false,
-      tournamentId: data.tournament_id,
-      groupIds: []
-    };
-    
-    return newParticipant;
+      if (!data) throw new Error('No data returned from participant creation');
+      
+      // Transform the data back to the frontend format
+      const newParticipant: Participant = {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        location: data.location,
+        birthYear: data.birth_year,
+        category: data.category,
+        isGroupOnly: data.is_group_only || false,
+        tournamentId: data.tournament_id,
+        groupIds: []
+      };
+      
+      return newParticipant;
+    } catch (error) {
+      console.error('Error creating participant:', error);
+      throw error;
+    }
   }
 
   static async updateParticipant(participant: Participant) {
-    const { data, error } = await this.supabase
-      .from('participants')
-      .update({
-        first_name: participant.firstName,
-        last_name: participant.lastName,
-        location: participant.location,
-        birth_year: participant.birthYear,
-        category: participant.category,
-        is_group_only: participant.isGroupOnly || false,
-        tournament_id: participant.tournamentId
-      })
-      .eq('id', participant.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .update({
+          first_name: participant.firstName,
+          last_name: participant.lastName,
+          location: participant.location,
+          birth_year: participant.birthYear,
+          category: participant.category,
+          is_group_only: participant.isGroupOnly || false,
+          tournament_id: participant.tournamentId
+        })
+        .eq('id', participant.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      location: data.location,
-      birthYear: data.birth_year,
-      category: data.category,
-      isGroupOnly: data.is_group_only || false,
-      tournamentId: data.tournament_id,
-      groupIds: participant.groupIds
-    } as Participant;
+      if (!data) throw new Error('No data returned from participant update');
+      
+      return {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        location: data.location,
+        birthYear: data.birth_year,
+        category: data.category,
+        isGroupOnly: data.is_group_only || false,
+        tournamentId: data.tournament_id,
+        groupIds: participant.groupIds
+      } as Participant;
+    } catch (error) {
+      console.error('Error updating participant:', error);
+      throw error;
+    }
   }
 
   static async deleteParticipant(id: number) {
-    const { error } = await this.supabase
-      .from('participants')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    return true;
+      return true;
+    } catch (error) {
+      console.error('Error deleting participant:', error);
+      throw error;
+    }
   }
 
   // Update participant tournament assignments
   static async updateParticipantTournament(participantId: number, tournamentId: number | null) {
-    const { error } = await this.supabase
-      .from('participants')
-      .update({ tournament_id: tournamentId })
-      .eq('id', participantId);
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .update({ tournament_id: tournamentId })
+        .eq('id', participantId);
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    return true;
+      return true;
+    } catch (error) {
+      console.error('Error updating participant tournament:', error);
+      throw error;
+    }
   }
   
   // Bulk update participant tournament assignments
   static async bulkUpdateParticipantTournaments(participantIds: number[], tournamentId: number | null) {
-    if (participantIds.length === 0) return true;
-    
-    const { error } = await this.supabase
-      .from('participants')
-      .update({ tournament_id: tournamentId })
-      .in('id', participantIds);
+    try {
+      if (participantIds.length === 0) return true;
       
-    if (error) throw error;
-    
-    return true;
+      const { error } = await supabase
+        .from('participants')
+        .update({ tournament_id: tournamentId })
+        .in('id', participantIds);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error bulk updating participant tournaments:', error);
+      throw error;
+    }
   }
 }
