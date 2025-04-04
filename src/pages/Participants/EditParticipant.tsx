@@ -6,39 +6,65 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { determineCategory, getCategoryDisplay } from '../../utils/categoryUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Participant } from '../../types';
-import { mockParticipants } from '../../data/mockData';
+import { DatabaseService } from '@/services/DatabaseService';
+import { Spinner } from '@/components/ui/spinner';
+import { useTournament } from '@/contexts/TournamentContext';
 
 const EditParticipant = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { activeTournament } = useTournament();
   
   const [participant, setParticipant] = useState<Partial<Participant>>({
     firstName: '',
     lastName: '',
     location: '',
     birthYear: new Date().getFullYear() - 15,
+    isGroupOnly: false
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Find the participant to edit
-    const participantId = id ? parseInt(id) : null;
-    const existingParticipant = participantId ? mockParticipants.find(p => p.id === participantId) : null;
+    const loadParticipant = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        // Fetch all participants and find the one with the matching id
+        const allParticipants = await DatabaseService.getAllParticipants();
+        const participantId = parseInt(id);
+        const existingParticipant = allParticipants.find(p => p.id === participantId);
+        
+        if (!existingParticipant) {
+          toast({
+            title: "Teilnehmer nicht gefunden",
+            description: "Der gesuchte Teilnehmer wurde nicht gefunden.",
+            variant: "destructive"
+          });
+          navigate('/participants');
+          return;
+        }
+        
+        setParticipant(existingParticipant);
+      } catch (error) {
+        console.error('Error loading participant:', error);
+        toast({
+          title: "Fehler",
+          description: "Beim Laden des Teilnehmers ist ein Fehler aufgetreten.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    if (!existingParticipant) {
-      toast({
-        title: "Teilnehmer nicht gefunden",
-        description: "Der gesuchte Teilnehmer wurde nicht gefunden.",
-        variant: "destructive"
-      });
-      navigate('/participants');
-      return;
-    }
-    
-    setParticipant(existingParticipant);
+    loadParticipant();
   }, [id, navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,13 +75,20 @@ const EditParticipant = () => {
     }));
   };
 
+  const handleCheckboxChange = (checked: boolean) => {
+    setParticipant(prev => ({
+      ...prev,
+      isGroupOnly: checked,
+    }));
+  };
+
   const determineParticipantCategory = () => {
     if (!participant.birthYear) return null;
     const category = determineCategory(participant.birthYear);
     return getCategoryDisplay(category);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!participant.firstName || !participant.lastName || !participant.location || !participant.birthYear) {
@@ -70,19 +103,23 @@ const EditParticipant = () => {
     // Update category based on birthYear
     const category = determineCategory(participant.birthYear);
     
-    // Find and update the participant in mockParticipants
-    const participantId = id ? parseInt(id) : null;
-    const index = participantId ? mockParticipants.findIndex(p => p.id === participantId) : -1;
-    
-    if (index !== -1) {
-      mockParticipants[index] = {
-        ...mockParticipants[index],
+    try {
+      setIsSaving(true);
+      
+      // Update participant in database
+      const updatedParticipant: Participant = {
+        id: parseInt(id!),
         firstName: participant.firstName as string,
         lastName: participant.lastName as string,
         location: participant.location as string,
         birthYear: participant.birthYear as number,
-        category: category
+        category: category,
+        isGroupOnly: participant.isGroupOnly || false,
+        tournamentId: participant.tournamentId,
+        groupIds: participant.groupIds || []
       };
+      
+      await DatabaseService.updateParticipant(updatedParticipant);
       
       toast({
         title: "Teilnehmer aktualisiert",
@@ -90,14 +127,26 @@ const EditParticipant = () => {
       });
       
       navigate('/participants');
-    } else {
+    } catch (error) {
+      console.error('Error updating participant:', error);
       toast({
         title: "Fehler bei der Aktualisierung",
-        description: "Der Teilnehmer konnte nicht gefunden werden.",
+        description: "Der Teilnehmer konnte nicht aktualisiert werden.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Spinner size="large" />
+        <p className="mt-4 text-muted-foreground">Teilnehmer wird geladen...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -129,6 +178,7 @@ const EditParticipant = () => {
                   onChange={handleChange}
                   placeholder="Vorname"
                   required
+                  disabled={isSaving}
                 />
               </div>
               <div className="space-y-2">
@@ -140,6 +190,7 @@ const EditParticipant = () => {
                   onChange={handleChange}
                   placeholder="Nachname"
                   required
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -156,6 +207,7 @@ const EditParticipant = () => {
                   min="1900"
                   max={new Date().getFullYear()}
                   required
+                  disabled={isSaving}
                 />
               </div>
               <div className="space-y-2">
@@ -175,14 +227,34 @@ const EditParticipant = () => {
                 onChange={handleChange}
                 placeholder="Wohnort"
                 required
+                disabled={isSaving}
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="isGroupOnly" 
+                checked={participant.isGroupOnly || false}
+                onCheckedChange={handleCheckboxChange}
+                disabled={isSaving}
+              />
+              <Label htmlFor="isGroupOnly">Nur Gruppenteilnahme (keine Einzelwertung)</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" type="button" onClick={() => navigate('/participants')}>
+            <Button variant="outline" type="button" onClick={() => navigate('/participants')} disabled={isSaving}>
               Abbrechen
             </Button>
-            <Button type="submit">Änderungen speichern</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Spinner size="small" className="mr-2" />
+                  Speichern...
+                </>
+              ) : (
+                'Änderungen speichern'
+              )}
+            </Button>
           </CardFooter>
         </form>
       </Card>

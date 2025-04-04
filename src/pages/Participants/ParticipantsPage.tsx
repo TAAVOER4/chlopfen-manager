@@ -1,320 +1,382 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Users, Pencil, Trash, Filter, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getCategoryDisplay } from '../../utils/categoryUtils';
-import DeleteParticipantDialog from '../../components/Participants/DeleteParticipantDialog';
-import { Participant, Category, Tournament } from '../../types';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Trash2, Plus, Search, Filter } from 'lucide-react';
+import { Group, Participant } from '@/types';
 import { useTournament } from '@/contexts/TournamentContext';
-import { getTournamentById } from '@/data/mockTournaments';
+import { Spinner } from '@/components/ui/spinner';
+import NoActiveTournamentAlert from '@/components/Participants/NoActiveTournamentAlert';
 import { useQuery } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
-import { Spinner } from '@/components/ui/spinner';
+import DeleteParticipantDialog from '@/components/Participants/DeleteParticipantDialog';
 
 const ParticipantsPage = () => {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate();
+  const { activeTournament } = useTournament();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
-  const [searchText, setSearchText] = useState('');
-  const [activeTab, setActiveTab] = useState('individual');
-  const { tournaments } = useTournament();
-
-  // Fetch participants and groups from the database
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Fetch participants from the database
   const { 
     data: participants = [], 
     isLoading: isLoadingParticipants,
-    error: participantsError
+    error: participantsError,
+    refetch: refetchParticipants
   } = useQuery({
-    queryKey: ['participants', refreshKey],
+    queryKey: ['participants', activeTournament?.id],
     queryFn: DatabaseService.getAllParticipants,
-    retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30000, // 30 seconds
   });
   
+  // Fetch groups from the database
   const { 
-    data: groups = [],
+    data: groups = [], 
     isLoading: isLoadingGroups,
-    error: groupsError
+    error: groupsError 
   } = useQuery({
-    queryKey: ['groups', refreshKey],
+    queryKey: ['groups', activeTournament?.id],
     queryFn: DatabaseService.getAllGroups,
-    retry: 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30000, // 30 seconds
   });
-
-  // Log any errors for debugging
-  if (participantsError) console.error('Error fetching participants:', participantsError);
-  if (groupsError) console.error('Error fetching groups:', groupsError);
-
-  const handleDeleteParticipant = (participant: Participant) => {
+  
+  // Filter participants by tournament
+  const tournamentParticipants = activeTournament 
+    ? participants.filter(p => p.tournamentId === activeTournament.id)
+    : [];
+  
+  // Filter participants based on search term and category
+  const filteredParticipants = tournamentParticipants.filter(participant => {
+    const matchesSearch = 
+      `${participant.firstName} ${participant.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      participant.location.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = 
+      selectedCategory === 'all' || 
+      (selectedCategory === 'groupOnly' && participant.isGroupOnly) || 
+      participant.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+  
+  const handleEditParticipant = (participantId: number) => {
+    navigate(`/participants/edit/${participantId}`);
+  };
+  
+  const handleDeleteClick = (participant: Participant) => {
     setSelectedParticipant(participant);
     setDeleteDialogOpen(true);
   };
-
+  
   const handleParticipantDeleted = () => {
-    // Refresh the component
-    setRefreshKey(prev => prev + 1);
+    refetchParticipants();
   };
-
-  // Function to get all group names a participant belongs to
-  const getParticipantGroups = (participantId: number) => {
-    const groupsForParticipant = groups.filter(group => 
-      group.participantIds.includes(participantId)
+  
+  const getGroupsForParticipant = (participantId: number): Group[] => {
+    if (!groups) return [];
+    return groups.filter(group => 
+      group.participantIds.includes(participantId) && 
+      group.tournamentId === activeTournament?.id
     );
-    
-    if (groupsForParticipant.length === 0) return '-';
-    
-    return groupsForParticipant.map(g => g.name).join(', ');
   };
   
-  // Function to get tournament name by ID
-  const getTournamentName = (tournamentId?: number): string => {
-    if (!tournamentId) return '-';
-    const tournament = tournaments.find(t => t.id === tournamentId);
-    return tournament ? tournament.name : '-';
-  };
-  
-  // Filter participants based on selected category and search text
-  const filteredParticipants = participants
-    .filter(participant => 
-      categoryFilter === 'all' || participant.category === categoryFilter
-    )
-    .filter(participant => {
-      if (!searchText.trim()) return true;
-      
-      const searchLower = searchText.toLowerCase();
-      const tournamentName = getTournamentName(participant.tournamentId).toLowerCase();
-      
-      // Search across all text fields INCLUDING tournament name
-      return (
-        participant.firstName.toLowerCase().includes(searchLower) ||
-        participant.lastName.toLowerCase().includes(searchLower) ||
-        participant.location.toLowerCase().includes(searchLower) ||
-        participant.birthYear.toString().includes(searchLower) ||
-        getCategoryDisplay(participant.category).toLowerCase().includes(searchLower) ||
-        tournamentName.includes(searchLower)
-      );
-    });
-
   // Loading state
   if (isLoadingParticipants || isLoadingGroups) {
     return (
-      <div className="flex justify-center items-center h-[60vh]">
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Spinner size="large" />
+        <p className="mt-4 text-muted-foreground">Teilnehmer werden geladen...</p>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (participantsError || groupsError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-swiss-blue">Teilnehmer</h1>
+        <div className="bg-destructive/10 p-4 rounded-md mb-6">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Fehler beim Laden der Daten</h2>
+          <p className="text-muted-foreground">
+            Bitte versuchen Sie die Seite neu zu laden oder kontaktieren Sie den Administrator.
+          </p>
+          <Button className="mt-4" onClick={() => window.location.reload()}>
+            Seite neu laden
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="p-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-swiss-blue">Teilnehmer</h1>
-        <div className="flex space-x-2">
-          <Link to="/participants/register">
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Teilnehmer erfassen
-            </Button>
-          </Link>
-          <Link to="/participants/register-group">
-            <Button variant="outline">
-              <Users className="mr-2 h-4 w-4" />
-              Gruppe erfassen
-            </Button>
-          </Link>
+        <div className="flex space-x-3">
+          <Button 
+            onClick={() => navigate('/participants/register')}
+            disabled={!activeTournament}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Teilnehmer erfassen
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/participants/register-group')}
+            disabled={!activeTournament}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Gruppe erfassen
+          </Button>
         </div>
       </div>
-
-      <Card className="mb-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="individual">
-              <User className="mr-2 h-4 w-4" />
-              Einzelteilnehmer
-            </TabsTrigger>
-            <TabsTrigger value="groups">
-              <Users className="mr-2 h-4 w-4" />
-              Gruppen
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="individual" className="p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold">Einzelteilnehmer</h2>
-              <div className="flex items-center gap-4">
-                {/* Search input */}
-                <div className="relative w-64">
+      
+      {!activeTournament && (
+        <NoActiveTournamentAlert />
+      )}
+      
+      {activeTournament && (
+        <>
+          <Tabs defaultValue="participants">
+            <TabsList className="mb-4">
+              <TabsTrigger value="participants">Einzelteilnehmer</TabsTrigger>
+              <TabsTrigger value="groups">Gruppen</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="participants">
+              <div className="mb-6 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-grow">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    type="search"
                     placeholder="Teilnehmer suchen..."
-                    className="pl-8"
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 w-full"
                   />
                 </div>
-
-                {/* Category filter */}
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select
-                    value={categoryFilter}
-                    onValueChange={(value) => setCategoryFilter(value as Category | 'all')}
+                <div className="flex gap-2 flex-wrap">
+                  <Badge
+                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory('all')}
                   >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Kategorie wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Kategorien</SelectItem>
-                      <SelectItem value="kids">{getCategoryDisplay('kids')}</SelectItem>
-                      <SelectItem value="juniors">{getCategoryDisplay('juniors')}</SelectItem>
-                      <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    Alle
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === 'kids' ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory('kids')}
+                  >
+                    Kinder
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === 'juniors' ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory('juniors')}
+                  >
+                    Junioren
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === 'active' ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory('active')}
+                  >
+                    Aktive
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === 'groupOnly' ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory('groupOnly')}
+                  >
+                    Nur Gruppe
+                  </Badge>
                 </div>
               </div>
-            </div>
-            <Table>
-              <TableCaption>Alle registrierten Teilnehmer</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Kategorie</TableHead>
-                  <TableHead>Jahrgang</TableHead>
-                  <TableHead>Wohnort</TableHead>
-                  <TableHead>Turnier</TableHead>
-                  <TableHead>Gruppe(n)</TableHead>
-                  <TableHead>Teilnahme</TableHead>
-                  <TableHead className="w-[160px]">Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredParticipants.length > 0 ? (
-                  filteredParticipants.map((participant) => (
-                    <TableRow key={participant.id}>
-                      <TableCell className="font-medium">
-                        {participant.firstName} {participant.lastName}
-                      </TableCell>
-                      <TableCell>{getCategoryDisplay(participant.category)}</TableCell>
-                      <TableCell>{participant.birthYear}</TableCell>
-                      <TableCell>{participant.location}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {getTournamentName(participant.tournamentId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {getParticipantGroups(participant.id)}
-                      </TableCell>
-                      <TableCell>
-                        {participant.isGroupOnly ? 
-                          <Badge variant="outline">Nur Gruppe</Badge> : 
-                          <Badge>Einzel & Gruppe</Badge>
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Link to={`/participants/edit/${participant.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Bearbeiten
+              
+              <div className="bg-white rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Kategorie</TableHead>
+                      <TableHead>Jahrgang</TableHead>
+                      <TableHead>Wohnort</TableHead>
+                      <TableHead>Gruppe(n)</TableHead>
+                      <TableHead>Teilnahme</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParticipants.length > 0 ? (
+                      filteredParticipants.map((participant) => {
+                        const participantGroups = getGroupsForParticipant(participant.id);
+                        return (
+                          <TableRow key={participant.id}>
+                            <TableCell className="font-medium">
+                              {participant.firstName} {participant.lastName}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {participant.category === 'kids' ? 'Kinder' : 
+                                participant.category === 'juniors' ? 'Junioren' : 'Aktive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{participant.birthYear}</TableCell>
+                            <TableCell>{participant.location}</TableCell>
+                            <TableCell>
+                              {participantGroups.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {participantGroups.map(group => (
+                                    <Badge 
+                                      key={group.id} 
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {group.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {participant.isGroupOnly ? (
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                                  Nur Gruppe
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Einzel & Gruppe
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleEditParticipant(participant.id)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteClick(participant)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          {tournamentParticipants.length === 0 
+                            ? `Keine Teilnehmer für ${activeTournament.name} gefunden.` 
+                            : 'Keine Teilnehmer gefunden, die Ihren Suchkriterien entsprechen.'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {tournamentParticipants.length > 0 && (
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  {tournamentParticipants.length} Teilnehmer insgesamt für {activeTournament.name}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="groups">
+              <div className="bg-white rounded-lg border p-8 min-h-[300px] flex flex-col items-center justify-center">
+                <h3 className="text-xl font-semibold mb-4">Gruppenübersicht</h3>
+                {groups.filter(g => g.tournamentId === activeTournament.id).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                    {groups
+                      .filter(g => g.tournamentId === activeTournament.id)
+                      .map(group => (
+                        <div 
+                          key={group.id} 
+                          className="border rounded-md p-4 hover:border-primary transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-lg">{group.name}</h4>
+                              <Badge variant="outline" className="mt-1">
+                                {group.category === 'kids_juniors' ? 'Kinder/Junioren' : 'Aktive'}
+                              </Badge>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => navigate(`/participants/edit-group/${group.id}`)}
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          </Link>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteParticipant(participant)}
-                          >
-                            <Trash className="h-4 w-4 mr-2" />
-                            Löschen
-                          </Button>
+                          </div>
+                          <div className="mt-3">
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {group.participantIds.length} Teilnehmer
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {group.participantIds.slice(0, 3).map(participantId => {
+                                const participant = participants.find(p => p.id === participantId);
+                                return participant ? (
+                                  <Badge key={participantId} variant="secondary" className="text-xs">
+                                    {participant.firstName} {participant.lastName}
+                                  </Badge>
+                                ) : null;
+                              })}
+                              {group.participantIds.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{group.participantIds.length - 3} weitere
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                      ))}
+                  </div>
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Keine Teilnehmer vorhanden
-                    </TableCell>
-                  </TableRow>
+                  <div className="text-center">
+                    <p className="text-muted-foreground mb-4">
+                      Keine Gruppen für {activeTournament.name} gefunden.
+                    </p>
+                    <Button onClick={() => navigate('/participants/register-group')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Gruppe erstellen
+                    </Button>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
-          </TabsContent>
-
-          <TabsContent value="groups" className="p-4">
-            <div className="mb-4">
-              <h2 className="text-2xl font-semibold">Gruppen</h2>
-            </div>
-            <Table>
-              <TableCaption>Alle registrierten Gruppen</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Kategorie</TableHead>
-                  <TableHead>Größe</TableHead>
-                  <TableHead>Turnier</TableHead>
-                  <TableHead>Mitglieder</TableHead>
-                  <TableHead className="w-[100px]">Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groups.length > 0 ? (
-                  groups.map((group) => (
-                    <TableRow key={group.id}>
-                      <TableCell className="font-medium">{group.name}</TableCell>
-                      <TableCell>{getCategoryDisplay(group.category)}</TableCell>
-                      <TableCell>{group.size === 'three' ? 'Dreiergruppe' : 'Vierergruppe'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {getTournamentName(group.tournamentId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {group.participantIds.map(id => {
-                          const participant = participants.find(p => p.id === id);
-                          return participant ? `${participant.firstName} ${participant.lastName}` : '';
-                        }).join(', ')}
-                      </TableCell>
-                      <TableCell>
-                        <Link to={`/participants/edit-group/${group.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Bearbeiten
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Keine Gruppen vorhanden
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TabsContent>
-        </Tabs>
-      </Card>
-
+              </div>
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+      
       <DeleteParticipantDialog
+        participant={selectedParticipant}
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        participant={selectedParticipant}
         onDeleted={handleParticipantDeleted}
       />
     </div>

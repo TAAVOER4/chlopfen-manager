@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { mockParticipants, mockGroups } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { Participant } from '../../types';
+import { Participant } from '@/types';
+import { DatabaseService } from '@/services/DatabaseService';
+import { Spinner } from '@/components/ui/spinner';
 
 interface DeleteParticipantDialogProps {
   open: boolean;
@@ -27,41 +28,34 @@ const DeleteParticipantDialog: React.FC<DeleteParticipantDialogProps> = ({
   onDeleted
 }) => {
   const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!participant) return;
     
-    // Check if participant is in any groups
-    if (participant.groupIds && participant.groupIds.length > 0) {
-      // Remove participant from all groups
-      participant.groupIds.forEach(groupId => {
-        const groupIndex = mockGroups.findIndex(g => g.id === groupId);
-        if (groupIndex !== -1) {
-          mockGroups[groupIndex].participantIds = mockGroups[groupIndex].participantIds.filter(
-            id => id !== participant.id
-          );
-          
-          // If group is now empty or below required size, consider deleting the group
-          if (mockGroups[groupIndex].participantIds.length === 0) {
-            mockGroups.splice(groupIndex, 1);
-          }
-        }
+    try {
+      setIsDeleting(true);
+      
+      // Delete the participant from the database
+      await DatabaseService.deleteParticipant(participant.id);
+      
+      toast({
+        title: "Teilnehmer gelöscht",
+        description: `${participant.firstName} ${participant.lastName} wurde erfolgreich gelöscht.`
       });
+      
+      onOpenChange(false);
+      onDeleted();
+    } catch (error) {
+      console.error('Error deleting participant:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Löschen des Teilnehmers ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
     }
-    
-    // Delete the participant
-    const participantIndex = mockParticipants.findIndex(p => p.id === participant.id);
-    if (participantIndex !== -1) {
-      mockParticipants.splice(participantIndex, 1);
-    }
-    
-    toast({
-      title: "Teilnehmer gelöscht",
-      description: `${participant.firstName} ${participant.lastName} wurde erfolgreich gelöscht.`
-    });
-    
-    onOpenChange(false);
-    onDeleted();
   };
 
   if (!participant) return null;
@@ -72,8 +66,8 @@ const DeleteParticipantDialog: React.FC<DeleteParticipantDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Teilnehmer löschen</DialogTitle>
           <DialogDescription>
-            Sind Sie sicher, dass Sie {participant?.firstName} {participant?.lastName} löschen möchten?
-            {participant?.groupIds && participant?.groupIds.length > 0 && (
+            Sind Sie sicher, dass Sie {participant.firstName} {participant.lastName} löschen möchten?
+            {participant.groupIds && participant.groupIds.length > 0 && (
               <p className="mt-2">
                 <b>Achtung:</b> Dieser Teilnehmer ist in {participant.groupIds.length} Gruppe(n). 
                 Beim Löschen wird der Teilnehmer aus allen Gruppen entfernt.
@@ -82,11 +76,18 @@ const DeleteParticipantDialog: React.FC<DeleteParticipantDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
             Abbrechen
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
-            Löschen
+          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? (
+              <>
+                <Spinner size="small" className="mr-2" />
+                Löschen...
+              </>
+            ) : (
+              'Löschen'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
