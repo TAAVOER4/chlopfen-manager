@@ -1,11 +1,13 @@
 
 import { BaseService } from './BaseService';
 import { Group } from '@/types';
+import { supabase } from '@/lib/supabase'; // Direct import as fallback
 
 export class GroupService extends BaseService {
   static async getAllGroups() {
     try {
-      const { data, error } = await this.supabase
+      console.log("Getting all groups...");
+      const { data, error } = await supabase
         .from('groups')
         .select('*');
         
@@ -24,7 +26,7 @@ export class GroupService extends BaseService {
       }));
       
       // Fetch group-participant associations
-      const { data: groupParticipants, error: groupError } = await this.supabase
+      const { data: groupParticipants, error: groupError } = await supabase
         .from('group_participants')
         .select('*');
         
@@ -46,8 +48,10 @@ export class GroupService extends BaseService {
 
   static async createGroup(group: Omit<Group, 'id'>) {
     try {
+      console.log("Creating group in database:", group);
+      
       // First create the group
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('groups')
         .insert([{
           name: group.name,
@@ -58,8 +62,12 @@ export class GroupService extends BaseService {
         .select()
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting group:", error);
+        throw error;
+      }
       
+      console.log("Group created successfully:", data);
       const newGroupId = data.id;
       
       // Now add participants to the group
@@ -69,11 +77,15 @@ export class GroupService extends BaseService {
           participant_id: participantId
         }));
         
-        const { error: participantError } = await this.supabase
+        console.log("Adding participants to group:", groupParticipants);
+        const { error: participantError } = await supabase
           .from('group_participants')
           .insert(groupParticipants);
           
-        if (participantError) throw participantError;
+        if (participantError) {
+          console.error("Error adding participants to group:", participantError);
+          throw participantError;
+        }
       }
       
       // Return the new group with participants

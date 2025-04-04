@@ -83,7 +83,8 @@ const GroupRegistrationForm: React.FC<GroupRegistrationFormProps> = ({
       
       // Save the group to the database
       console.log("Saving group:", newGroup);
-      await DatabaseService.createGroup(newGroup);
+      const savedGroup = await DatabaseService.createGroup(newGroup);
+      console.log("Group saved successfully:", savedGroup);
       
       toast({
         title: "Gruppe erstellt",
