@@ -84,7 +84,7 @@ export class AuthenticationService extends BaseSupabaseService {
         username: 'admin',
         name: 'Administrator',
         password_hash: await import('@/utils/authUtils').then(({hashPassword}) => hashPassword('admin')),
-        role: 'admin',
+        role: 'admin', // Use string literal that matches the enum
         is_active: true,
         created_at: new Date().toISOString()
       };

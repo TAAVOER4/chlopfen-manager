@@ -42,8 +42,16 @@ export const useTournaments = (currentUser: User | null) => {
         }
 
         if (data && data.length > 0) {
-          // Convert to Tournament[] type
-          const tournaments = data as Tournament[];
+          // Convert database fields to match our Tournament type
+          const tournaments = data.map(t => ({
+            id: t.id,
+            name: t.name,
+            date: t.date,
+            location: t.location,
+            year: t.year,
+            isActive: t.is_active // Map from is_active to isActive
+          })) as Tournament[];
+          
           setAvailableTournaments(tournaments);
 
           // Set selected tournament to active one or first one
