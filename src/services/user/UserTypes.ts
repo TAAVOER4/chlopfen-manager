@@ -1,6 +1,7 @@
 
-import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
-
+/**
+ * Raw user data structure from Supabase
+ */
 export interface SupabaseUserData {
   id: string;
   name: string;
@@ -10,4 +11,3 @@ export interface SupabaseUserData {
   individual_criterion: string | null;
   group_criterion: string | null;
 }
-

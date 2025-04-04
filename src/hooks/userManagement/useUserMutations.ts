@@ -1,7 +1,7 @@
 
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { SupabaseService } from '@/services/SupabaseService';
+import { UserService } from '@/services/user/UserService';
 
 export const useUserMutations = (
   users: User[], 
@@ -56,9 +56,9 @@ export const useUserMutations = (
       if (isNewUser) {
         // For new users, we need to remove the temporary ID before sending to API
         const { id, ...userWithoutId } = editingUser;
-        updatedUser = await SupabaseService.createUser(userWithoutId);
+        updatedUser = await UserService.createUser(userWithoutId);
       } else {
-        updatedUser = await SupabaseService.updateUser(editingUser);
+        updatedUser = await UserService.updateUser(editingUser);
       }
       
       console.log('User saved successfully:', updatedUser);

@@ -1,10 +1,10 @@
 
 import { BaseSupabaseService } from './BaseSupabaseService';
-import { createClient } from '@supabase/supabase-js';
 import { User, Tournament } from '@/types';
 import { AuthService } from './AuthService';
 import { TournamentService } from './TournamentService';
-import { UserService } from './UserService';
+import { UserService } from './user/UserService';
+import { UserInitializationService } from './user/UserInitializationService';
 
 export class SupabaseService extends BaseSupabaseService {
   static async initializeDatabase(): Promise<void> {

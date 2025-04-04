@@ -1,25 +1,21 @@
 
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { User } from '@/types';
-import { UserMapper } from './UserMapper';
+import { getUserTournaments } from './UserTournamentService';
 
 export class UserQueryService extends BaseSupabaseService {
-  /**
-   * Fetches all users from the database
-   */
   static async getAllUsers(): Promise<User[]> {
     try {
       console.log('Fetching all users from Supabase');
       
-      // Use the service role key for this operation to bypass RLS
-      // This ensures admins can see all users regardless of RLS policies
+      // Fetch all users
       const { data: users, error } = await this.supabase
         .from('users')
-        .select('*') as any;
+        .select('*');
         
       if (error) {
         console.error('Error loading users:', error);
-        throw error;
+        return [];
       }
       
       if (!users || users.length === 0) {
@@ -27,48 +23,31 @@ export class UserQueryService extends BaseSupabaseService {
         return [];
       }
       
-      console.log(`Found ${users.length} users in database`);
+      // For each user, get their assigned tournaments
+      const usersWithTournaments = await Promise.all(users.map(async (user) => {
+        // Get tournament IDs for this user
+        const tournamentIds = await getUserTournaments(user.id);
+          
+        return {
+          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000, // Convert string ID to number
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          passwordHash: user.password_hash,
+          assignedCriteria: {
+            individual: user.individual_criterion as any,
+            group: user.group_criterion as any
+          },
+          tournamentIds
+        };
+      }));
       
-      // Convert Supabase data to our User model format
-      return users.map(UserMapper.toUserModel);
+      console.log('Found', users.length, 'users in database');
+      
+      return usersWithTournaments;
     } catch (error) {
-      console.error('Error while fetching users:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetches a specific user by username
-   */
-  static async getUserByUsername(username: string): Promise<User | null> {
-    try {
-      console.log(`Fetching user with username: ${username}`);
-      
-      const { data, error } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .single() as any;
-        
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Not found error
-          console.log(`No user found with username: ${username}`);
-          return null;
-        }
-        console.error(`Error fetching user ${username}:`, error);
-        throw error;
-      }
-      
-      if (!data) {
-        console.log(`No user found with username: ${username}`);
-        return null;
-      }
-      
-      return UserMapper.toUserModel(data);
-    } catch (error) {
-      console.error(`Error fetching user ${username}:`, error);
-      return null;
+      console.error('Error loading users:', error);
+      return [];
     }
   }
 }
