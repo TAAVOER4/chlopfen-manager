@@ -6,10 +6,11 @@ import { Button } from '@/components/ui';
 import { Group } from '@/types';
 
 interface EditGroupHeaderProps {
+  group: Group;
   onDeleteClick: () => void;
 }
 
-const EditGroupHeader: React.FC<EditGroupHeaderProps> = ({ onDeleteClick }) => {
+const EditGroupHeader: React.FC<EditGroupHeaderProps> = ({ group, onDeleteClick }) => {
   const navigate = useNavigate();
   
   return (
@@ -19,7 +20,9 @@ const EditGroupHeader: React.FC<EditGroupHeaderProps> = ({ onDeleteClick }) => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Zurück
         </Button>
-        <h1 className="text-3xl font-bold text-swiss-blue">Gruppe bearbeiten</h1>
+        <h1 className="text-3xl font-bold text-swiss-blue">
+          Gruppe bearbeiten: {group.name}
+        </h1>
       </div>
       <Button 
         variant="destructive" 

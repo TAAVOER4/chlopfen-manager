@@ -40,7 +40,10 @@ const EditGroup = () => {
 
   return (
     <div className="animate-fade-in">
-      <EditGroupHeader onDeleteClick={() => setDeleteDialogOpen(true)} />
+      <EditGroupHeader 
+        group={group} 
+        onDeleteClick={() => setDeleteDialogOpen(true)} 
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GroupFormCard

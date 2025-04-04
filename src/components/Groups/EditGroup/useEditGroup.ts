@@ -36,6 +36,13 @@ export const useEditGroup = () => {
     staleTime: 5 * 60 * 1000,
   });
   
+  // Fetch participants for the current group
+  const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
+    queryKey: ['participants'],
+    queryFn: DatabaseService.getAllParticipants,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Find the group from the fetched data
   useEffect(() => {
     if (!id || isLoadingGroups || groups.length === 0) return;
@@ -44,12 +51,7 @@ export const useEditGroup = () => {
     const foundGroup = groups.find(g => g.id === groupId);
     
     if (!foundGroup) {
-      toast({
-        title: "Gruppe nicht gefunden",
-        description: "Die angeforderte Gruppe konnte nicht gefunden werden.",
-        variant: "destructive"
-      });
-      navigate('/participants');
+      console.error("Group not found with ID:", groupId);
       return;
     }
     
@@ -59,19 +61,15 @@ export const useEditGroup = () => {
     form.setValue('name', foundGroup.name);
     form.setValue('category', foundGroup.category);
     form.setValue('size', foundGroup.size);
-  }, [id, navigate, toast, form, groups, isLoadingGroups]);
+  }, [id, form, groups, isLoadingGroups]);
 
-  // Fetch participants for the current group
-  const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
-    queryKey: ['participants'],
-    queryFn: DatabaseService.getAllParticipants,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Initialize the useGroupForm hook with the current group's participants
+  // Initialize selected participants based on group participantIds
   const initialParticipants = useMemo(() => {
     if (!group || !participants.length) return [];
-    return participants.filter(p => group.participantIds.includes(p.id));
+    
+    const groupParticipants = participants.filter(p => group.participantIds.includes(p.id));
+    console.log("Initial participants for group:", groupParticipants);
+    return groupParticipants;
   }, [group, participants]);
   
   const {
@@ -88,6 +86,13 @@ export const useEditGroup = () => {
     initialParticipants,
     currentGroupId: group?.id
   });
+
+  // Make sure we set the selected participants when initialParticipants change
+  useEffect(() => {
+    if (initialParticipants.length > 0) {
+      setSelectedParticipants(initialParticipants);
+    }
+  }, [initialParticipants, setSelectedParticipants]);
 
   const handleDeleteGroup = async () => {
     if (!group) return;
