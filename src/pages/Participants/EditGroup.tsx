@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash } from 'lucide-react';
@@ -13,14 +14,15 @@ import {
 import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { mockGroups, mockParticipants } from '../../data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { Group, GroupSize, GroupCategory } from '../../types';
-import { isDuplicateGroup } from '../../utils/groupUtils';
+import { Group, GroupSize, GroupCategory } from '@/types';
 import GroupInfoForm, { groupSchema, GroupFormValues } from '@/components/Groups/GroupInfoForm';
 import AvailableParticipants from '@/components/Groups/AvailableParticipants';
 import DeleteGroupDialog from '@/components/Groups/DeleteGroupDialog';
 import { useGroupForm } from '@/hooks/useGroupForm';
+import { DatabaseService } from '@/services/DatabaseService';
+import { useTournament } from '@/contexts/TournamentContext';
+import { useQuery } from '@tanstack/react-query';
 
 const EditGroup = () => {
   const navigate = useNavigate();
@@ -28,6 +30,8 @@ const EditGroup = () => {
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [group, setGroup] = useState<Group | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { activeTournament } = useTournament();
   
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
@@ -38,12 +42,19 @@ const EditGroup = () => {
     },
   });
   
-  // Find the group and initialize form data
+  // Fetch all groups
+  const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
+    queryKey: ['groups'],
+    queryFn: DatabaseService.getAllGroups,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Find the group from the fetched data
   useEffect(() => {
-    if (!id) return;
+    if (!id || isLoadingGroups || groups.length === 0) return;
     
     const groupId = parseInt(id);
-    const foundGroup = mockGroups.find(g => g.id === groupId);
+    const foundGroup = groups.find(g => g.id === groupId);
     
     if (!foundGroup) {
       toast({
@@ -55,22 +66,26 @@ const EditGroup = () => {
       return;
     }
     
+    console.log("Found group:", foundGroup);
     setGroup(foundGroup);
     
     form.setValue('name', foundGroup.name);
     form.setValue('category', foundGroup.category);
     form.setValue('size', foundGroup.size);
-    
-    const groupParticipants = mockParticipants.filter(p => 
-      foundGroup.participantIds.includes(p.id)
-    );
-    setSelectedParticipants(groupParticipants);
-  }, [id, navigate, toast, form]);
+  }, [id, navigate, toast, form, groups, isLoadingGroups]);
+
+  // Fetch participants for the current group
+  const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
+    queryKey: ['participants'],
+    queryFn: DatabaseService.getAllParticipants,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Initialize the useGroupForm hook with the current group's participants
-  const initialParticipants = group ? 
-    mockParticipants.filter(p => group.participantIds.includes(p.id)) : 
-    [];
+  const initialParticipants = React.useMemo(() => {
+    if (!group || !participants.length) return [];
+    return participants.filter(p => group.participantIds.includes(p.id));
+  }, [group, participants]);
   
   const {
     selectedParticipants,
@@ -87,30 +102,30 @@ const EditGroup = () => {
     currentGroupId: group?.id
   });
 
-  const handleDeleteGroup = () => {
+  const handleDeleteGroup = async () => {
     if (!group) return;
     
-    mockParticipants.forEach(participant => {
-      if (participant.groupIds && participant.groupIds.includes(group.id)) {
-        participant.groupIds = participant.groupIds.filter(gId => gId !== group.id);
-      }
-    });
-    
-    const groupIndex = mockGroups.findIndex(g => g.id === group.id);
-    if (groupIndex !== -1) {
-      mockGroups.splice(groupIndex, 1);
+    try {
+      await DatabaseService.deleteGroup(group.id);
+      
+      toast({
+        title: "Gruppe gelöscht",
+        description: `${group.name} wurde erfolgreich gelöscht.`
+      });
+      
+      navigate('/participants');
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      toast({
+        title: "Fehler beim Löschen",
+        description: "Die Gruppe konnte nicht gelöscht werden.",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: "Gruppe gelöscht",
-      description: `${group.name} wurde erfolgreich gelöscht.`
-    });
-    
-    navigate('/participants');
   };
 
-  const onSubmit = (data: GroupFormValues) => {
-    if (!group) return;
+  const onSubmit = async (data: GroupFormValues) => {
+    if (!group || !activeTournament) return;
     
     if (selectedParticipants.length === 0) {
       toast({
@@ -131,65 +146,56 @@ const EditGroup = () => {
       return;
     }
     
-    const participantIds = selectedParticipants.map(p => p.id);
-    
-    if (isDuplicateGroup(participantIds, group.id)) {
+    try {
+      setIsSubmitting(true);
+      
+      const updatedGroup: Group = {
+        id: group.id,
+        name: data.name,
+        category: data.category as GroupCategory,
+        size: data.size as GroupSize,
+        participantIds: selectedParticipants.map(p => p.id),
+        tournamentId: activeTournament.id
+      };
+      
+      console.log("Updating group:", updatedGroup);
+      await DatabaseService.updateGroup(updatedGroup);
+      
       toast({
-        title: "Doppelte Gruppe",
-        description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
+        title: "Gruppe aktualisiert",
+        description: `${data.name} wurde erfolgreich aktualisiert.`
+      });
+      
+      navigate('/participants');
+    } catch (error) {
+      console.error("Error updating group:", error);
+      toast({
+        title: "Fehler beim Speichern",
+        description: "Die Gruppe konnte nicht aktualisiert werden.",
         variant: "destructive"
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    const oldParticipantIds = group.participantIds || [];
-    const newParticipantIds = participantIds;
-    
-    // Remove participants that are no longer in the group
-    oldParticipantIds.forEach(oldId => {
-      if (!newParticipantIds.includes(oldId)) {
-        const participantIndex = mockParticipants.findIndex(p => p.id === oldId);
-        if (participantIndex !== -1 && mockParticipants[participantIndex].groupIds) {
-          mockParticipants[participantIndex].groupIds = mockParticipants[participantIndex].groupIds!.filter(gId => gId !== group.id);
-        }
-      }
-    });
-    
-    // Add new participants to the group
-    newParticipantIds.forEach(newId => {
-      if (!oldParticipantIds.includes(newId)) {
-        const participantIndex = mockParticipants.findIndex(p => p.id === newId);
-        if (participantIndex !== -1) {
-          if (!mockParticipants[participantIndex].groupIds) {
-            mockParticipants[participantIndex].groupIds = [];
-          }
-          mockParticipants[participantIndex].groupIds!.push(group.id);
-        }
-      }
-    });
-    
-    // Update the group in the mockGroups array
-    const groupIndex = mockGroups.findIndex(g => g.id === group.id);
-    if (groupIndex !== -1) {
-      mockGroups[groupIndex] = {
-        ...mockGroups[groupIndex],
-        name: data.name,
-        size: data.size,
-        category: data.category as GroupCategory,
-        participantIds: newParticipantIds
-      };
-    }
-    
-    toast({
-      title: "Gruppe aktualisiert",
-      description: `${data.name} wurde erfolgreich aktualisiert.`
-    });
-    
-    navigate('/participants');
   };
 
+  if (isLoadingGroups || isLoadingParticipants) {
+    return <div className="flex items-center justify-center h-64">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-lg">Lade Daten...</p>
+      </div>
+    </div>;
+  }
+
   if (!group) {
-    return <div>Lade...</div>;
+    return <div className="text-center p-8">
+      <h2 className="text-xl font-bold mb-2">Gruppe nicht gefunden</h2>
+      <p className="mb-4">Die angeforderte Gruppe konnte nicht gefunden werden.</p>
+      <Button onClick={() => navigate('/participants')}>
+        Zurück zur Übersicht
+      </Button>
+    </div>;
   }
 
   return (
@@ -234,7 +240,9 @@ const EditGroup = () => {
                 <Button variant="outline" type="button" onClick={() => navigate('/participants')}>
                   Abbrechen
                 </Button>
-                <Button type="submit">Gruppe speichern</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Speichern..." : "Gruppe speichern"}
+                </Button>
               </CardFooter>
             </form>
           </Form>

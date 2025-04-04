@@ -105,8 +105,10 @@ export class GroupService extends BaseService {
 
   static async updateGroup(group: Group) {
     try {
+      console.log("Updating group in database:", group);
+      
       // Update the group details
-      const { error } = await this.supabase
+      const { error } = await supabase
         .from('groups')
         .update({
           name: group.name,
@@ -116,15 +118,21 @@ export class GroupService extends BaseService {
         })
         .eq('id', group.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating group:", error);
+        throw error;
+      }
       
       // Delete all existing participant associations
-      const { error: deleteError } = await this.supabase
+      const { error: deleteError } = await supabase
         .from('group_participants')
         .delete()
         .eq('group_id', group.id);
         
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("Error deleting group participants:", deleteError);
+        throw deleteError;
+      }
       
       // Create new participant associations
       if (group.participantIds.length > 0) {
@@ -133,13 +141,18 @@ export class GroupService extends BaseService {
           participant_id: participantId
         }));
         
-        const { error: insertError } = await this.supabase
+        console.log("Adding updated participants to group:", groupParticipants);
+        const { error: insertError } = await supabase
           .from('group_participants')
           .insert(groupParticipants);
           
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Error inserting updated group participants:", insertError);
+          throw insertError;
+        }
       }
       
+      console.log("Group updated successfully:", group);
       return group;
     } catch (error) {
       console.error('Error updating group:', error);
@@ -148,22 +161,36 @@ export class GroupService extends BaseService {
   }
 
   static async deleteGroup(id: number) {
-    // Delete group participants associations first
-    const { error: deleteParticipantsError } = await this.supabase
-      .from('group_participants')
-      .delete()
-      .eq('group_id', id);
+    try {
+      console.log("Deleting group with ID:", id);
       
-    if (deleteParticipantsError) throw deleteParticipantsError;
-    
-    // Then delete the group
-    const { error } = await this.supabase
-      .from('groups')
-      .delete()
-      .eq('id', id);
+      // Delete group participants associations first
+      const { error: deleteParticipantsError } = await supabase
+        .from('group_participants')
+        .delete()
+        .eq('group_id', id);
+        
+      if (deleteParticipantsError) {
+        console.error("Error deleting group participants:", deleteParticipantsError);
+        throw deleteParticipantsError;
+      }
       
-    if (error) throw error;
-    
-    return true;
+      // Then delete the group
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        console.error("Error deleting group:", error);
+        throw error;
+      }
+      
+      console.log("Group deleted successfully");
+      return true;
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      throw error;
+    }
   }
 }
