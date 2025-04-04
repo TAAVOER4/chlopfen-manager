@@ -84,9 +84,9 @@ export class AuthenticationService extends BaseSupabaseService {
         username: 'admin',
         name: 'Administrator',
         password_hash: await import('@/utils/authUtils').then(({hashPassword}) => hashPassword('admin')),
-        role: 'admin', // Use string literal that matches the enum
-        is_active: true,
-        created_at: new Date().toISOString()
+        role: 'admin' as 'admin', // Cast to literal type to match expected UserRole
+        individual_criterion: null,
+        group_criterion: null
       };
 
       const { error: createError } = await this.supabase
