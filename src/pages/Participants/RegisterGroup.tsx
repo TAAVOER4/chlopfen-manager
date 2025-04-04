@@ -21,7 +21,7 @@ const RegisterGroup = () => {
     resolver: zodResolver(groupSchema),
     defaultValues: {
       name: "",
-      category: "kids_juniors",
+      category: "kids_juniors", // Will be updated automatically based on participants
       size: "three",
     },
   });

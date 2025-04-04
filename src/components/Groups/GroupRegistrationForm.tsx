@@ -81,6 +81,8 @@ const GroupRegistrationForm: React.FC<GroupRegistrationFormProps> = ({
         tournamentId: activeTournament.id
       };
       
+      // Save the group to the database
+      console.log("Saving group:", newGroup);
       await DatabaseService.createGroup(newGroup);
       
       toast({
