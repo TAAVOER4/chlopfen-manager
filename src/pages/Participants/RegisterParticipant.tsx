@@ -9,16 +9,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { determineCategory, getCategoryDisplay } from '../../utils/categoryUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Participant } from '../../types';
-import { mockParticipants } from '../../data/mockData';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { DatabaseService } from '@/services/DatabaseService';
+import { Spinner } from '@/components/ui/spinner';
 
 const RegisterParticipant = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { activeTournament } = useTournament();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [participant, setParticipant] = useState<Partial<Participant>>({
     firstName: '',
@@ -49,18 +51,25 @@ const RegisterParticipant = () => {
     return getCategoryDisplay(category);
   };
 
-  // Check if a participant with similar details already exists
-  const findExistingParticipant = (): Participant | null => {
-    if (!participant.firstName || !participant.lastName) return null;
+  const checkParticipantExists = async (): Promise<boolean> => {
+    if (!participant.firstName || !participant.lastName || !participant.birthYear) return false;
     
-    return mockParticipants.find(
-      p => p.firstName.toLowerCase() === participant.firstName?.toLowerCase() && 
-           p.lastName.toLowerCase() === participant.lastName?.toLowerCase() &&
-           p.birthYear === participant.birthYear
-    ) || null;
+    try {
+      const allParticipants = await DatabaseService.getAllParticipants();
+      
+      return allParticipants.some(
+        p => p.firstName.toLowerCase() === participant.firstName?.toLowerCase() && 
+             p.lastName.toLowerCase() === participant.lastName?.toLowerCase() &&
+             p.birthYear === participant.birthYear &&
+             p.tournamentId === activeTournament?.id
+      );
+    } catch (error) {
+      console.error('Error checking if participant exists:', error);
+      return false;
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!activeTournament) {
@@ -82,61 +91,52 @@ const RegisterParticipant = () => {
     }
 
     // Check if participant already exists
-    const existingParticipant = findExistingParticipant();
+    const participantExists = await checkParticipantExists();
     
-    if (existingParticipant) {
-      // If participant exists but isn't assigned to current tournament, add the tournament reference
-      if (existingParticipant.tournamentId !== activeTournament.id) {
-        const index = mockParticipants.findIndex(p => p.id === existingParticipant.id);
-        if (index !== -1) {
-          mockParticipants[index] = {
-            ...existingParticipant,
-            tournamentId: activeTournament.id
-          };
-          
-          toast({
-            title: "Teilnehmer aktualisiert",
-            description: `${existingParticipant.firstName} ${existingParticipant.lastName} wurde dem Turnier ${activeTournament.name} hinzugefügt.`
-          });
-          
-          navigate('/participants');
-          return;
-        }
-      } else {
-        toast({
-          title: "Teilnehmer existiert bereits",
-          description: `${existingParticipant.firstName} ${existingParticipant.lastName} ist bereits für dieses Turnier registriert.`,
-          variant: "destructive"
-        });
-        return;
-      }
+    if (participantExists) {
+      toast({
+        title: "Teilnehmer existiert bereits",
+        description: `${participant.firstName} ${participant.lastName} ist bereits für dieses Turnier registriert.`,
+        variant: "destructive"
+      });
+      return;
     }
 
-    // Generate a unique ID for new participant
-    const newId = Math.max(...mockParticipants.map(p => p.id), 0) + 1;
-    
-    // Create the new participant with category and tournament reference
-    const category = determineCategory(participant.birthYear);
-    const newParticipant: Participant = {
-      id: newId,
-      firstName: participant.firstName,
-      lastName: participant.lastName,
-      location: participant.location,
-      birthYear: participant.birthYear,
-      category: category,
-      isGroupOnly: participant.isGroupOnly || false,
-      tournamentId: activeTournament.id
-    };
-    
-    // Add to mock data
-    mockParticipants.push(newParticipant);
-    
-    toast({
-      title: "Teilnehmer registriert",
-      description: `${participant.firstName} ${participant.lastName} wurde erfolgreich für ${activeTournament.name} registriert.`
-    });
-    
-    navigate('/participants');
+    setIsSubmitting(true);
+
+    try {
+      // Create the new participant with category and tournament reference
+      const category = determineCategory(participant.birthYear);
+      const newParticipant: Omit<Participant, 'id'> = {
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        location: participant.location,
+        birthYear: participant.birthYear,
+        category: category,
+        isGroupOnly: participant.isGroupOnly || false,
+        tournamentId: activeTournament.id,
+        groupIds: []
+      };
+      
+      // Save to database
+      await DatabaseService.createParticipant(newParticipant);
+      
+      toast({
+        title: "Teilnehmer registriert",
+        description: `${participant.firstName} ${participant.lastName} wurde erfolgreich für ${activeTournament.name} registriert.`
+      });
+      
+      navigate('/participants');
+    } catch (error) {
+      console.error('Error creating participant:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Speichern der Teilnehmerdaten ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -179,6 +179,7 @@ const RegisterParticipant = () => {
                   onChange={handleChange}
                   placeholder="Vorname"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -190,6 +191,7 @@ const RegisterParticipant = () => {
                   onChange={handleChange}
                   placeholder="Nachname"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -206,6 +208,7 @@ const RegisterParticipant = () => {
                   min="1900"
                   max={new Date().getFullYear()}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -225,6 +228,7 @@ const RegisterParticipant = () => {
                 onChange={handleChange}
                 placeholder="Wohnort"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -233,15 +237,25 @@ const RegisterParticipant = () => {
                 id="isGroupOnly" 
                 checked={participant.isGroupOnly || false}
                 onCheckedChange={handleCheckboxChange}
+                disabled={isSubmitting}
               />
               <Label htmlFor="isGroupOnly">Nur Gruppenteilnahme (keine Einzelwertung)</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" type="button" onClick={() => navigate('/participants')}>
+            <Button variant="outline" type="button" onClick={() => navigate('/participants')} disabled={isSubmitting}>
               Abbrechen
             </Button>
-            <Button type="submit" disabled={!activeTournament}>Teilnehmer speichern</Button>
+            <Button type="submit" disabled={!activeTournament || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner size="small" className="mr-2" />
+                  Speichern...
+                </>
+              ) : (
+                'Teilnehmer speichern'
+              )}
+            </Button>
           </CardFooter>
         </form>
       </Card>
