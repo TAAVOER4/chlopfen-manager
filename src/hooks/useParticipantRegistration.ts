@@ -6,12 +6,14 @@ import { useToast } from '@/hooks/use-toast';
 import { determineCategory } from '@/utils/categoryUtils';
 import { DatabaseService } from '@/services/DatabaseService';
 import { useTournament } from '@/contexts/TournamentContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useParticipantRegistration = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { activeTournament } = useTournament();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const [participant, setParticipant] = useState<Partial<Participant>>({
     firstName: '',
@@ -106,6 +108,9 @@ export const useParticipantRegistration = () => {
       
       // Save to database
       await DatabaseService.createParticipant(newParticipant);
+      
+      // Immediately invalidate the participants query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
       
       toast({
         title: "Teilnehmer registriert",

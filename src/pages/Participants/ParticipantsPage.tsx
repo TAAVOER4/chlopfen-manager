@@ -18,7 +18,7 @@ import { Group, Participant } from '@/types';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Spinner } from '@/components/ui/spinner';
 import NoActiveTournamentAlert from '@/components/Participants/NoActiveTournamentAlert';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 import DeleteParticipantDialog from '@/components/Participants/DeleteParticipantDialog';
 
@@ -29,6 +29,7 @@ const ParticipantsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
   
   // Fetch participants from the database
   const { 
@@ -39,7 +40,7 @@ const ParticipantsPage = () => {
   } = useQuery({
     queryKey: ['participants', activeTournament?.id],
     queryFn: DatabaseService.getAllParticipants,
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Set to 0 to always fetch fresh data
   });
   
   // Fetch groups from the database
@@ -50,7 +51,7 @@ const ParticipantsPage = () => {
   } = useQuery({
     queryKey: ['groups', activeTournament?.id],
     queryFn: DatabaseService.getAllGroups,
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Set to 0 to always fetch fresh data
   });
   
   // Filter participants by tournament
@@ -82,7 +83,9 @@ const ParticipantsPage = () => {
   };
   
   const handleParticipantDeleted = () => {
-    refetchParticipants();
+    // Force immediate data refresh
+    queryClient.invalidateQueries({ queryKey: ['participants'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
   };
   
   const getGroupsForParticipant = (participantId: number): Group[] => {

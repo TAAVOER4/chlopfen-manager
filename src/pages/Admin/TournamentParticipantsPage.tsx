@@ -24,13 +24,14 @@ import { Participant, Tournament } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Spinner } from '@/components/ui/spinner';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 
 const TournamentParticipantsPage = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const { toast } = useToast();
   const { activeTournament, setActiveTournament, tournaments } = useTournament();
+  const queryClient = useQueryClient();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +48,7 @@ const TournamentParticipantsPage = () => {
     queryKey: ['participants'],
     queryFn: DatabaseService.getAllParticipants,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Set to 0 to always fetch fresh data
   });
 
   // Get tournament data
@@ -105,8 +106,8 @@ const TournamentParticipantsPage = () => {
         description: `${selectedParticipants.length} Teilnehmer wurden dem Turnier ${tournament.name} zugewiesen.`,
       });
       
-      // Refresh participants data
-      await refetchParticipants();
+      // Immediately invalidate queries to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
       
       // Refresh active tournament if this is the active one
       if (activeTournament && tournament.id === activeTournament.id) {

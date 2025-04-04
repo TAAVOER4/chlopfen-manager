@@ -44,6 +44,7 @@ const DeleteParticipantDialog: React.FC<DeleteParticipantDialogProps> = ({
         description: `${participant.firstName} ${participant.lastName} wurde erfolgreich gelöscht.`
       });
       
+      // Close the dialog and trigger immediate refresh
       onOpenChange(false);
       onDeleted();
     } catch (error) {
