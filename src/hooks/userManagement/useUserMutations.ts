@@ -48,6 +48,9 @@ export const useUserMutations = (
         return;
       }
       
+      // Log user data before sending to API for debugging
+      console.log('Saving user with tournament IDs:', editingUser.tournamentIds);
+      
       let updatedUser: User;
       
       if (isNewUser) {
