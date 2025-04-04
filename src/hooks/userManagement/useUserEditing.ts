@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { UserService } from '@/services/UserService';
+import { UserService } from '@/services/user/UserService';
 
 export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
   const { toast } = useToast();
