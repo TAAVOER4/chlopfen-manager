@@ -5,18 +5,18 @@ import { BaseSupabaseService } from '@/services/BaseSupabaseService';
 
 // Criterion mapping for individual criteria
 const individualCriteriaOptions = [
-  { value: 'whip_control', label: 'Geisselführung' },
-  { value: 'posture', label: 'Haltung' },
-  { value: 'stance', label: 'Stand' },
-  { value: 'rhythm', label: 'Rhythmus' },
-  { value: 'whip_strikes', label: 'Schlagerfolge' }
+  { value: 'whipControl' as CriterionKey, label: 'Geisselführung' },
+  { value: 'posture' as CriterionKey, label: 'Haltung' },
+  { value: 'stance' as CriterionKey, label: 'Stand' },
+  { value: 'rhythm' as CriterionKey, label: 'Rhythmus' },
+  { value: 'whipStrikes' as CriterionKey, label: 'Schlagerfolge' }
 ];
 
 // Criterion mapping for group criteria
 const groupCriteriaOptions = [
-  { value: 'rhythm', label: 'Rhythmus' },
-  { value: 'tempo', label: 'Tempo' },
-  { value: 'whip_strikes', label: 'Schlagerfolge' }
+  { value: 'rhythm' as GroupCriterionKey, label: 'Rhythmus' },
+  { value: 'tempo' as GroupCriterionKey, label: 'Tempo' },
+  { value: 'whipStrikes' as GroupCriterionKey, label: 'Schlagerfolge' }
 ];
 
 export const useUserCriteriaData = () => {
