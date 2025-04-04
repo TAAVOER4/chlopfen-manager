@@ -6,8 +6,21 @@ export class StatisticsService extends BaseService {
     try {
       const { data, error } = await this.supabase
         .from('participants')
-        .select('category, count(*)')
-        .group('category');
+        .select('category')
+        .then(result => {
+          // Group by category manually
+          if (result.error) throw result.error;
+          
+          const categories: Record<string, number> = {};
+          result.data?.forEach(participant => {
+            categories[participant.category] = (categories[participant.category] || 0) + 1;
+          });
+          
+          return {
+            data: Object.entries(categories).map(([category, count]) => ({ category, count })),
+            error: null
+          };
+        });
         
       if (error) {
         console.error('Error fetching participant statistics:', error);
@@ -25,8 +38,21 @@ export class StatisticsService extends BaseService {
     try {
       const { data, error } = await this.supabase
         .from('groups')
-        .select('category, count(*)')
-        .group('category');
+        .select('category')
+        .then(result => {
+          // Group by category manually
+          if (result.error) throw result.error;
+          
+          const categories: Record<string, number> = {};
+          result.data?.forEach(group => {
+            categories[group.category] = (categories[group.category] || 0) + 1;
+          });
+          
+          return {
+            data: Object.entries(categories).map(([category, count]) => ({ category, count })),
+            error: null
+          };
+        });
         
       if (error) {
         console.error('Error fetching group statistics:', error);
@@ -67,5 +93,14 @@ export class StatisticsService extends BaseService {
       console.error('Error loading score statistics:', error);
       return [];
     }
+  }
+
+  // For compatibility with DatabaseService methods
+  static async getIndividualResults() {
+    return this.getScoreStatistics();
+  }
+
+  static async getGroupResults() {
+    return this.getGroupStatistics();
   }
 }
