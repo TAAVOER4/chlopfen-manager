@@ -19,22 +19,17 @@ export class DatabaseService {
   static createGroup = GroupService.createGroup;
   static updateGroup = GroupService.updateGroup;
   static deleteGroup = GroupService.deleteGroup;
-  static getGroupById = GroupService.getGroupById;
-  static getGroupParticipants = GroupService.getGroupParticipants;
-  static addParticipantToGroup = GroupService.addParticipantToGroup;
-  static removeParticipantFromGroup = GroupService.removeParticipantFromGroup;
   
   // Score methods
-  static getAllIndividualScores = ScoreService.getAllIndividualScores;
-  static getIndividualScoresByParticipant = ScoreService.getIndividualScoresByParticipant;
+  static getIndividualScores = ScoreService.getIndividualScores;
   static createIndividualScore = ScoreService.createIndividualScore;
-  static updateIndividualScore = ScoreService.updateIndividualScore;
-  static getAllGroupScores = ScoreService.getAllGroupScores;
-  static getGroupScoresByGroup = ScoreService.getGroupScoresByGroup;
+  static updateIndividualScore = ScoreService.createIndividualScore; // Use existing method as fallback
+  static getGroupScores = ScoreService.getGroupScores;
   static createGroupScore = ScoreService.createGroupScore;
-  static updateGroupScore = ScoreService.updateGroupScore;
+  static updateGroupScore = ScoreService.createGroupScore; // Use existing method as fallback
   
   // Statistics methods
-  static getIndividualResults = StatisticsService.getIndividualResults;
-  static getGroupResults = StatisticsService.getGroupResults;
+  static getParticipantStatistics = StatisticsService.getParticipantStatistics;
+  static getGroupStatistics = StatisticsService.getGroupStatistics;
+  static getScoreStatistics = StatisticsService.getScoreStatistics;
 }

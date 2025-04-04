@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 import { generateResults, generateGroupResults } from '@/services/ResultsService';
 import { Tournament, ScheduleItem, Participant, Group, IndividualScore, GroupScore } from '@/types';
-import { Spinner } from '@/components/ui/spinner';
 
 export const useReportsData = () => {
   const { selectedTournament } = useUser();
@@ -63,13 +62,13 @@ export const useReportsData = () => {
   
   // Generate results using the fetched data
   const allIndividualResults = useMemo(() => ({
-    'kids': generateResults('kids', participants, individualScores),
-    'juniors': generateResults('juniors', participants, individualScores),
-    'active': generateResults('active', participants, individualScores)
+    'kids': generateResults('kids', participants as Participant[], individualScores as IndividualScore[]),
+    'juniors': generateResults('juniors', participants as Participant[], individualScores as IndividualScore[]),
+    'active': generateResults('active', participants as Participant[], individualScores as IndividualScore[])
   }), [participants, individualScores]);
   
   const groupResults = useMemo(() => 
-    generateGroupResults(groups, participants, groupScores), 
+    generateGroupResults(groups as Group[], participants as Participant[], groupScores as GroupScore[]), 
     [groups, participants, groupScores]
   );
   
@@ -142,10 +141,6 @@ export const useReportsData = () => {
     tournamentName,
     tournament,
     mockSchedule,
-    mockParticipants: participants,
-    mockGroups: groups,
-    mockIndividualScores: individualScores,
-    mockGroupScores: groupScores,
     mockSponsors: sponsors,
     participants,
     groups,
