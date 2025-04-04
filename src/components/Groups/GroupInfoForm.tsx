@@ -33,6 +33,7 @@ const GroupInfoForm: React.FC<GroupInfoFormProps> = ({
   removeParticipant
 }) => {
   const size = form.watch('size');
+  const category = form.watch('category');
   
   return (
     <>
@@ -64,30 +65,16 @@ const GroupInfoForm: React.FC<GroupInfoFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kategorie</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wählen Sie eine Kategorie" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="kids_juniors">{getCategoryDisplay('kids_juniors')}</SelectItem>
-                    <SelectItem value="active">{getCategoryDisplay('active')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Category field (read-only) */}
+          <div className="space-y-2">
+            <FormLabel>Kategorie</FormLabel>
+            <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              {getCategoryDisplay(category as GroupCategory)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Wird automatisch basierend auf den Teilnehmern bestimmt
+            </p>
+          </div>
 
           <FormField
             control={form.control}

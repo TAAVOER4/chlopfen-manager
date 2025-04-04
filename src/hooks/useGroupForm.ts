@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { GroupFormValues } from '@/components/Groups/GroupInfoForm';
-import { Participant, Category, GroupCategory } from '../types';
+import { Participant, GroupCategory } from '../types';
 import { generateGroupName } from '../utils/groupUtils';
 import { useToast } from '@/hooks/use-toast';
-import { mapToGroupCategory } from '../utils/categoryUtils';
+import { determineGroupCategory } from '../utils/categoryUtils';
 import { useQuery } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 
@@ -34,12 +34,10 @@ export const useGroupForm = ({
   });
 
   // Get the current values from the form
-  const { category, size } = form.watch();
+  const { size } = form.watch();
 
-  // Update available participants when category changes
+  // Update available participants
   useEffect(() => {
-    setSelectedCategory(category as GroupCategory);
-    
     // If we have participants already selected, don't clear them when category changes
     if (initialParticipants.length === 0) {
       setSelectedParticipants([]); // Clear selected participants when category changes if not editing
@@ -48,7 +46,7 @@ export const useGroupForm = ({
     // Make all participants available, regardless of category
     // The category filtering will be handled in the AvailableParticipants component
     setAvailableParticipants(participants);
-  }, [category, participants, initialParticipants.length]);
+  }, [participants, initialParticipants.length]);
 
   // Auto-generate group name when selected participants change
   useEffect(() => {
@@ -61,17 +59,10 @@ export const useGroupForm = ({
   // Determine category based on participants
   useEffect(() => {
     if (selectedParticipants.length > 0) {
-      // Check if any participant is 'active'
-      const hasActiveParticipant = selectedParticipants.some(p => p.category === 'active');
-      
-      // If any participant is 'active', set category to 'active'
-      if (hasActiveParticipant) {
-        form.setValue('category', 'active');
-        setSelectedCategory('active');
-      } else {
-        form.setValue('category', 'kids_juniors');
-        setSelectedCategory('kids_juniors');
-      }
+      // Let categoryUtils determine the category
+      const category = determineGroupCategory(selectedParticipants);
+      form.setValue('category', category);
+      setSelectedCategory(category);
     }
   }, [selectedParticipants, form]);
 
