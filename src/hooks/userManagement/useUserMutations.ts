@@ -61,6 +61,8 @@ export const useUserMutations = (
         updatedUser = await SupabaseService.updateUser(editingUser);
       }
       
+      console.log('User saved successfully:', updatedUser);
+      
       setUsers(prevUsers => 
         isNewUser 
           ? [...prevUsers, updatedUser] 

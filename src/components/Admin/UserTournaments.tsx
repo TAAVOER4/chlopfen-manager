@@ -19,12 +19,14 @@ const UserTournaments: React.FC<UserTournamentsProps> = ({
     .filter(t => tournamentIds?.includes(t.id))
     .map(t => t.name);
 
+  // Admin and judge roles have access to all tournaments by default
   if (role === 'admin' || role === 'judge') {
     return (
       <span className="text-muted-foreground text-sm">Alle Turniere</span>
     );
   }
 
+  // Display assigned tournaments for readers and editors
   if (userTournaments.length > 0) {
     return (
       <div className="flex flex-wrap gap-1">
@@ -35,6 +37,7 @@ const UserTournaments: React.FC<UserTournamentsProps> = ({
     );
   }
 
+  // No tournaments assigned
   return (
     <span className="text-yellow-600 text-sm">Keine Turniere zugewiesen</span>
   );

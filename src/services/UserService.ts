@@ -1,6 +1,6 @@
 
 import { BaseSupabaseService } from './BaseSupabaseService';
-import { User } from '@/types';
+import { User, UserRole, CriterionKey, GroupCriterionKey } from '@/types';
 import { hashPassword } from '@/utils/authUtils';
 
 export class UserService extends BaseSupabaseService {
@@ -55,14 +55,14 @@ export class UserService extends BaseSupabaseService {
           : [];
           
         return {
-          id: user.id,
+          id: parseInt(user.id.toString(), 10), // Convert string ID to number
           name: user.name,
           username: user.username,
-          role: user.role,
+          role: user.role as UserRole,
           passwordHash: user.password_hash,
           assignedCriteria: {
-            individual: user.individual_criterion,
-            group: user.group_criterion
+            individual: user.individual_criterion as CriterionKey | undefined,
+            group: user.group_criterion as GroupCriterionKey | undefined
           },
           tournamentIds
         };
@@ -128,14 +128,14 @@ export class UserService extends BaseSupabaseService {
       
       // Return the user with the assigned tournaments
       return {
-        id: newUser.id,
+        id: parseInt(newUser.id.toString(), 10), // Convert string ID to number
         name: newUser.name,
         username: newUser.username,
-        role: newUser.role,
+        role: newUser.role as UserRole,
         passwordHash: newUser.password_hash,
         assignedCriteria: {
-          individual: newUser.individual_criterion,
-          group: newUser.group_criterion
+          individual: newUser.individual_criterion as CriterionKey | undefined,
+          group: newUser.group_criterion as GroupCriterionKey | undefined
         },
         tournamentIds: user.tournamentIds || []
       };
@@ -147,7 +147,10 @@ export class UserService extends BaseSupabaseService {
   
   static async updateUser(user: User): Promise<User> {
     try {
-      console.log('Updating user:', user.username);
+      console.log('Updating user:', user);
+      
+      // Convert user.id to string if it's a number
+      const userIdString = user.id.toString();
       
       // Update the user record
       const { data: updatedUser, error } = await this.supabase
@@ -159,7 +162,7 @@ export class UserService extends BaseSupabaseService {
           individual_criterion: user.assignedCriteria?.individual || null,
           group_criterion: user.assignedCriteria?.group || null
         })
-        .eq('username', user.username)
+        .eq('id', userIdString)
         .select()
         .single();
         
@@ -178,7 +181,7 @@ export class UserService extends BaseSupabaseService {
         const { error: passwordError } = await this.supabase
           .from('users')
           .update({ password_hash: hashedPassword })
-          .eq('username', user.username);
+          .eq('id', userIdString);
           
         if (passwordError) {
           console.error('Error updating password:', passwordError);
@@ -191,7 +194,7 @@ export class UserService extends BaseSupabaseService {
       const { error: deleteError } = await this.supabase
         .from('user_tournaments')
         .delete()
-        .eq('user_id', updatedUser.id);
+        .eq('user_id', userIdString);
         
       if (deleteError) {
         console.error('Error deleting tournament assignments:', deleteError);
@@ -201,7 +204,7 @@ export class UserService extends BaseSupabaseService {
       // Then, create new assignments if there are any
       if (user.tournamentIds && user.tournamentIds.length > 0) {
         const tournamentEntries = user.tournamentIds.map(tournamentId => ({
-          user_id: updatedUser.id,
+          user_id: userIdString,
           tournament_id: tournamentId
         }));
         
@@ -219,14 +222,14 @@ export class UserService extends BaseSupabaseService {
       
       // Return the updated user with the new tournament assignments
       return {
-        id: updatedUser.id,
+        id: parseInt(updatedUser.id.toString(), 10), // Convert string ID to number
         name: updatedUser.name,
         username: updatedUser.username,
-        role: updatedUser.role,
+        role: updatedUser.role as UserRole,
         passwordHash: updatedUser.password_hash,
         assignedCriteria: {
-          individual: updatedUser.individual_criterion,
-          group: updatedUser.group_criterion
+          individual: updatedUser.individual_criterion as CriterionKey | undefined,
+          group: updatedUser.group_criterion as GroupCriterionKey | undefined
         },
         tournamentIds: user.tournamentIds || []
       };
@@ -265,7 +268,7 @@ export class UserService extends BaseSupabaseService {
       const { error } = await this.supabase
         .from('users')
         .delete()
-        .eq('username', username);
+        .eq('id', user.id);
         
       if (error) {
         console.error('Error deleting user:', error);
@@ -279,12 +282,24 @@ export class UserService extends BaseSupabaseService {
   
   static async changePassword(username: string, newPassword: string): Promise<boolean> {
     try {
+      // Get the user ID first to ensure we're changing the password for the right user
+      const { data: user, error: userError } = await this.supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .single();
+        
+      if (userError || !user) {
+        console.error('Error getting user for password change:', userError);
+        return false;
+      }
+      
       const hashedPassword = hashPassword(newPassword);
       
       const { error } = await this.supabase
         .from('users')
         .update({ password_hash: hashedPassword })
-        .eq('username', username);
+        .eq('id', user.id);
         
       if (error) {
         console.error('Error changing password:', error);
@@ -304,7 +319,7 @@ export class UserService extends BaseSupabaseService {
         name: 'Administrator',
         username: 'admin',
         password_hash: hashPassword('admin'),
-        role: 'admin',
+        role: 'admin' as UserRole,
         individual_criterion: null,
         group_criterion: null
       };
