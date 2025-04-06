@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser, isLoading } = useUser();
+  const [hasCheckedAccess, setHasCheckedAccess] = useState(false);
 
   // Validate size parameter and check if user is authorized
   useEffect(() => {
@@ -35,9 +36,8 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
       });
     }
 
-    // Only check authorization after we've confirmed the user is not logged in
-    // This prevents the "not logged in" error when the auth state is still loading
-    if (!isLoading && !currentUser) {
+    // Check if user is logged in
+    if (!currentUser) {
       navigate('/judging');
       toast({
         title: "Fehler",
@@ -49,7 +49,7 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
 
     // Check if user has the right assignedCriteria for group judging
     // Skip this check for admin users
-    if (!isLoading && currentUser && currentUser.role !== 'admin') {
+    if (currentUser.role !== 'admin') {
       const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo'];
       if (!currentUser.assignedCriteria?.group || 
           !validGroupCriteria.includes(currentUser.assignedCriteria.group)) {
@@ -59,9 +59,15 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
           description: "Sie sind nicht berechtigt, Gruppen zu bewerten",
           variant: "destructive"
         });
+        return;
       }
     }
+
+    setHasCheckedAccess(true);
   }, [size, categoryParam, navigate, toast, currentUser, isLoading]);
 
-  return { isValidAccess: true };
+  return { 
+    isValidAccess: hasCheckedAccess && !isLoading && currentUser !== null,
+    isChecking: isLoading || !hasCheckedAccess
+  };
 };

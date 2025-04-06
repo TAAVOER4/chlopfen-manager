@@ -9,6 +9,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Group, GroupCriterionKey, GroupScore } from '../../types';
+import { Spinner } from '@/components/ui/spinner';
 
 interface GroupJudgingFormProps {
   currentGroup: Group;
@@ -18,6 +19,7 @@ interface GroupJudgingFormProps {
   canEditCriterion: (criterion: GroupCriterionKey) => boolean;
   currentGroupIndex: number;
   totalGroups: number;
+  isSaving?: boolean;
 }
 
 const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
@@ -27,7 +29,8 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
   handleSaveScore,
   canEditCriterion,
   currentGroupIndex,
-  totalGroups
+  totalGroups,
+  isSaving = false
 }) => {
   // All possible criteria
   const allCriteria = [
@@ -75,6 +78,7 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
                     criterion.key, 
                     e.target.value === '' ? 0 : Number(e.target.value)
                   )}
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -93,10 +97,18 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
         <Button 
           className="w-full" 
           onClick={handleSaveScore}
-          disabled={criteriaToShow.length === 0}
+          disabled={criteriaToShow.length === 0 || isSaving}
         >
-          <Save className="mr-2 h-4 w-4" /> 
-          {currentGroupIndex < totalGroups - 1 ? 'Speichern und weiter' : 'Speichern und beenden'}
+          {isSaving ? (
+            <>
+              <Spinner className="mr-2" size="sm" /> Speichern...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" /> 
+              {currentGroupIndex < totalGroups - 1 ? 'Speichern und weiter' : 'Speichern und beenden'}
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

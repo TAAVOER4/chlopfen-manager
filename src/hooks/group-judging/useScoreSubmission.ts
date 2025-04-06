@@ -17,14 +17,16 @@ export const useScoreSubmission = (
   const { toast } = useToast();
   const { currentUser, selectedTournament } = useUser();
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
-      console.log('Submitting score to mutation:', score);
+      console.log('Submitting score to database:', score);
       return await ScoreService.createGroupScore(score);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Score saved successfully:', data);
       const currentGroup = groups[currentGroupIndex];
       if (!currentGroup) return;
       
@@ -39,27 +41,36 @@ export const useScoreSubmission = (
       } else {
         navigate('/judging');
       }
+      
+      setIsSaving(false);
     },
     onError: (error) => {
       handleError(error, 'Fehler beim Speichern der Bewertung');
+      setIsSaving(false);
     }
   });
 
   const handleSaveScore = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
     if (!groups.length) {
       handleError(new Error("Keine Gruppen gefunden"), "Bewertung Validierung");
+      setIsSaving(false);
       return;
     }
     
     const currentGroup = groups[currentGroupIndex];
     if (!currentGroup || !currentUser?.id) {
       handleError(new Error("Fehlende Gruppen- oder Benutzerinformationen"), "Bewertung Validierung");
+      setIsSaving(false);
       return;
     }
     
     const currentScore = scores[currentGroup.id];
     if (!currentScore) {
       handleError(new Error("Keine Bewertungsdaten für diese Gruppe gefunden"), "Bewertung Validierung");
+      setIsSaving(false);
       return;
     }
     
@@ -75,6 +86,7 @@ export const useScoreSubmission = (
         description: "Bitte geben Sie Bewertungen für alle Ihnen zugewiesenen Kriterien ein.",
         variant: "destructive"
       });
+      setIsSaving(false);
       return;
     }
     
@@ -82,6 +94,7 @@ export const useScoreSubmission = (
     const tournamentId = selectedTournament?.id || currentGroup.tournamentId;
     if (!tournamentId) {
       handleError(new Error("Kein Turnier ausgewählt"), "Bewertung Validierung");
+      setIsSaving(false);
       return;
     }
 
@@ -105,6 +118,7 @@ export const useScoreSubmission = (
   return {
     currentGroupIndex,
     setCurrentGroupIndex,
-    handleSaveScore
+    handleSaveScore,
+    isSaving
   };
 };

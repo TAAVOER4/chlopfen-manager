@@ -10,17 +10,21 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   const { errors, hasErrors, handleError, clearError, clearAllErrors } = useJudgingErrors();
   
   // Check if user has access to judging
-  useJudgingAccess(size, categoryParam);
+  const { isValidAccess, isChecking } = useJudgingAccess(size, categoryParam);
   
   // Load groups data
-  const { groups, isLoading } = useGroupsData(size, categoryParam);
+  const { groups, isLoading, refetchGroups } = useGroupsData(size, categoryParam);
   
   // Setup scoring logic
   const { scores, canEditCriterion, handleScoreChange } = useGroupScores(groups);
   
   // Setup submission logic
-  const { currentGroupIndex, setCurrentGroupIndex, handleSaveScore } = 
-    useScoreSubmission(groups, scores, canEditCriterion, handleError);
+  const { 
+    currentGroupIndex, 
+    setCurrentGroupIndex, 
+    handleSaveScore,
+    isSaving
+  } = useScoreSubmission(groups, scores, canEditCriterion, handleError);
 
   return {
     groups,
@@ -34,6 +38,9 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     errors,
     hasErrors,
     clearError,
-    clearAllErrors
+    clearAllErrors,
+    refetchGroups,
+    isSaving,
+    isChecking
   };
 };

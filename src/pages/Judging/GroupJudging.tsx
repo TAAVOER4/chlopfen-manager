@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { GroupCategory, GroupSize } from '../../types';
 import { getCategoryDisplay } from '@/utils/categoryUtils';
@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { Spinner } from '@/components/ui/spinner';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
@@ -31,7 +32,9 @@ const GroupJudging: React.FC = () => {
     isLoading,
     errors,
     hasErrors,
-    clearError
+    clearError,
+    isSaving,
+    isChecking
   } = useGroupJudging(size, categoryParam);
 
   // Navigate back to judging page with group tab selected
@@ -42,7 +45,7 @@ const GroupJudging: React.FC = () => {
   };
 
   // Display loading state - show while either user data or groups are loading
-  if (isUserLoading || isLoading) {
+  if (isUserLoading || isLoading || isChecking) {
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-6">
@@ -51,7 +54,10 @@ const GroupJudging: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="col-span-3">
-            <Skeleton className="h-[400px] w-full" />
+            <div className="flex flex-col items-center justify-center h-[400px] bg-muted rounded-lg">
+              <Spinner size="lg" />
+              <p className="mt-4 text-muted-foreground">Daten werden geladen...</p>
+            </div>
           </div>
           <div className="col-span-1">
             <Skeleton className="h-[200px] w-full" />
@@ -120,6 +126,7 @@ const GroupJudging: React.FC = () => {
             canEditCriterion={canEditCriterion}
             currentGroupIndex={currentGroupIndex}
             totalGroups={groups.length}
+            isSaving={isSaving}
           />
         </div>
         
