@@ -1,3 +1,4 @@
+
 import { BaseService } from './BaseService';
 import { IndividualScore, GroupScore } from '@/types';
 
@@ -119,14 +120,8 @@ export class ScoreService extends BaseService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Handle the judgeId appropriately based on its type
-      // If it's a string that can be parsed as a number, do so
-      // Otherwise, use it as is (the database expects a UUID as string)
-      let judgeId = score.judgeId;
-      if (typeof judgeId === 'string' && !isNaN(Number(judgeId))) {
-        // If it's a numeric string, convert to number for GroupScore type compatibility
-        judgeId = parseInt(judgeId, 10);
-      }
+      // Ensure judgeId is a string for UUID compatibility
+      const judgeId = score.judgeId.toString();
       
       if (!judgeId) {
         throw new Error('Judge ID is required');

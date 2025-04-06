@@ -18,6 +18,7 @@ export interface Participant {
   groupIds?: number[];
   isGroupOnly?: boolean; // New flag to indicate participant is only in groups, not individual competition
   tournamentId?: number; // Reference to which tournament this participant belongs to
+  displayOrder?: number; // New field for ordering participants in the UI
 }
 
 export interface Group {
@@ -27,11 +28,13 @@ export interface Group {
   category: GroupCategory; // Changed from Category to GroupCategory
   participantIds: number[];
   tournamentId?: number; // Reference to which tournament this group belongs to
+  displayOrder?: number; // New field for ordering groups in the UI
 }
 
 export interface IndividualScore {
+  id?: number;
   participantId: number;
-  judgeId: number;
+  judgeId: string; // Changed from number to string to match UUID in database
   round: 1 | 2;
   whipStrikes: number; // Now allows decimal values like 9.1
   rhythm: number;
@@ -42,8 +45,9 @@ export interface IndividualScore {
 }
 
 export interface GroupScore {
+  id?: number;
   groupId: number;
-  judgeId: number;
+  judgeId: string; // Changed from number to string to match UUID in database
   whipStrikes: number;
   rhythm: number;
   tempo: number;
