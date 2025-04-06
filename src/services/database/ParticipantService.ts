@@ -1,4 +1,3 @@
-
 import { BaseService } from './BaseService';
 import { Participant } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -8,7 +7,8 @@ export class ParticipantService extends BaseService {
     try {
       const { data, error } = await supabase
         .from('participants')
-        .select('*');
+        .select('*')
+        .order('display_order', { ascending: true, nullsLast: true });
         
       if (error) throw error;
       
@@ -24,6 +24,7 @@ export class ParticipantService extends BaseService {
         category: participant.category,
         isGroupOnly: participant.is_group_only || false,
         tournamentId: participant.tournament_id,
+        displayOrder: participant.display_order,
         groupIds: [] // Will be populated later
       }));
       
@@ -142,7 +143,6 @@ export class ParticipantService extends BaseService {
     }
   }
 
-  // Update participant tournament assignments
   static async updateParticipantTournament(participantId: number, tournamentId: number | null) {
     try {
       const { error } = await supabase
@@ -158,8 +158,7 @@ export class ParticipantService extends BaseService {
       throw error;
     }
   }
-  
-  // Bulk update participant tournament assignments
+
   static async bulkUpdateParticipantTournaments(participantIds: number[], tournamentId: number | null) {
     try {
       if (participantIds.length === 0) return true;
@@ -174,6 +173,45 @@ export class ParticipantService extends BaseService {
       return true;
     } catch (error) {
       console.error('Error bulk updating participant tournaments:', error);
+      throw error;
+    }
+  }
+
+  static async updateParticipantDisplayOrder(participantId: number, displayOrder: number) {
+    try {
+      const { error } = await supabase
+        .from('participants')
+        .update({ display_order: displayOrder })
+        .eq('id', participantId);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating participant display order:', error);
+      throw error;
+    }
+  }
+
+  static async bulkUpdateParticipantDisplayOrder(participantUpdates: { id: number, displayOrder: number }[]) {
+    try {
+      if (participantUpdates.length === 0) return true;
+      
+      // Create an array of updates for the database
+      const updates = participantUpdates.map(update => ({
+        id: update.id,
+        display_order: update.displayOrder
+      }));
+      
+      const { error } = await supabase
+        .from('participants')
+        .upsert(updates, { onConflict: 'id' });
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error bulk updating participant display order:', error);
       throw error;
     }
   }

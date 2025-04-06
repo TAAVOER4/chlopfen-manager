@@ -58,6 +58,7 @@ const JudgingPage: React.FC = () => {
     if (participants.length > 0) {
       const individualParticipants = participants.filter(p => !p.isGroupOnly);
       
+      // Group participants by category
       const categorizedParticipants = individualParticipants.reduce(
         (acc, participant) => {
           if (!acc[participant.category]) {
@@ -68,6 +69,21 @@ const JudgingPage: React.FC = () => {
         },
         {} as Record<string, typeof participants>
       );
+      
+      // Sort participants by displayOrder if available
+      Object.keys(categorizedParticipants).forEach(category => {
+        categorizedParticipants[category].sort((a, b) => {
+          // If both have displayOrder, sort by it
+          if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+            return a.displayOrder - b.displayOrder;
+          }
+          // If only one has displayOrder, prioritize it
+          if (a.displayOrder !== undefined) return -1;
+          if (b.displayOrder !== undefined) return 1;
+          // Default to id sort
+          return a.id - b.id;
+        });
+      });
       
       setParticipantsByCategory(categorizedParticipants);
     }

@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { Group, GroupSize, GroupCategory } from '../types';
 import { reorderGroups } from '@/utils/scoreUtils';
 import { useToast } from '@/hooks/use-toast';
+import { DatabaseService } from '@/services/DatabaseService';
 
 export const useGroupReordering = (
   groupsBySizeAndCategory: Record<GroupSize, Record<GroupCategory, Group[]>>,
@@ -60,7 +60,10 @@ export const useGroupReordering = (
           }
         }));
 
-        // Save the reordered groups to session storage
+        // Save the reordered groups to the database
+        saveGroupOrderToDatabase(updatedGroups);
+
+        // Keep the session storage for backward compatibility
         sessionStorage.setItem(
           `reorderedGroups-${size}-${category}`, 
           JSON.stringify(updatedGroups)
@@ -73,6 +76,11 @@ export const useGroupReordering = (
       }
     } catch (error) {
       console.error("Error during drag and drop:", error);
+      toast({
+        title: "Fehler",
+        description: "Bei der Neuordnung ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
     }
 
     setDraggingSize(null);
@@ -105,7 +113,10 @@ export const useGroupReordering = (
       }
     }));
 
-    // Save the reordered groups to session storage
+    // Save the reordered groups to the database
+    saveGroupOrderToDatabase(updatedGroups);
+
+    // Keep the session storage for backward compatibility
     sessionStorage.setItem(
       `reorderedGroups-${size}-${category}`, 
       JSON.stringify(updatedGroups)
@@ -115,6 +126,28 @@ export const useGroupReordering = (
       title: "Reihenfolge aktualisiert",
       description: "Die Reihenfolge der Gruppen wurde erfolgreich geändert."
     });
+  };
+
+  // Helper function to save the group order to the database
+  const saveGroupOrderToDatabase = async (groups: Group[]) => {
+    try {
+      // Create an array of updates with id and new display order
+      const updates = groups.map((group, index) => ({
+        id: group.id,
+        displayOrder: index + 1
+      }));
+
+      // Bulk update the display orders
+      await DatabaseService.bulkUpdateGroupDisplayOrder(updates);
+      console.log('Group display order saved to database');
+    } catch (error) {
+      console.error('Error saving group order to database:', error);
+      toast({
+        title: "Speicherfehler",
+        description: "Die Reihenfolge konnte nicht in der Datenbank gespeichert werden.",
+        variant: "destructive"
+      });
+    }
   };
 
   const openReorderDialog = (size: GroupSize, category: GroupCategory) => {

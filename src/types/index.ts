@@ -1,4 +1,3 @@
-
 export type Category = 'kids' | 'juniors' | 'active';
 export type GroupCategory = 'kids_juniors' | 'active';
 export type AllCategory = 'all'; // New type for "all" categories
@@ -16,9 +15,9 @@ export interface Participant {
   birthYear: number;
   category: Category;
   groupIds?: number[];
-  isGroupOnly?: boolean; // New flag to indicate participant is only in groups, not individual competition
+  isGroupOnly?: boolean; // Flag to indicate participant is only in groups, not individual competition
   tournamentId?: number; // Reference to which tournament this participant belongs to
-  displayOrder?: number; // New field for ordering participants in the UI
+  displayOrder?: number; // Field for ordering participants in the UI
 }
 
 export interface Group {
@@ -28,7 +27,7 @@ export interface Group {
   category: GroupCategory; // Changed from Category to GroupCategory
   participantIds: number[];
   tournamentId?: number; // Reference to which tournament this group belongs to
-  displayOrder?: number; // New field for ordering groups in the UI
+  displayOrder?: number; // Field for ordering groups in the UI
 }
 
 export interface IndividualScore {

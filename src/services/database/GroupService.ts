@@ -1,4 +1,3 @@
-
 import { BaseService } from './BaseService';
 import { Group } from '@/types';
 import { supabase } from '@/lib/supabase'; // Direct import as fallback
@@ -9,7 +8,8 @@ export class GroupService extends BaseService {
       console.log("Getting all groups...");
       const { data, error } = await supabase
         .from('groups')
-        .select('*');
+        .select('*')
+        .order('display_order', { ascending: true, nullsLast: true });
         
       if (error) throw error;
       
@@ -22,6 +22,7 @@ export class GroupService extends BaseService {
         category: group.category,
         size: group.size,
         tournamentId: group.tournament_id,
+        displayOrder: group.display_order,
         participantIds: [] as number[]
       }));
       
@@ -190,6 +191,57 @@ export class GroupService extends BaseService {
       return true;
     } catch (error) {
       console.error('Error deleting group:', error);
+      throw error;
+    }
+  }
+
+  static async updateGroupDisplayOrder(groupId: number, displayOrder: number) {
+    try {
+      console.log(`Updating display order for group ${groupId} to ${displayOrder}`);
+      
+      const { error } = await supabase
+        .from('groups')
+        .update({ display_order: displayOrder })
+        .eq('id', groupId);
+        
+      if (error) {
+        console.error("Error updating group display order:", error);
+        throw error;
+      }
+      
+      console.log("Group display order updated successfully");
+      return true;
+    } catch (error) {
+      console.error('Error updating group display order:', error);
+      throw error;
+    }
+  }
+
+  static async bulkUpdateGroupDisplayOrder(groupUpdates: { id: number, displayOrder: number }[]) {
+    try {
+      if (groupUpdates.length === 0) return true;
+      
+      console.log("Bulk updating group display orders:", groupUpdates);
+      
+      // Create an array of updates for the database
+      const updates = groupUpdates.map(update => ({
+        id: update.id,
+        display_order: update.displayOrder
+      }));
+      
+      const { error } = await supabase
+        .from('groups')
+        .upsert(updates, { onConflict: 'id' });
+        
+      if (error) {
+        console.error("Error bulk updating group display orders:", error);
+        throw error;
+      }
+      
+      console.log("Bulk update of group display orders completed successfully");
+      return true;
+    } catch (error) {
+      console.error('Error bulk updating group display orders:', error);
       throw error;
     }
   }

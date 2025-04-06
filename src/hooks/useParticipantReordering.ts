@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Category, Participant } from '../types';
 import { reorderParticipants } from '@/utils/scoreUtils';
 import { useToast } from '@/hooks/use-toast';
+import { DatabaseService } from '@/services/DatabaseService';
 
 export const useParticipantReordering = (participantsByCategory: Record<string, Participant[]>, setParticipantsByCategory: React.Dispatch<React.SetStateAction<Record<string, Participant[]>>>) => {
   const [draggingCategory, setDraggingCategory] = useState<Category | null>(null);
@@ -51,6 +52,9 @@ export const useParticipantReordering = (participantsByCategory: Record<string, 
           [category]: updatedParticipants
         }));
 
+        // Save the reordered participants to the database
+        saveParticipantOrderToDatabase(updatedParticipants);
+
         toast({
           title: "Reihenfolge aktualisiert",
           description: "Die Reihenfolge der Teilnehmer wurde erfolgreich geändert."
@@ -58,6 +62,11 @@ export const useParticipantReordering = (participantsByCategory: Record<string, 
       }
     } catch (error) {
       console.error("Error during drag and drop:", error);
+      toast({
+        title: "Fehler",
+        description: "Bei der Neuordnung ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
     }
 
     setDraggingCategory(null);
@@ -86,10 +95,35 @@ export const useParticipantReordering = (participantsByCategory: Record<string, 
       [category]: updatedParticipants
     }));
 
+    // Save the reordered participants to the database
+    saveParticipantOrderToDatabase(updatedParticipants);
+
     toast({
       title: "Reihenfolge aktualisiert",
       description: "Die Reihenfolge der Teilnehmer wurde erfolgreich geändert."
     });
+  };
+
+  // Helper function to save the participant order to the database
+  const saveParticipantOrderToDatabase = async (participants: Participant[]) => {
+    try {
+      // Create an array of updates with id and new display order
+      const updates = participants.map((participant, index) => ({
+        id: participant.id,
+        displayOrder: index + 1
+      }));
+
+      // Bulk update the display orders
+      await DatabaseService.bulkUpdateParticipantDisplayOrder(updates);
+      console.log('Participant display order saved to database');
+    } catch (error) {
+      console.error('Error saving participant order to database:', error);
+      toast({
+        title: "Speicherfehler",
+        description: "Die Reihenfolge konnte nicht in der Datenbank gespeichert werden.",
+        variant: "destructive"
+      });
+    }
   };
 
   const openReorderDialog = (category: Category) => {

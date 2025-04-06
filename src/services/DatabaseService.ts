@@ -13,12 +13,16 @@ export class DatabaseService {
   static deleteParticipant = ParticipantService.deleteParticipant;
   static updateParticipantTournament = ParticipantService.updateParticipantTournament;
   static bulkUpdateParticipantTournaments = ParticipantService.bulkUpdateParticipantTournaments;
+  static updateParticipantDisplayOrder = ParticipantService.updateParticipantDisplayOrder;
+  static bulkUpdateParticipantDisplayOrder = ParticipantService.bulkUpdateParticipantDisplayOrder;
 
   // Group methods
   static getAllGroups = GroupService.getAllGroups;
   static createGroup = GroupService.createGroup;
   static updateGroup = GroupService.updateGroup;
   static deleteGroup = GroupService.deleteGroup;
+  static updateGroupDisplayOrder = GroupService.updateGroupDisplayOrder;
+  static bulkUpdateGroupDisplayOrder = GroupService.bulkUpdateGroupDisplayOrder;
   
   // Score methods
   static getIndividualScores = ScoreService.getIndividualScores;

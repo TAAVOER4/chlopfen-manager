@@ -97,6 +97,7 @@ export type Database = {
       groups: {
         Row: {
           category: Database["public"]["Enums"]["group_category"]
+          display_order: number | null
           id: number
           name: string
           size: Database["public"]["Enums"]["group_size"]
@@ -104,6 +105,7 @@ export type Database = {
         }
         Insert: {
           category: Database["public"]["Enums"]["group_category"]
+          display_order?: number | null
           id?: number
           name: string
           size: Database["public"]["Enums"]["group_size"]
@@ -111,6 +113,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["group_category"]
+          display_order?: number | null
           id?: number
           name?: string
           size?: Database["public"]["Enums"]["group_size"]
@@ -191,6 +194,7 @@ export type Database = {
         Row: {
           birth_year: number
           category: Database["public"]["Enums"]["participant_category"]
+          display_order: number | null
           first_name: string
           id: number
           is_group_only: boolean | null
@@ -201,6 +205,7 @@ export type Database = {
         Insert: {
           birth_year: number
           category: Database["public"]["Enums"]["participant_category"]
+          display_order?: number | null
           first_name: string
           id?: number
           is_group_only?: boolean | null
@@ -211,6 +216,7 @@ export type Database = {
         Update: {
           birth_year?: number
           category?: Database["public"]["Enums"]["participant_category"]
+          display_order?: number | null
           first_name?: string
           id?: number
           is_group_only?: boolean | null

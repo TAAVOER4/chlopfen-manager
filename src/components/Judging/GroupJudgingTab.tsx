@@ -22,7 +22,7 @@ const GroupJudgingTab = () => {
     four: { kids_juniors: [], active: [] }
   });
   
-  // Load real data from the database
+  // Load groups from the database
   useEffect(() => {
     const loadGroups = async () => {
       setLoading(true);
@@ -41,50 +41,29 @@ const GroupJudgingTab = () => {
           four: { kids_juniors: [], active: [] }
         };
         
-        // First try to load from session storage
-        const sizes: GroupSize[] = ['three', 'four'];
-        const categories: GroupCategory[] = ['kids_juniors', 'active'];
-        
-        let hasLoadedFromStorage = false;
-        
-        sizes.forEach(size => {
-          categories.forEach(category => {
-            const storageKey = `reorderedGroups-${size}-${category}`;
-            const storedGroups = sessionStorage.getItem(storageKey);
-            
-            if (storedGroups) {
-              try {
-                const parsedGroups: Group[] = JSON.parse(storedGroups);
-                // Match with actual database groups
-                const matchedGroups = parsedGroups
-                  .map(storedGroup => tournamentGroups.find(g => g.id === storedGroup.id))
-                  .filter(Boolean) as Group[];
-                
-                initialGroups[size][category] = matchedGroups;
-                hasLoadedFromStorage = true;
-              } catch (error) {
-                console.error(`Error parsing stored groups for ${size}-${category}:`, error);
-              }
-            }
-          });
+        // Organize groups by size and category
+        tournamentGroups.forEach(group => {
+          initialGroups[group.size][group.category].push(group);
         });
         
-        // If nothing was loaded from storage, organize by group properties
-        if (!hasLoadedFromStorage) {
-          tournamentGroups.forEach(group => {
-            initialGroups[group.size][group.category].push(group);
+        // Sort groups by displayOrder if available
+        Object.keys(initialGroups).forEach((size) => {
+          const sizeKey = size as GroupSize;
+          Object.keys(initialGroups[sizeKey]).forEach((category) => {
+            const categoryKey = category as GroupCategory;
+            initialGroups[sizeKey][categoryKey].sort((a, b) => {
+              // If both have displayOrder, sort by it
+              if (a.displayOrder && b.displayOrder) {
+                return a.displayOrder - b.displayOrder;
+              }
+              // If only one has displayOrder, prioritize it
+              if (a.displayOrder) return -1;
+              if (b.displayOrder) return 1;
+              // Default to id sort
+              return a.id - b.id;
+            });
           });
-        } else {
-          // Find any groups that might not be in any category yet
-          tournamentGroups.forEach(group => {
-            const alreadyInCategory = initialGroups[group.size][group.category]
-              .some(g => g.id === group.id);
-              
-            if (!alreadyInCategory) {
-              initialGroups[group.size][group.category].push(group);
-            }
-          });
-        }
+        });
         
         setGroupsBySizeAndCategory(initialGroups);
       } catch (error) {
@@ -116,25 +95,6 @@ const GroupJudgingTab = () => {
     openReorderDialog,
     closeReorderDialog,
   } = useGroupReordering(groupsBySizeAndCategory, setGroupsBySizeAndCategory);
-
-  // Store reordered groups in session storage whenever they change
-  useEffect(() => {
-    Object.keys(groupsBySizeAndCategory).forEach((size) => {
-      const sizeKey = size as GroupSize;
-      Object.keys(groupsBySizeAndCategory[sizeKey]).forEach((category) => {
-        const categoryKey = category as GroupCategory;
-        const groups = groupsBySizeAndCategory[sizeKey][categoryKey];
-        
-        // Only store if there are groups in this category
-        if (groups.length > 0) {
-          sessionStorage.setItem(
-            `reorderedGroups-${sizeKey}-${categoryKey}`, 
-            JSON.stringify(groups)
-          );
-        }
-      });
-    });
-  }, [groupsBySizeAndCategory]);
 
   // Create an array of card configurations based on the requested layout
   const cardConfigs = [
