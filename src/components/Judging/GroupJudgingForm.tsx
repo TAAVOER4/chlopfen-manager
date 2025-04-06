@@ -29,8 +29,8 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
   currentGroupIndex,
   totalGroups
 }) => {
-  // Criterions that the current judge is authorized to see and edit
-  const criteriaToShow = [
+  // All possible criteria
+  const allCriteria = [
     { key: 'whipStrikes' as GroupCriterionKey, 
       title: '1. Schläge (Note 1-10)', 
       label: 'Schläge Bewertung', 
@@ -43,7 +43,10 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
       title: '3. Takt (Note 1-10)', 
       label: 'Takt Bewertung', 
       description: 'Gleiche Taktgeschwindigkeit vom Anfang bis zum Schluss' }
-  ].filter(criterion => canEditCriterion(criterion.key));
+  ];
+  
+  // Filter to only show criteria that the current judge is authorized to see and edit
+  const criteriaToShow = allCriteria.filter(criterion => canEditCriterion(criterion.key));
 
   return (
     <Card className="mb-6">
