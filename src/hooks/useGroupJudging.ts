@@ -11,7 +11,7 @@ import { useMutation } from '@tanstack/react-query';
 export const useGroupJudging = (size: string | undefined, categoryParam: string | null) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentUser } = useUser();
+  const { currentUser, selectedTournament } = useUser();
   
   // State for groups and scores
   const [groups, setGroups] = useState<Group[]>([]);
@@ -22,6 +22,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
     mutationFn: (score: Omit<GroupScore, 'id'>) => {
+      console.log('Submitting score to mutation:', score);
       return ScoreService.createGroupScore(score);
     },
     onSuccess: () => {
@@ -155,7 +156,8 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
             whipStrikes: 0,
             rhythm: 0,
             tempo: 0,
-            time: true
+            time: true,
+            tournamentId: selectedTournament?.id || group.tournamentId
           };
         });
         setScores(initialScores);
@@ -173,7 +175,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     };
     
     fetchGroups();
-  }, [size, categoryParam, currentUser, toast]);
+  }, [size, categoryParam, currentUser, toast, selectedTournament]);
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
@@ -212,8 +214,10 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
       rhythm: currentScore.rhythm || 0,
       tempo: currentScore.tempo || 0,
       time: currentScore.time !== undefined ? currentScore.time : true,
-      tournamentId: currentGroup.tournamentId
+      tournamentId: selectedTournament?.id || currentGroup.tournamentId
     };
+    
+    console.log('Saving score data:', scoreData);
     
     // Save score to database
     saveScoreMutation.mutate(scoreData);

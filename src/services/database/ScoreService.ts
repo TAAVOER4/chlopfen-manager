@@ -113,6 +113,13 @@ export class ScoreService extends BaseService {
   
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
+      console.log('Saving group score with data:', score);
+      
+      // Ensure tournamentId is a number before sending to database
+      const tournamentId = typeof score.tournamentId === 'string' 
+        ? parseInt(score.tournamentId, 10) 
+        : score.tournamentId;
+        
       const { data, error } = await this.supabase
         .from('group_scores')
         .insert([{
@@ -122,7 +129,7 @@ export class ScoreService extends BaseService {
           rhythm: score.rhythm,
           tempo: score.tempo,
           time: score.time,
-          tournament_id: score.tournamentId
+          tournament_id: tournamentId
         }])
         .select()
         .single();
