@@ -1,3 +1,4 @@
+
 import { BaseService } from './BaseService';
 import { Group } from '@/types';
 import { supabase } from '@/lib/supabase'; // Direct import as fallback
@@ -223,15 +224,36 @@ export class GroupService extends BaseService {
       
       console.log("Bulk updating group display orders:", groupUpdates);
       
-      // Create an array of updates for the database
-      const updates = groupUpdates.map(update => ({
-        id: update.id,
-        display_order: update.displayOrder
-      }));
+      // First, fetch the current data for these groups to ensure we have all required fields
+      const groupIds = groupUpdates.map(update => update.id);
+      const { data: existingGroups, error: fetchError } = await supabase
+        .from('groups')
+        .select('*')
+        .in('id', groupIds);
+        
+      if (fetchError) {
+        console.error("Error fetching existing groups for update:", fetchError);
+        throw fetchError;
+      }
       
+      if (!existingGroups || existingGroups.length === 0) {
+        console.error("No existing groups found for update");
+        throw new Error("No existing groups found for update");
+      }
+      
+      // Create an array of updates that preserves all existing data and only updates the display_order
+      const updates = existingGroups.map(group => {
+        const update = groupUpdates.find(u => u.id === group.id);
+        return {
+          ...group, // Keep all existing data
+          display_order: update ? update.displayOrder : group.display_order
+        };
+      });
+      
+      // Perform the upsert
       const { error } = await supabase
         .from('groups')
-        .upsert(updates, { onConflict: 'id' });
+        .upsert(updates);
         
       if (error) {
         console.error("Error bulk updating group display orders:", error);
