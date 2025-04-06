@@ -29,7 +29,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     }
 
     // Validate category parameter
-    if (!['kids_juniors', 'active'].includes(categoryParam || '')) {
+    if (categoryParam && !['kids_juniors', 'active'].includes(categoryParam)) {
       toast({
         title: "Hinweis",
         description: "Keine Kategorie ausgewählt, alle Kategorien werden angezeigt"
