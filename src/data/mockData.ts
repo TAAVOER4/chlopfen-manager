@@ -637,7 +637,7 @@ export const mockIndividualScores: IndividualScore[] = [
   // Bestehende Scores
   {
     participantId: 1,
-    judgeId: 1,
+    judgeId: "1", // Changed from number to string
     round: 1,
     whipStrikes: 8,
     rhythm: 7,
@@ -647,7 +647,7 @@ export const mockIndividualScores: IndividualScore[] = [
   },
   {
     participantId: 1,
-    judgeId: 2,
+    judgeId: "2", // Changed from number to string
     round: 1,
     whipStrikes: 7,
     rhythm: 8,
@@ -659,7 +659,7 @@ export const mockIndividualScores: IndividualScore[] = [
   // Einige Beispiel-Scores für neue Teilnehmer
   {
     participantId: 7,
-    judgeId: 1,
+    judgeId: "1", // Changed from number to string
     round: 1,
     whipStrikes: 9,
     rhythm: 8,
@@ -669,7 +669,7 @@ export const mockIndividualScores: IndividualScore[] = [
   },
   {
     participantId: 22,
-    judgeId: 2,
+    judgeId: "2", // Changed from number to string
     round: 1,
     whipStrikes: 8,
     rhythm: 9,
@@ -679,7 +679,7 @@ export const mockIndividualScores: IndividualScore[] = [
   },
   {
     participantId: 37,
-    judgeId: 3,
+    judgeId: "3", // Changed from number to string
     round: 1,
     whipStrikes: 9,
     rhythm: 9,
@@ -694,7 +694,7 @@ export const mockGroupScores: GroupScore[] = [
   // Bestehende Scores
   {
     groupId: 1,
-    judgeId: 1,
+    judgeId: "1", // Changed from number to string
     whipStrikes: 8,
     rhythm: 7,
     tempo: 8,
@@ -704,7 +704,7 @@ export const mockGroupScores: GroupScore[] = [
   // Beispielhafte neue Scores
   {
     groupId: 3,
-    judgeId: 2,
+    judgeId: "2", // Changed from number to string
     whipStrikes: 9,
     rhythm: 8,
     tempo: 7,
@@ -712,7 +712,7 @@ export const mockGroupScores: GroupScore[] = [
   },
   {
     groupId: 7,
-    judgeId: 3,
+    judgeId: "3", // Changed from number to string
     whipStrikes: 8,
     rhythm: 9,
     tempo: 8,
@@ -720,7 +720,7 @@ export const mockGroupScores: GroupScore[] = [
   },
   {
     groupId: 11,
-    judgeId: 4,
+    judgeId: "4", // Changed from number to string
     whipStrikes: 9,
     rhythm: 9,
     tempo: 9,

@@ -73,7 +73,7 @@ const IndividualJudging = () => {
     // Create a new score record
     const newScore: IndividualScore = {
       participantId: currentParticipant.id,
-      judgeId: currentUser.id,
+      judgeId: currentUser.id.toString(), // Convert to string to match the updated type
       round: round,
       whipStrikes: scores.whipStrikes,
       rhythm: scores.rhythm,
@@ -140,7 +140,7 @@ const IndividualJudging = () => {
       const existingScore = mockIndividualScores.find(
         score => 
           score.participantId === currentParticipant.id && 
-          score.judgeId === currentUser.id &&
+          score.judgeId === currentUser.id.toString() && // Convert to string for comparison
           score.round === round
       );
 
