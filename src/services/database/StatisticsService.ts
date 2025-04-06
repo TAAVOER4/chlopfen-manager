@@ -6,31 +6,62 @@ export class StatisticsService extends BaseService {
     try {
       const { data, error } = await this.supabase
         .from('participants')
-        .select('category')
-        .then(result => {
-          // Group by category manually
-          if (result.error) throw result.error;
-          
-          const categories: Record<string, number> = {};
-          result.data?.forEach(participant => {
-            categories[participant.category] = (categories[participant.category] || 0) + 1;
-          });
-          
-          return {
-            data: Object.entries(categories).map(([category, count]) => ({ category, count })),
-            error: null
-          };
-        });
+        .select('category, is_group_only');
         
       if (error) {
         console.error('Error fetching participant statistics:', error);
         throw error;
       }
       
-      return data || [];
+      // Initialize statistics object with default values
+      const statistics = {
+        total: 0,
+        individual: 0,
+        groupOnly: 0,
+        byCategory: {} as Record<string, {
+          total: number;
+          individual: number;
+          groupOnly: number;
+        }>
+      };
+      
+      // Process participant data
+      data?.forEach(participant => {
+        const category = participant.category;
+        const isGroupOnly = participant.is_group_only || false;
+        
+        // Initialize category if it doesn't exist
+        if (!statistics.byCategory[category]) {
+          statistics.byCategory[category] = {
+            total: 0,
+            individual: 0,
+            groupOnly: 0
+          };
+        }
+        
+        // Update total counts
+        statistics.total++;
+        statistics.byCategory[category].total++;
+        
+        // Update individual/groupOnly counts
+        if (isGroupOnly) {
+          statistics.groupOnly++;
+          statistics.byCategory[category].groupOnly++;
+        } else {
+          statistics.individual++;
+          statistics.byCategory[category].individual++;
+        }
+      });
+      
+      return statistics;
     } catch (error) {
       console.error('Error loading participant statistics:', error);
-      return [];
+      return {
+        total: 0,
+        individual: 0,
+        groupOnly: 0,
+        byCategory: {}
+      };
     }
   }
   
@@ -38,31 +69,43 @@ export class StatisticsService extends BaseService {
     try {
       const { data, error } = await this.supabase
         .from('groups')
-        .select('category')
-        .then(result => {
-          // Group by category manually
-          if (result.error) throw result.error;
-          
-          const categories: Record<string, number> = {};
-          result.data?.forEach(group => {
-            categories[group.category] = (categories[group.category] || 0) + 1;
-          });
-          
-          return {
-            data: Object.entries(categories).map(([category, count]) => ({ category, count })),
-            error: null
-          };
-        });
+        .select('size');
         
       if (error) {
         console.error('Error fetching group statistics:', error);
         throw error;
       }
       
-      return data || [];
+      // Initialize group statistics
+      const statistics = {
+        total: 0,
+        bySize: {
+          three: 0,
+          four: 0
+        }
+      };
+      
+      // Process group data
+      data?.forEach(group => {
+        statistics.total++;
+        
+        if (group.size === 'three') {
+          statistics.bySize.three++;
+        } else if (group.size === 'four') {
+          statistics.bySize.four++;
+        }
+      });
+      
+      return statistics;
     } catch (error) {
       console.error('Error loading group statistics:', error);
-      return [];
+      return {
+        total: 0,
+        bySize: {
+          three: 0,
+          four: 0
+        }
+      };
     }
   }
   

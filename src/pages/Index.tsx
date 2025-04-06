@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, 
@@ -12,49 +12,86 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockParticipants, mockGroups } from '../data/mockData';
 import { getCategoryDisplay, getCategoryClass } from '../utils/categoryUtils';
+import { Spinner } from '@/components/ui/spinner';
+import { DatabaseService } from '@/services/DatabaseService';
+import { useTournament } from '@/contexts/TournamentContext';
+
+// Initialize statistics types
+type ParticipantStats = {
+  total: number;
+  individual: number;
+  groupOnly: number;
+  byCategory: Record<string, {
+    total: number;
+    individual: number;
+    groupOnly: number;
+  }>;
+};
+
+type GroupStats = {
+  total: number;
+  bySize: {
+    three: number;
+    four: number;
+  };
+};
 
 const Index = () => {
-  // Group participants by category
-  const participantsByCategory = mockParticipants.reduce(
-    (acc, participant) => {
-      if (!acc[participant.category]) {
-        acc[participant.category] = {
-          all: [],
-          individual: [],
-          groupOnly: []
-        };
-      }
-      
-      // Add to all participants
-      acc[participant.category].all.push(participant);
-      
-      // Sort by participation type
-      if (participant.isGroupOnly) {
-        acc[participant.category].groupOnly.push(participant);
-      } else {
-        acc[participant.category].individual.push(participant);
-      }
-      
-      return acc;
-    },
-    {} as Record<string, { 
-      all: typeof mockParticipants,
-      individual: typeof mockParticipants,
-      groupOnly: typeof mockParticipants
-    }>
-  );
+  const { activeTournament } = useTournament();
+  const [isLoading, setIsLoading] = useState(true);
+  const [participantStats, setParticipantStats] = useState<ParticipantStats>({
+    total: 0,
+    individual: 0,
+    groupOnly: 0,
+    byCategory: {}
+  });
+  const [groupStats, setGroupStats] = useState<GroupStats>({
+    total: 0,
+    bySize: {
+      three: 0,
+      four: 0
+    }
+  });
 
-  // Group statistics
-  const totalGroups = mockGroups.length;
-  const threePersonGroups = mockGroups.filter(g => g.size === 'three').length;
-  const fourPersonGroups = mockGroups.filter(g => g.size === 'four').length;
+  // Fetch statistics from database
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      setIsLoading(true);
+      try {
+        const [participantData, groupData] = await Promise.all([
+          DatabaseService.getParticipantStatistics(),
+          DatabaseService.getGroupStatistics()
+        ]);
+        
+        setParticipantStats(participantData);
+        setGroupStats(groupData);
+      } catch (error) {
+        console.error('Error fetching dashboard statistics:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchStatistics();
+  }, [activeTournament]);
 
-  // Participant statistics
-  const totalParticipants = mockParticipants.length;
-  const individualParticipants = mockParticipants.filter(p => !p.isGroupOnly).length;
-  const groupOnlyParticipants = mockParticipants.filter(p => p.isGroupOnly).length;
+  // Get category stats with default values if category doesn't exist
+  const getCategoryStats = (category: string) => {
+    return participantStats.byCategory[category] || { total: 0, individual: 0, groupOnly: 0 };
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Spinner size="large" className="mx-auto mb-4" />
+          <p className="text-lg text-muted-foreground">Lade Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -103,7 +140,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{totalParticipants}</div>
+              <div className="text-2xl font-bold">{participantStats.total}</div>
               <Users className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
@@ -117,7 +154,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{individualParticipants}</div>
+              <div className="text-2xl font-bold">{participantStats.individual}</div>
               <User className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
@@ -131,7 +168,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{groupOnlyParticipants}</div>
+              <div className="text-2xl font-bold">{participantStats.groupOnly}</div>
               <UsersRound className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
@@ -145,7 +182,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{totalGroups}</div>
+              <div className="text-2xl font-bold">{groupStats.total}</div>
               <Group className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
@@ -165,15 +202,15 @@ const Index = () => {
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Total:</div>
-              <div className="font-medium">{participantsByCategory['kids']?.all.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('kids').total}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Einzelwertung:</div>
-              <div className="font-medium">{participantsByCategory['kids']?.individual.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('kids').individual}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
-              <div className="font-medium">{participantsByCategory['kids']?.groupOnly.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('kids').groupOnly}</div>
             </div>
           </CardContent>
         </Card>
@@ -189,15 +226,15 @@ const Index = () => {
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Total:</div>
-              <div className="font-medium">{participantsByCategory['juniors']?.all.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('juniors').total}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Einzelwertung:</div>
-              <div className="font-medium">{participantsByCategory['juniors']?.individual.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('juniors').individual}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
-              <div className="font-medium">{participantsByCategory['juniors']?.groupOnly.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('juniors').groupOnly}</div>
             </div>
           </CardContent>
         </Card>
@@ -213,15 +250,15 @@ const Index = () => {
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Total:</div>
-              <div className="font-medium">{participantsByCategory['active']?.all.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('active').total}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Einzelwertung:</div>
-              <div className="font-medium">{participantsByCategory['active']?.individual.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('active').individual}</div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Nur Gruppe:</div>
-              <div className="font-medium">{participantsByCategory['active']?.groupOnly.length || 0}</div>
+              <div className="font-medium">{getCategoryStats('active').groupOnly}</div>
             </div>
           </CardContent>
         </Card>
@@ -238,7 +275,7 @@ const Index = () => {
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Anzahl:</div>
-              <div className="text-2xl font-bold">{threePersonGroups}</div>
+              <div className="text-2xl font-bold">{groupStats.bySize.three}</div>
             </div>
           </CardContent>
         </Card>
@@ -252,7 +289,7 @@ const Index = () => {
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">Anzahl:</div>
-              <div className="text-2xl font-bold">{fourPersonGroups}</div>
+              <div className="text-2xl font-bold">{groupStats.bySize.four}</div>
             </div>
           </CardContent>
         </Card>
