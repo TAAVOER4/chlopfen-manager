@@ -6,7 +6,12 @@ export class GroupQueryService extends BaseGroupService {
   static async getAllGroups() {
     try {
       console.log("Getting all groups...");
-      // Ensure we're using the initialized supabase client from the base class
+      // Make sure we're using the correct supabase client
+      if (!this.supabase) {
+        console.error("Supabase client is not initialized in GroupQueryService");
+        return [];
+      }
+      
       const { data, error } = await this.supabase
         .from('groups')
         .select('*')
