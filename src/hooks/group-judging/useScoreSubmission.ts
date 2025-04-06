@@ -98,10 +98,16 @@ export const useScoreSubmission = (
       return;
     }
 
+    // Make sure judgeId is sent as a string (UUID format)
+    // Ensure that judgeId is a proper UUID format string, not a number
+    const judgeId = currentUser.id.toString();
+    
+    console.log('Judge ID being used:', judgeId, 'Type:', typeof judgeId);
+
     // Prepare score data for saving
     const scoreData: Omit<GroupScore, 'id'> = {
       groupId: currentGroup.id,
-      judgeId: currentUser.id,
+      judgeId: judgeId,
       whipStrikes: currentScore.whipStrikes !== undefined ? currentScore.whipStrikes : null,
       rhythm: currentScore.rhythm !== undefined ? currentScore.rhythm : null,
       tempo: currentScore.tempo !== undefined ? currentScore.tempo : null,

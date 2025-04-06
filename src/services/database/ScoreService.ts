@@ -119,12 +119,21 @@ export class ScoreService extends BaseService {
       const tournamentId = typeof score.tournamentId === 'string' 
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
+      
+      // Ensure judgeId is a string for UUID compatibility
+      const judgeId = score.judgeId ? score.judgeId.toString() : null;
+      
+      if (!judgeId) {
+        throw new Error('Judge ID is required');
+      }
+      
+      console.log('Processing score submission with judge ID:', judgeId);
         
       const { data, error } = await this.supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: score.judgeId,
+          judge_id: judgeId,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,

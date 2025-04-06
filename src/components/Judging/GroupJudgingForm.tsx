@@ -50,6 +50,12 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
   
   // Filter to only show criteria that the current judge is authorized to see and edit
   const criteriaToShow = allCriteria.filter(criterion => canEditCriterion(criterion.key));
+  
+  // Check if all required fields have been filled
+  const hasAllRequiredFields = criteriaToShow.every(criterion => 
+    scores[currentGroup.id]?.[criterion.key] !== undefined && 
+    scores[currentGroup.id]?.[criterion.key] !== null
+  );
 
   return (
     <Card className="mb-6">
@@ -97,7 +103,7 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
         <Button 
           className="w-full" 
           onClick={handleSaveScore}
-          disabled={criteriaToShow.length === 0 || isSaving}
+          disabled={!hasAllRequiredFields || criteriaToShow.length === 0 || isSaving}
         >
           {isSaving ? (
             <>
