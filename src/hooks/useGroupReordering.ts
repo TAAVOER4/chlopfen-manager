@@ -60,6 +60,12 @@ export const useGroupReordering = (
           }
         }));
 
+        // Save the reordered groups to session storage
+        sessionStorage.setItem(
+          `reorderedGroups-${size}-${category}`, 
+          JSON.stringify(updatedGroups)
+        );
+
         toast({
           title: "Reihenfolge aktualisiert",
           description: "Die Reihenfolge der Gruppen wurde erfolgreich geändert."
@@ -98,6 +104,12 @@ export const useGroupReordering = (
         [category]: updatedGroups
       }
     }));
+
+    // Save the reordered groups to session storage
+    sessionStorage.setItem(
+      `reorderedGroups-${size}-${category}`, 
+      JSON.stringify(updatedGroups)
+    );
 
     toast({
       title: "Reihenfolge aktualisiert",

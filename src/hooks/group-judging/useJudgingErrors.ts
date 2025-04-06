@@ -11,10 +11,10 @@ export const useJudgingErrors = () => {
     
     const errorMessage = error instanceof Error 
       ? error.message 
-      : 'An unexpected error occurred';
+      : 'Ein unerwarteter Fehler ist aufgetreten';
       
     toast({
-      title: "Error",
+      title: "Fehler",
       description: `${context}: ${errorMessage}`,
       variant: "destructive"
     });

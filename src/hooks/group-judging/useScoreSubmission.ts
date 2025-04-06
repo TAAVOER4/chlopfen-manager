@@ -20,9 +20,9 @@ export const useScoreSubmission = (
 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
-    mutationFn: (score: Omit<GroupScore, 'id'>) => {
+    mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to mutation:', score);
-      return ScoreService.createGroupScore(score);
+      return await ScoreService.createGroupScore(score);
     },
     onSuccess: () => {
       const currentGroup = groups[currentGroupIndex];
@@ -41,20 +41,25 @@ export const useScoreSubmission = (
       }
     },
     onError: (error) => {
-      handleError(error, 'Scoring Submission');
+      handleError(error, 'Fehler beim Speichern der Bewertung');
     }
   });
 
   const handleSaveScore = async () => {
+    if (!groups.length) {
+      handleError(new Error("Keine Gruppen gefunden"), "Bewertung Validierung");
+      return;
+    }
+    
     const currentGroup = groups[currentGroupIndex];
     if (!currentGroup || !currentUser?.id) {
-      handleError(new Error("Missing group or user information"), "Score Validation");
+      handleError(new Error("Fehlende Gruppen- oder Benutzerinformationen"), "Bewertung Validierung");
       return;
     }
     
     const currentScore = scores[currentGroup.id];
     if (!currentScore) {
-      handleError(new Error("No score data found for this group"), "Score Validation");
+      handleError(new Error("Keine Bewertungsdaten für diese Gruppe gefunden"), "Bewertung Validierung");
       return;
     }
     
@@ -74,14 +79,21 @@ export const useScoreSubmission = (
     }
     
     // Prepare score data for saving
+    const tournamentId = selectedTournament?.id || currentGroup.tournamentId;
+    if (!tournamentId) {
+      handleError(new Error("Kein Turnier ausgewählt"), "Bewertung Validierung");
+      return;
+    }
+
+    // Prepare score data for saving
     const scoreData: Omit<GroupScore, 'id'> = {
       groupId: currentGroup.id,
       judgeId: currentUser.id,
-      whipStrikes: currentScore.whipStrikes || 0,
-      rhythm: currentScore.rhythm || 0,
-      tempo: currentScore.tempo || 0,
+      whipStrikes: currentScore.whipStrikes !== undefined ? currentScore.whipStrikes : null,
+      rhythm: currentScore.rhythm !== undefined ? currentScore.rhythm : null,
+      tempo: currentScore.tempo !== undefined ? currentScore.tempo : null,
       time: currentScore.time !== undefined ? currentScore.time : true,
-      tournamentId: selectedTournament?.id || currentGroup.tournamentId
+      tournamentId: tournamentId
     };
     
     console.log('Saving score data:', scoreData);

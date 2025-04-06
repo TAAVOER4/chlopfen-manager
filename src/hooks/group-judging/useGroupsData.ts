@@ -4,6 +4,7 @@ import { Group, GroupSize, GroupCategory } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { GroupService } from '@/services/database/GroupService';
+import { useJudgingErrors } from './useJudgingErrors';
 
 export const useGroupsData = (
   size: string | undefined,
@@ -13,7 +14,7 @@ export const useGroupsData = (
   const { currentUser, selectedTournament } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { handleError } = useJudgingErrors();
 
   // Load groups from database based on size and category
   useEffect(() => {
@@ -21,7 +22,6 @@ export const useGroupsData = (
       if (!size) return;
       
       setIsLoading(true);
-      setError(null);
       try {
         const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
         
@@ -31,6 +31,13 @@ export const useGroupsData = (
         
         // Filter groups by size and category
         let filteredGroups = allGroups.filter(group => group.size === groupSize);
+        
+        // Filter by tournament if available
+        if (selectedTournament?.id) {
+          filteredGroups = filteredGroups.filter(group => 
+            group.tournamentId === selectedTournament.id
+          );
+        }
         
         // Filter by category if provided
         if (categoryParam && ['kids_juniors', 'active'].includes(categoryParam)) {
@@ -60,16 +67,14 @@ export const useGroupsData = (
             
             setGroups(orderedGroups);
           } catch (error) {
-            console.error('Error parsing stored groups:', error);
+            handleError(error, 'Error parsing stored groups');
             setGroups(filteredGroups);
-            setError('Fehler beim Laden der gespeicherten Gruppenreihenfolge');
           }
         } else {
           setGroups(filteredGroups);
         }
       } catch (error) {
-        console.error('Error fetching groups:', error);
-        setError('Gruppen konnten nicht geladen werden');
+        handleError(error, 'Error fetching groups');
         toast({
           title: "Fehler",
           description: "Gruppen konnten nicht geladen werden",
@@ -81,12 +86,10 @@ export const useGroupsData = (
     };
     
     fetchGroups();
-  }, [size, categoryParam, toast, selectedTournament]);
+  }, [size, categoryParam, toast, selectedTournament, handleError]);
 
   return { 
     groups, 
-    isLoading, 
-    error,
-    hasError: !!error
+    isLoading
   };
 };
