@@ -21,6 +21,7 @@ export const useGroupsData = (
   const fetchGroups = useCallback(async () => {
     // Skip if size is undefined or we're still loading user data
     if (!size || isUserLoading) {
+      console.log("Skipping fetch - missing size or user loading:", { size, isUserLoading });
       return;
     }
     
@@ -30,20 +31,24 @@ export const useGroupsData = (
     try {
       const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
       
-      console.log('Fetching groups from database...');
+      console.log('Fetching groups from database using GroupService...');
       const allGroups = await GroupService.getAllGroups();
-      console.log('All groups fetched:', allGroups);
+      console.log('All groups fetched:', allGroups.length, 'groups');
+      
+      if (allGroups.length === 0) {
+        console.warn('No groups returned from database');
+      }
       
       // Filter groups by size and category
       let filteredGroups = allGroups.filter(group => group.size === groupSize);
-      console.log('Filtered by size:', filteredGroups);
+      console.log('Filtered by size:', filteredGroups.length, 'groups');
       
       // Filter by tournament if available
       if (selectedTournament?.id) {
         filteredGroups = filteredGroups.filter(group => 
           group.tournamentId === selectedTournament.id
         );
-        console.log('Filtered by tournament:', filteredGroups);
+        console.log('Filtered by tournament:', filteredGroups.length, 'groups');
       }
       
       // Filter by category if provided
@@ -51,7 +56,7 @@ export const useGroupsData = (
         filteredGroups = filteredGroups.filter(
           group => group.category === categoryParam as GroupCategory
         );
-        console.log('Filtered by category:', filteredGroups);
+        console.log('Filtered by category:', filteredGroups.length, 'groups');
       }
       
       // Use reordered groups from session storage if available
@@ -71,16 +76,16 @@ export const useGroupsData = (
             }
           });
           
+          console.log('Using ordered groups from session storage:', orderedGroups.length, 'groups');
           setGroups(orderedGroups);
         } catch (error) {
           handleError(error, 'Error parsing stored groups');
           setGroups(filteredGroups);
         }
       } else {
+        console.log('Using filtered groups directly:', filteredGroups.length, 'groups');
         setGroups(filteredGroups);
       }
-      
-      console.log(`Loaded ${filteredGroups.length} groups successfully`);
     } catch (error) {
       handleError(error, 'Error fetching groups');
       toast({
@@ -98,6 +103,7 @@ export const useGroupsData = (
   useEffect(() => {
     // Only fetch if we haven't attempted already and have valid parameters
     if (!hasAttemptedFetch && size) {
+      console.log("Initial fetch triggered");
       fetchGroups();
     }
   }, [fetchGroups, hasAttemptedFetch, size]);
@@ -105,6 +111,7 @@ export const useGroupsData = (
   // If size or category changes, reset and fetch again
   useEffect(() => {
     if (hasAttemptedFetch) {
+      console.log("Parameters changed, resetting fetch state");
       setHasAttemptedFetch(false);
     }
   }, [size, categoryParam]);
@@ -113,6 +120,7 @@ export const useGroupsData = (
     groups, 
     isLoading: isLoading || isUserLoading,
     refetchGroups: useCallback(() => {
+      console.log("Manual refetch triggered");
       setHasAttemptedFetch(false);
       fetchGroups();
     }, [fetchGroups])

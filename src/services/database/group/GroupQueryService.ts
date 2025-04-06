@@ -5,7 +5,7 @@ import { Group } from '@/types';
 export class GroupQueryService extends BaseGroupService {
   static async getAllGroups() {
     try {
-      console.log("Getting all groups...");
+      console.log("Getting all groups from database...");
       
       const { data, error } = await this.supabase
         .from('groups')
@@ -18,6 +18,8 @@ export class GroupQueryService extends BaseGroupService {
       }
       
       if (!data) return [];
+      
+      console.log("Database returned groups data:", data);
       
       // Create initial groups without participants
       const groups = data.map(group => ({
@@ -48,10 +50,10 @@ export class GroupQueryService extends BaseGroupService {
         });
       }
       
-      console.log("Loaded groups:", groups);
+      console.log("Processed groups with participants:", groups);
       return groups as Group[];
     } catch (error) {
-      console.error('Error loading groups:', error);
+      console.error('Error in getAllGroups method:', error);
       return [];
     }
   }
