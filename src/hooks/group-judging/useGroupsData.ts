@@ -11,13 +11,18 @@ export const useGroupsData = (
   categoryParam: string | null
 ) => {
   const { toast } = useToast();
-  const { currentUser, selectedTournament } = useUser();
+  const { currentUser, selectedTournament, isLoading: isUserLoading } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { handleError } = useJudgingErrors();
 
   // Load groups from database based on size and category
   useEffect(() => {
+    // Don't try to fetch groups if user data is still loading
+    if (isUserLoading) {
+      return;
+    }
+    
     const fetchGroups = async () => {
       if (!size) return;
       
@@ -86,10 +91,10 @@ export const useGroupsData = (
     };
     
     fetchGroups();
-  }, [size, categoryParam, toast, selectedTournament, handleError]);
+  }, [size, categoryParam, toast, selectedTournament, handleError, isUserLoading, currentUser]);
 
   return { 
     groups, 
-    isLoading
+    isLoading: isLoading || isUserLoading
   };
 };

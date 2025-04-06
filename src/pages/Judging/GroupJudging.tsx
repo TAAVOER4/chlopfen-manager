@@ -11,12 +11,14 @@ import NextParticipantPreview from '@/components/Judging/NextParticipantPreview'
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
   const navigate = useNavigate();
+  const { isLoading: isUserLoading } = useUser();
   
   // Use our custom hook for most of the functionality
   const {
@@ -39,8 +41,8 @@ const GroupJudging: React.FC = () => {
     });
   };
 
-  // Display loading state
-  if (isLoading) {
+  // Display loading state - show while either user data or groups are loading
+  if (isUserLoading || isLoading) {
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-6">
