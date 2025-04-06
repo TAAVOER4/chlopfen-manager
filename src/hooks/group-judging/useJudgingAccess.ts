@@ -10,22 +10,28 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
   const { toast } = useToast();
   const { currentUser, isLoading } = useUser();
   const [hasCheckedAccess, setHasCheckedAccess] = useState(false);
+  const [accessValid, setAccessValid] = useState(false);
 
   // Validate size parameter and check if user is authorized
   useEffect(() => {
     // Don't run validation checks while auth state is still loading
-    if (isLoading) {
+    if (isLoading || hasCheckedAccess) {
       return;
     }
 
+    console.log("Checking access for group judging:", { size, category: categoryParam, userLoaded: !!currentUser });
+
+    let valid = true;
+
     if (size !== 'three' && size !== 'four') {
+      console.log("Invalid size parameter:", size);
       navigate('/judging');
       toast({
         title: "Fehler",
         description: "Ungültige Gruppengröße",
         variant: "destructive"
       });
-      return;
+      valid = false;
     }
 
     // Validate category parameter
@@ -38,36 +44,41 @@ export const useJudgingAccess = (size: string | undefined, categoryParam: string
 
     // Check if user is logged in
     if (!currentUser) {
+      console.log("User not logged in");
       navigate('/judging');
       toast({
         title: "Fehler",
         description: "Sie sind nicht angemeldet",
         variant: "destructive"
       });
-      return;
+      valid = false;
     }
 
     // Check if user has the right assignedCriteria for group judging
     // Skip this check for admin users
-    if (currentUser.role !== 'admin') {
+    if (currentUser && currentUser.role !== 'admin') {
       const validGroupCriteria: GroupCriterionKey[] = ['whipStrikes', 'rhythm', 'tempo'];
       if (!currentUser.assignedCriteria?.group || 
           !validGroupCriteria.includes(currentUser.assignedCriteria.group)) {
+        console.log("User does not have valid group criteria:", currentUser.assignedCriteria?.group);
         navigate('/judging');
         toast({
           title: "Zugriff verweigert",
           description: "Sie sind nicht berechtigt, Gruppen zu bewerten",
           variant: "destructive"
         });
-        return;
+        valid = false;
       }
     }
 
+    setAccessValid(valid);
     setHasCheckedAccess(true);
-  }, [size, categoryParam, navigate, toast, currentUser, isLoading]);
+    
+    console.log("Access check complete, result:", valid);
+  }, [size, categoryParam, navigate, toast, currentUser, isLoading, hasCheckedAccess]);
 
   return { 
-    isValidAccess: hasCheckedAccess && !isLoading && currentUser !== null,
+    isValidAccess: accessValid,
     isChecking: isLoading || !hasCheckedAccess
   };
 };

@@ -4,6 +4,7 @@ import { useGroupsData } from './group-judging/useGroupsData';
 import { useGroupScores } from './group-judging/useGroupScores';
 import { useScoreSubmission } from './group-judging/useScoreSubmission';
 import { useJudgingErrors } from './group-judging/useJudgingErrors';
+import { useState, useEffect } from 'react';
 
 export const useGroupJudging = (size: string | undefined, categoryParam: string | null) => {
   // Setup error handling
@@ -12,10 +13,13 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   // Check if user has access to judging
   const { isValidAccess, isChecking } = useJudgingAccess(size, categoryParam);
   
-  // Load groups data
-  const { groups, isLoading, refetchGroups } = useGroupsData(size, categoryParam);
+  // Only load groups data if access is valid to prevent unnecessary API calls
+  const { groups, isLoading, refetchGroups } = useGroupsData(
+    isValidAccess ? size : undefined, 
+    isValidAccess ? categoryParam : null
+  );
   
-  // Setup scoring logic
+  // Setup scoring logic - only initialize if we have groups
   const { scores, canEditCriterion, handleScoreChange } = useGroupScores(groups);
   
   // Setup submission logic

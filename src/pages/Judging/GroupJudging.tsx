@@ -21,6 +21,8 @@ const GroupJudging: React.FC = () => {
   const navigate = useNavigate();
   const { isLoading: isUserLoading } = useUser();
   
+  console.log("Rendering GroupJudging component", { size, categoryParam });
+  
   // Use our custom hook for most of the functionality
   const {
     groups,
@@ -43,6 +45,17 @@ const GroupJudging: React.FC = () => {
       state: { from: 'groupJudging' } 
     });
   };
+
+  // Effect to log component state for debugging
+  useEffect(() => {
+    console.log("GroupJudging state:", { 
+      groups: groups.length, 
+      isLoading, 
+      isUserLoading,
+      isChecking,
+      currentIndex: currentGroupIndex
+    });
+  }, [groups, isLoading, isUserLoading, isChecking, currentGroupIndex]);
 
   // Display loading state - show while either user data or groups are loading
   if (isUserLoading || isLoading || isChecking) {

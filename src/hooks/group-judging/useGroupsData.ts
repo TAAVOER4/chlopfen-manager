@@ -14,13 +14,19 @@ export const useGroupsData = (
   const { currentUser, selectedTournament, isLoading: isUserLoading } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const { handleError } = useJudgingErrors();
 
   // Memoize the fetchGroups function to avoid recreation on every render
   const fetchGroups = useCallback(async () => {
-    if (!size || isUserLoading) return;
+    // Skip if size is undefined or we're still loading user data
+    if (!size || isUserLoading) {
+      return;
+    }
     
+    console.log('Attempting to fetch groups with size:', size, 'category:', categoryParam);
     setIsLoading(true);
+    
     try {
       const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
       
@@ -69,6 +75,8 @@ export const useGroupsData = (
       } else {
         setGroups(filteredGroups);
       }
+      
+      console.log(`Loaded ${filteredGroups.length} groups successfully`);
     } catch (error) {
       handleError(error, 'Error fetching groups');
       toast({
@@ -78,17 +86,31 @@ export const useGroupsData = (
       });
     } finally {
       setIsLoading(false);
+      setHasAttemptedFetch(true);
     }
-  }, [size, categoryParam, selectedTournament, handleError, toast, isUserLoading]);
+  }, [size, categoryParam, selectedTournament?.id, handleError, toast, isUserLoading]);
 
-  // Load groups from database based on size and category
+  // Load groups from database based on size and category - but only once
   useEffect(() => {
-    fetchGroups();
-  }, [fetchGroups]);
+    // Only fetch if we haven't attempted already and have valid parameters
+    if (!hasAttemptedFetch && size) {
+      fetchGroups();
+    }
+  }, [fetchGroups, hasAttemptedFetch, size]);
+
+  // If size or category changes, reset and fetch again
+  useEffect(() => {
+    if (hasAttemptedFetch) {
+      setHasAttemptedFetch(false);
+    }
+  }, [size, categoryParam]);
 
   return { 
     groups, 
     isLoading: isLoading || isUserLoading,
-    refetchGroups: fetchGroups
+    refetchGroups: useCallback(() => {
+      setHasAttemptedFetch(false);
+      fetchGroups();
+    }, [fetchGroups])
   };
 };
