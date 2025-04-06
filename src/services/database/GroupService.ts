@@ -9,7 +9,7 @@ export class GroupService extends BaseService {
       const { data, error } = await supabase
         .from('groups')
         .select('*')
-        .order('display_order', { ascending: true, nullsLast: true });
+        .order('display_order', { ascending: true, nullsFirst: false });
         
       if (error) throw error;
       
