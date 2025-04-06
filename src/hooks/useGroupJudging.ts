@@ -3,8 +3,12 @@ import { useJudgingAccess } from './group-judging/useJudgingAccess';
 import { useGroupsData } from './group-judging/useGroupsData';
 import { useGroupScores } from './group-judging/useGroupScores';
 import { useScoreSubmission } from './group-judging/useScoreSubmission';
+import { useJudgingErrors } from './group-judging/useJudgingErrors';
 
 export const useGroupJudging = (size: string | undefined, categoryParam: string | null) => {
+  // Setup error handling
+  const { errors, hasErrors, handleError, clearError, clearAllErrors } = useJudgingErrors();
+  
   // Check if user has access to judging
   useJudgingAccess(size, categoryParam);
   
@@ -16,7 +20,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   
   // Setup submission logic
   const { currentGroupIndex, setCurrentGroupIndex, handleSaveScore } = 
-    useScoreSubmission(groups, scores, canEditCriterion);
+    useScoreSubmission(groups, scores, canEditCriterion, handleError);
 
   return {
     groups,
@@ -26,6 +30,10 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     handleScoreChange,
     handleSaveScore,
     setCurrentGroupIndex,
-    isLoading
+    isLoading,
+    errors,
+    hasErrors,
+    clearError,
+    clearAllErrors
   };
 };

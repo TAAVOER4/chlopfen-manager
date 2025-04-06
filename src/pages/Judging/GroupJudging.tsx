@@ -9,6 +9,8 @@ import GroupJudgingForm from '@/components/Judging/GroupJudgingForm';
 import EmptyGroupState from '@/components/Judging/EmptyGroupState';
 import NextParticipantPreview from '@/components/Judging/NextParticipantPreview';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
@@ -24,7 +26,10 @@ const GroupJudging: React.FC = () => {
     canEditCriterion,
     handleScoreChange,
     handleSaveScore,
-    isLoading
+    isLoading,
+    errors,
+    hasErrors,
+    clearError
   } = useGroupJudging(size, categoryParam);
 
   // Navigate back to judging page with group tab selected
@@ -82,6 +87,26 @@ const GroupJudging: React.FC = () => {
         totalGroups={groups.length}
         currentGroupName={currentGroup.name}
       />
+
+      {hasErrors && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Fehler</AlertTitle>
+          <AlertDescription>
+            {Object.entries(errors).map(([context, message]) => (
+              <div key={context} className="flex justify-between items-center">
+                <span>{context}: {message}</span>
+                <button 
+                  onClick={() => clearError(context)} 
+                  className="text-xs underline"
+                >
+                  Schließen
+                </button>
+              </div>
+            ))}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <div className="col-span-3">

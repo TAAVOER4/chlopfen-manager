@@ -13,6 +13,7 @@ export const useGroupsData = (
   const { currentUser, selectedTournament } = useUser();
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load groups from database based on size and category
   useEffect(() => {
@@ -20,6 +21,7 @@ export const useGroupsData = (
       if (!size) return;
       
       setIsLoading(true);
+      setError(null);
       try {
         const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
         
@@ -60,12 +62,14 @@ export const useGroupsData = (
           } catch (error) {
             console.error('Error parsing stored groups:', error);
             setGroups(filteredGroups);
+            setError('Fehler beim Laden der gespeicherten Gruppenreihenfolge');
           }
         } else {
           setGroups(filteredGroups);
         }
       } catch (error) {
         console.error('Error fetching groups:', error);
+        setError('Gruppen konnten nicht geladen werden');
         toast({
           title: "Fehler",
           description: "Gruppen konnten nicht geladen werden",
@@ -79,5 +83,10 @@ export const useGroupsData = (
     fetchGroups();
   }, [size, categoryParam, toast, selectedTournament]);
 
-  return { groups, isLoading };
+  return { 
+    groups, 
+    isLoading, 
+    error,
+    hasError: !!error
+  };
 };

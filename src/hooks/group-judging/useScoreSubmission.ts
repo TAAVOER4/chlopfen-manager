@@ -10,7 +10,8 @@ import { useMutation } from '@tanstack/react-query';
 export const useScoreSubmission = (
   groups: Group[],
   scores: Record<number, Partial<GroupScore>>,
-  canEditCriterion: (criterion: GroupCriterionKey) => boolean
+  canEditCriterion: (criterion: GroupCriterionKey) => boolean,
+  handleError: (error: unknown, context: string) => string
 ) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -40,21 +41,22 @@ export const useScoreSubmission = (
       }
     },
     onError: (error) => {
-      console.error('Error saving score:', error);
-      toast({
-        title: "Fehler",
-        description: "Die Bewertung konnte nicht gespeichert werden.",
-        variant: "destructive"
-      });
+      handleError(error, 'Scoring Submission');
     }
   });
 
   const handleSaveScore = async () => {
     const currentGroup = groups[currentGroupIndex];
-    if (!currentGroup || !currentUser?.id) return;
+    if (!currentGroup || !currentUser?.id) {
+      handleError(new Error("Missing group or user information"), "Score Validation");
+      return;
+    }
     
     const currentScore = scores[currentGroup.id];
-    if (!currentScore) return;
+    if (!currentScore) {
+      handleError(new Error("No score data found for this group"), "Score Validation");
+      return;
+    }
     
     // Check if required fields are filled in
     const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
