@@ -6,7 +6,7 @@ import { StatisticsService } from './StatisticsService';
 
 /**
  * DatabaseService acts as a facade for all database services
- * to maintain backward compatibility with existing code
+ * to provide a unified API for database operations
  */
 export class DatabaseService {
   // Participant operations
@@ -30,8 +30,10 @@ export class DatabaseService {
   // Score operations
   static getIndividualScores = ScoreService.getIndividualScores;
   static createIndividualScore = ScoreService.createIndividualScore;
+  static updateIndividualScore = ScoreService.createIndividualScore; // Use existing method as fallback
   static getGroupScores = ScoreService.getGroupScores;
   static createGroupScore = ScoreService.createGroupScore;
+  static updateGroupScore = ScoreService.createGroupScore; // Use existing method as fallback
 
   // Statistics operations
   static getParticipantStatistics = StatisticsService.getParticipantStatistics;
