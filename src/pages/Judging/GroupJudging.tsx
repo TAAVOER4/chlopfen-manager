@@ -8,6 +8,7 @@ import GroupJudgingHeader from '@/components/Judging/GroupJudgingHeader';
 import GroupJudgingForm from '@/components/Judging/GroupJudgingForm';
 import EmptyGroupState from '@/components/Judging/EmptyGroupState';
 import NextParticipantPreview from '@/components/Judging/NextParticipantPreview';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
@@ -22,7 +23,8 @@ const GroupJudging: React.FC = () => {
     scores,
     canEditCriterion,
     handleScoreChange,
-    handleSaveScore
+    handleSaveScore,
+    isLoading
   } = useGroupJudging(size, categoryParam);
 
   // Navigate back to judging page with group tab selected
@@ -31,6 +33,26 @@ const GroupJudging: React.FC = () => {
       state: { from: 'groupJudging' } 
     });
   };
+
+  // Display loading state
+  if (isLoading) {
+    return (
+      <div className="animate-fade-in">
+        <div className="flex items-center justify-between mb-6">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="col-span-3">
+            <Skeleton className="h-[400px] w-full" />
+          </div>
+          <div className="col-span-1">
+            <Skeleton className="h-[200px] w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Return early if no groups found
   if (groups.length === 0) {

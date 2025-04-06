@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Group, GroupScore, GroupSize, GroupCriterionKey, GroupCategory } from '../types';
-import { mockGroups } from '../data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
+import { GroupService } from '@/services/database/GroupService';
+import { ScoreService } from '@/services/database/ScoreService';
+import { useMutation } from '@tanstack/react-query';
 
 export const useGroupJudging = (size: string | undefined, categoryParam: string | null) => {
   const navigate = useNavigate();
@@ -15,6 +17,38 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   const [groups, setGroups] = useState<Group[]>([]);
   const [scores, setScores] = useState<Record<number, Partial<GroupScore>>>({});
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Create mutation for saving scores
+  const saveScoreMutation = useMutation({
+    mutationFn: (score: Omit<GroupScore, 'id'>) => {
+      return ScoreService.createGroupScore(score);
+    },
+    onSuccess: () => {
+      const currentGroup = groups[currentGroupIndex];
+      if (!currentGroup) return;
+      
+      toast({
+        title: "Bewertung gespeichert",
+        description: `Die Bewertung für ${currentGroup.name} wurde gespeichert.`
+      });
+      
+      // Move to next group or back to judging page
+      if (currentGroupIndex < groups.length - 1) {
+        setCurrentGroupIndex(prev => prev + 1);
+      } else {
+        navigate('/judging');
+      }
+    },
+    onError: (error) => {
+      console.error('Error saving score:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Bewertung konnte nicht gespeichert werden.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Validate size parameter and check if user is authorized
   useEffect(() => {
@@ -61,60 +95,85 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     }
   }, [size, categoryParam, navigate, toast, currentUser]);
 
-  // Filter groups based on size and category
+  // Load groups from database based on size and category
   useEffect(() => {
-    if (!size) return;
-    
-    const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
-    
-    // Get the reordered groups from session storage if available
-    const storedGroups = sessionStorage.getItem(`reorderedGroups-${groupSize}-${categoryParam || 'all'}`);
-    let filteredGroups: Group[] = [];
-    
-    if (storedGroups) {
+    const fetchGroups = async () => {
+      if (!size) return;
+      
+      setIsLoading(true);
       try {
-        // Use the reordered groups from session storage
-        const parsedGroups: Group[] = JSON.parse(storedGroups);
-        filteredGroups = parsedGroups;
+        const groupSize: GroupSize = size === 'three' ? 'three' : 'four';
+        
+        // Fetch all groups from the database
+        const allGroups = await GroupService.getAllGroups();
+        console.log('Fetched groups from database:', allGroups);
+        
+        // Filter groups by size and category
+        let filteredGroups = allGroups.filter(group => group.size === groupSize);
+        
+        // Filter by category if provided
+        if (categoryParam && ['kids_juniors', 'active'].includes(categoryParam)) {
+          filteredGroups = filteredGroups.filter(
+            group => group.category === categoryParam as GroupCategory
+          );
+        }
+        
+        console.log('Filtered groups:', filteredGroups);
+        
+        // Use reordered groups from session storage if available
+        const storedGroups = sessionStorage.getItem(`reorderedGroups-${groupSize}-${categoryParam || 'all'}`);
+        if (storedGroups) {
+          try {
+            const parsedGroups: Group[] = JSON.parse(storedGroups);
+            // Find the actual database group objects that match the stored order
+            const orderedGroups = parsedGroups
+              .map(storedGroup => filteredGroups.find(g => g.id === storedGroup.id))
+              .filter(Boolean) as Group[];
+            
+            // Add any new groups that might not be in storage yet
+            filteredGroups.forEach(group => {
+              if (!orderedGroups.some(g => g.id === group.id)) {
+                orderedGroups.push(group);
+              }
+            });
+            
+            setGroups(orderedGroups);
+          } catch (error) {
+            console.error('Error parsing stored groups:', error);
+            setGroups(filteredGroups);
+          }
+        } else {
+          setGroups(filteredGroups);
+        }
+        
+        // Initialize scores for each group
+        const initialScores: Record<number, Partial<GroupScore>> = {};
+        filteredGroups.forEach(group => {
+          initialScores[group.id] = {
+            groupId: group.id,
+            judgeId: currentUser?.id,
+            whipStrikes: 0,
+            rhythm: 0,
+            tempo: 0,
+            time: true
+          };
+        });
+        setScores(initialScores);
+        
       } catch (error) {
-        console.error('Error parsing stored groups:', error);
-        // Fallback to default filtering
-        filteredGroups = getFilteredGroups(groupSize, categoryParam);
+        console.error('Error fetching groups:', error);
+        toast({
+          title: "Fehler",
+          description: "Gruppen konnten nicht geladen werden",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // No stored order, use default filtering
-      filteredGroups = getFilteredGroups(groupSize, categoryParam);
-    }
+    };
     
-    setGroups(filteredGroups);
-    
-    // Initialize scores for each group
-    const initialScores: Record<number, Partial<GroupScore>> = {};
-    filteredGroups.forEach(group => {
-      initialScores[group.id] = {
-        groupId: group.id,
-        judgeId: currentUser?.id,
-        whipStrikes: 0,
-        rhythm: 0,
-        tempo: 0
-      };
-    });
-    setScores(initialScores);
-  }, [size, categoryParam, currentUser]);
-
-  // Helper function to get filtered groups by size and category
-  const getFilteredGroups = (groupSize: GroupSize, categoryParam: string | null): Group[] => {
-    let filtered = mockGroups.filter(group => group.size === groupSize);
-    
-    // Filter by category if provided
-    if (categoryParam && ['kids_juniors', 'active'].includes(categoryParam)) {
-      filtered = filtered.filter(
-        group => group.category === categoryParam as GroupCategory
-      );
-    }
-    
-    return filtered;
-  };
+    fetchGroups();
+  }, [size, categoryParam, currentUser, toast]);
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
@@ -138,21 +197,26 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     }));
   };
 
-  const handleSaveScore = () => {
+  const handleSaveScore = async () => {
     const currentGroup = groups[currentGroupIndex];
-    if (!currentGroup) return;
+    if (!currentGroup || !currentUser?.id) return;
     
-    toast({
-      title: "Bewertung gespeichert",
-      description: `Die Bewertung für ${currentGroup.name} wurde gespeichert.`
-    });
+    const currentScore = scores[currentGroup.id];
+    if (!currentScore) return;
     
-    // Move to next group or back to judging page
-    if (currentGroupIndex < groups.length - 1) {
-      setCurrentGroupIndex(prev => prev + 1);
-    } else {
-      navigate('/judging');
-    }
+    // Prepare score data for saving
+    const scoreData: Omit<GroupScore, 'id'> = {
+      groupId: currentGroup.id,
+      judgeId: currentUser.id,
+      whipStrikes: currentScore.whipStrikes || 0,
+      rhythm: currentScore.rhythm || 0,
+      tempo: currentScore.tempo || 0,
+      time: currentScore.time !== undefined ? currentScore.time : true,
+      tournamentId: currentGroup.tournamentId
+    };
+    
+    // Save score to database
+    saveScoreMutation.mutate(scoreData);
   };
 
   return {
@@ -162,6 +226,7 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     canEditCriterion,
     handleScoreChange,
     handleSaveScore,
-    setCurrentGroupIndex
+    setCurrentGroupIndex,
+    isLoading
   };
 };
