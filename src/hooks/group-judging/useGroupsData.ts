@@ -91,7 +91,7 @@ export const useGroupsData = (
     };
     
     fetchGroups();
-  }, [size, categoryParam, toast, selectedTournament, handleError, isUserLoading, currentUser]);
+  }, [size, categoryParam, toast, selectedTournament, handleError, isUserLoading]);
 
   return { 
     groups, 
