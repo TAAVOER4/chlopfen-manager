@@ -7,6 +7,11 @@ export class GroupQueryService extends BaseGroupService {
     try {
       console.log("Getting all groups...");
       
+      if (!this.supabase) {
+        console.error("Supabase client is not initialized");
+        return [];
+      }
+      
       const { data, error } = await this.supabase
         .from('groups')
         .select('*')

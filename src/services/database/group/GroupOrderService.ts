@@ -1,22 +1,17 @@
 
 import { BaseGroupService } from './BaseGroupService';
+import { Group } from '@/types';
 
 export class GroupOrderService extends BaseGroupService {
-  static async updateGroupDisplayOrder(groupId: number, displayOrder: number) {
+  static async updateGroupDisplayOrder(id: number, displayOrder: number) {
     try {
-      console.log(`Updating display order for group ${groupId} to ${displayOrder}`);
-      
       const { error } = await this.supabase
         .from('groups')
         .update({ display_order: displayOrder })
-        .eq('id', groupId);
+        .eq('id', id);
         
-      if (error) {
-        console.error("Error updating group display order:", error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log("Group display order updated successfully");
       return true;
     } catch (error) {
       console.error('Error updating group display order:', error);
@@ -24,49 +19,25 @@ export class GroupOrderService extends BaseGroupService {
     }
   }
 
-  static async bulkUpdateGroupDisplayOrder(groupUpdates: { id: number, displayOrder: number }[]) {
+  static async bulkUpdateGroupDisplayOrder(groups: Pick<Group, 'id' | 'displayOrder'>[]) {
     try {
-      if (groupUpdates.length === 0) return true;
+      // Create promises for all updates
+      const updatePromises = groups.map(group => 
+        this.supabase
+          .from('groups')
+          .update({ display_order: group.displayOrder })
+          .eq('id', group.id)
+      );
       
-      console.log("Bulk updating group display orders:", groupUpdates);
+      // Execute all updates in parallel
+      const results = await Promise.all(updatePromises);
       
-      // First, fetch the current data for these groups to ensure we have all required fields
-      const groupIds = groupUpdates.map(update => update.id);
-      const { data: existingGroups, error: fetchError } = await this.supabase
-        .from('groups')
-        .select('*')
-        .in('id', groupIds);
-        
-      if (fetchError) {
-        console.error("Error fetching existing groups for update:", fetchError);
-        throw fetchError;
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`${errors.length} errors occurred during bulk update`);
       }
       
-      if (!existingGroups || existingGroups.length === 0) {
-        console.error("No existing groups found for update");
-        throw new Error("No existing groups found for update");
-      }
-      
-      // Create an array of updates that preserves all existing data and only updates the display_order
-      const updates = existingGroups.map(group => {
-        const update = groupUpdates.find(u => u.id === group.id);
-        return {
-          ...group, // Keep all existing data
-          display_order: update ? update.displayOrder : group.display_order
-        };
-      });
-      
-      // Perform the upsert
-      const { error } = await this.supabase
-        .from('groups')
-        .upsert(updates);
-        
-      if (error) {
-        console.error("Error bulk updating group display orders:", error);
-        throw error;
-      }
-      
-      console.log("Bulk update of group display orders completed successfully");
       return true;
     } catch (error) {
       console.error('Error bulk updating group display orders:', error);
