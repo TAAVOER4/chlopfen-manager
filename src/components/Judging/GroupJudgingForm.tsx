@@ -68,11 +68,12 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
                   min="1"
                   max="10"
                   step="0.1"
-                  value={scores[currentGroup.id]?.[criterion.key] || 1}
+                  placeholder="Bewertung eingeben (1-10)"
+                  value={scores[currentGroup.id]?.[criterion.key] || ''}
                   onChange={(e) => handleScoreChange(
                     currentGroup.id, 
                     criterion.key, 
-                    Number(e.target.value)
+                    e.target.value === '' ? 0 : Number(e.target.value)
                   )}
                 />
               </div>

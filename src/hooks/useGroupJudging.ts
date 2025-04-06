@@ -147,15 +147,15 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
           setGroups(filteredGroups);
         }
         
-        // Initialize scores for each group
+        // Initialize scores for each group - with empty values instead of default 1
         const initialScores: Record<number, Partial<GroupScore>> = {};
         filteredGroups.forEach(group => {
           initialScores[group.id] = {
             groupId: group.id,
             judgeId: currentUser?.id,
-            whipStrikes: 0,
-            rhythm: 0,
-            tempo: 0,
+            whipStrikes: undefined,
+            rhythm: undefined,
+            tempo: undefined,
             time: true,
             tournamentId: selectedTournament?.id || group.tournamentId
           };
@@ -205,6 +205,21 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     
     const currentScore = scores[currentGroup.id];
     if (!currentScore) return;
+    
+    // Check if required fields are filled in
+    const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
+    const missingFields = requiredFields.filter(field => 
+      canEditCriterion(field) && (currentScore[field] === undefined || currentScore[field] === null)
+    );
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Fehlende Bewertungen",
+        description: "Bitte geben Sie Bewertungen für alle Ihnen zugewiesenen Kriterien ein.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Prepare score data for saving
     const scoreData: Omit<GroupScore, 'id'> = {
