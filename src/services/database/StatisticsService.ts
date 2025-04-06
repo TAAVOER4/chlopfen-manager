@@ -1,10 +1,11 @@
 
 import { BaseService } from './BaseService';
+import { supabase } from '@/integrations/supabase/client';
 
 export class StatisticsService extends BaseService {
   static async getParticipantStatistics() {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('participants')
         .select('category, is_group_only');
         
@@ -67,7 +68,7 @@ export class StatisticsService extends BaseService {
   
   static async getGroupStatistics() {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('groups')
         .select('size');
         
@@ -112,7 +113,7 @@ export class StatisticsService extends BaseService {
   static async getScoreStatistics() {
     try {
       // Get average scores by category
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('individual_scores')
         .select(`
           id,
