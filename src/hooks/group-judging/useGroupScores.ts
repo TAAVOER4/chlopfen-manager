@@ -14,10 +14,15 @@ export const useGroupScores = (groups: Group[]) => {
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
     groups.forEach(group => {
-      // Ensure judgeId is stored as a string to match UUID format expected by the database
+      // Convert user ID to a number if necessary
+      // This ensures judgeId is the correct type based on the GroupScore interface
+      const judgeId = typeof currentUser.id === 'string' 
+        ? parseInt(currentUser.id, 10) || currentUser.id // Keep as string if parseInt fails
+        : currentUser.id;
+      
       initialScores[group.id] = {
         groupId: group.id,
-        judgeId: currentUser.id.toString(),
+        judgeId: judgeId,
         whipStrikes: undefined,
         rhythm: undefined,
         tempo: undefined,

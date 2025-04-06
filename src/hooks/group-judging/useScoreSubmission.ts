@@ -98,9 +98,10 @@ export const useScoreSubmission = (
       return;
     }
 
-    // Make sure judgeId is sent as a string (UUID format)
-    // Ensure that judgeId is a proper UUID format string, not a number
-    const judgeId = currentUser.id.toString();
+    // Convert user ID to a number if necessary to match the GroupScore type
+    const judgeId = typeof currentUser.id === 'string' 
+      ? parseInt(currentUser.id, 10) || currentUser.id 
+      : currentUser.id;
     
     console.log('Judge ID being used:', judgeId, 'Type:', typeof judgeId);
 
