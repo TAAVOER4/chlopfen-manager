@@ -32,15 +32,18 @@ export const useGroupsData = (
       
       console.log('Fetching groups from database...');
       const allGroups = await GroupService.getAllGroups();
+      console.log('All groups fetched:', allGroups);
       
       // Filter groups by size and category
       let filteredGroups = allGroups.filter(group => group.size === groupSize);
+      console.log('Filtered by size:', filteredGroups);
       
       // Filter by tournament if available
       if (selectedTournament?.id) {
         filteredGroups = filteredGroups.filter(group => 
           group.tournamentId === selectedTournament.id
         );
+        console.log('Filtered by tournament:', filteredGroups);
       }
       
       // Filter by category if provided
@@ -48,6 +51,7 @@ export const useGroupsData = (
         filteredGroups = filteredGroups.filter(
           group => group.category === categoryParam as GroupCategory
         );
+        console.log('Filtered by category:', filteredGroups);
       }
       
       // Use reordered groups from session storage if available
@@ -90,7 +94,7 @@ export const useGroupsData = (
     }
   }, [size, categoryParam, selectedTournament?.id, handleError, toast, isUserLoading]);
 
-  // Load groups from database based on size and category - but only once
+  // Load groups from database based on size and category
   useEffect(() => {
     // Only fetch if we haven't attempted already and have valid parameters
     if (!hasAttemptedFetch && size) {

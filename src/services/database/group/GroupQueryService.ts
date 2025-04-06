@@ -7,17 +7,15 @@ export class GroupQueryService extends BaseGroupService {
     try {
       console.log("Getting all groups...");
       
-      if (!this.supabase) {
-        console.error("Supabase client is not initialized");
-        return [];
-      }
-      
       const { data, error } = await this.supabase
         .from('groups')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading groups:', error);
+        throw error;
+      }
       
       if (!data) return [];
       
@@ -37,7 +35,11 @@ export class GroupQueryService extends BaseGroupService {
         .from('group_participants')
         .select('*');
         
-      if (!groupError && groupParticipants) {
+      if (groupError) {
+        console.error('Error loading group participants:', groupError);
+      }
+      
+      if (groupParticipants) {
         // Add participant IDs to each group
         groups.forEach(group => {
           group.participantIds = groupParticipants
@@ -46,6 +48,7 @@ export class GroupQueryService extends BaseGroupService {
         });
       }
       
+      console.log("Loaded groups:", groups);
       return groups as Group[];
     } catch (error) {
       console.error('Error loading groups:', error);

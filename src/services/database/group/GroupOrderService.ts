@@ -3,12 +3,12 @@ import { BaseGroupService } from './BaseGroupService';
 import { Group } from '@/types';
 
 export class GroupOrderService extends BaseGroupService {
-  static async updateGroupDisplayOrder(id: number, displayOrder: number) {
+  static async updateGroupDisplayOrder(groupId: number, displayOrder: number) {
     try {
       const { error } = await this.supabase
         .from('groups')
         .update({ display_order: displayOrder })
-        .eq('id', id);
+        .eq('id', groupId);
         
       if (error) throw error;
       
@@ -19,17 +19,18 @@ export class GroupOrderService extends BaseGroupService {
     }
   }
 
-  static async bulkUpdateGroupDisplayOrder(groups: Pick<Group, 'id' | 'displayOrder'>[]) {
+  static async bulkUpdateGroupDisplayOrder(groupUpdates: { id: number, displayOrder: number }[]) {
     try {
-      // Create promises for all updates
-      const updatePromises = groups.map(group => 
+      if (groupUpdates.length === 0) return true;
+      
+      // Update one by one to match the pattern in ParticipantOrderService
+      const updatePromises = groupUpdates.map(update => 
         this.supabase
           .from('groups')
-          .update({ display_order: group.displayOrder })
-          .eq('id', group.id)
+          .update({ display_order: update.displayOrder })
+          .eq('id', update.id)
       );
       
-      // Execute all updates in parallel
       const results = await Promise.all(updatePromises);
       
       // Check for errors
@@ -40,7 +41,7 @@ export class GroupOrderService extends BaseGroupService {
       
       return true;
     } catch (error) {
-      console.error('Error bulk updating group display orders:', error);
+      console.error('Error bulk updating group display order:', error);
       throw error;
     }
   }
