@@ -147,7 +147,8 @@ export const useEditGroup = () => {
         category: data.category as GroupCategory,
         size: data.size as GroupSize,
         participantIds: selectedParticipants.map(p => p.id),
-        tournamentId: activeTournament.id
+        tournamentId: activeTournament.id,
+        displayOrder: group.displayOrder
       };
       
       console.log("Updating group:", updatedGroup);

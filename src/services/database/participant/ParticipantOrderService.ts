@@ -22,17 +22,22 @@ export class ParticipantOrderService extends BaseParticipantService {
     try {
       if (participantUpdates.length === 0) return true;
       
-      // Create an array of updates for the database
-      const updates = participantUpdates.map(update => ({
-        id: update.id,
-        display_order: update.displayOrder
-      }));
+      // We need to approach this differently since we can't just update with partial data
+      // We'll update one by one instead
+      const updatePromises = participantUpdates.map(update => 
+        this.supabase
+          .from('participants')
+          .update({ display_order: update.displayOrder })
+          .eq('id', update.id)
+      );
       
-      const { error } = await this.supabase
-        .from('participants')
-        .upsert(updates, { onConflict: 'id' });
-        
-      if (error) throw error;
+      const results = await Promise.all(updatePromises);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`${errors.length} errors occurred during bulk update`);
+      }
       
       return true;
     } catch (error) {

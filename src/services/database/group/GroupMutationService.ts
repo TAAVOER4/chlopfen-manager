@@ -1,6 +1,6 @@
 
 import { BaseGroupService } from './BaseGroupService';
-import { Group, GroupSize, GroupCategory } from '@/types';
+import { Group } from '@/types';
 
 export class GroupMutationService extends BaseGroupService {
   static async createGroup(group: Omit<Group, 'id'>) {
@@ -44,7 +44,7 @@ export class GroupMutationService extends BaseGroupService {
     }
   }
 
-  static async updateGroup(id: number, group: Partial<Omit<Group, 'id'>>) {
+  static async updateGroup(group: Group) {
     try {
       // Update group info
       const { error } = await this.supabase
@@ -56,36 +56,34 @@ export class GroupMutationService extends BaseGroupService {
           tournament_id: group.tournamentId,
           display_order: group.displayOrder
         })
-        .eq('id', id);
+        .eq('id', group.id);
         
       if (error) throw error;
       
-      // If participantIds are provided, update associations
-      if (group.participantIds) {
-        // First delete all existing associations
-        const { error: deleteError } = await this.supabase
-          .from('group_participants')
-          .delete()
-          .eq('group_id', id);
-          
-        if (deleteError) throw deleteError;
+      // Update participant associations
+      // First delete all existing associations
+      const { error: deleteError } = await this.supabase
+        .from('group_participants')
+        .delete()
+        .eq('group_id', group.id);
         
-        // Then add new associations
-        if (group.participantIds.length > 0) {
-          const groupParticipants = group.participantIds.map(participantId => ({
-            group_id: id,
-            participant_id: participantId
-          }));
+      if (deleteError) throw deleteError;
+      
+      // Then add new associations
+      if (group.participantIds.length > 0) {
+        const groupParticipants = group.participantIds.map(participantId => ({
+          group_id: group.id,
+          participant_id: participantId
+        }));
+        
+        const { error: insertError } = await this.supabase
+          .from('group_participants')
+          .insert(groupParticipants);
           
-          const { error: insertError } = await this.supabase
-            .from('group_participants')
-            .insert(groupParticipants);
-            
-          if (insertError) throw insertError;
-        }
+        if (insertError) throw insertError;
       }
       
-      return { id, ...group };
+      return group;
     } catch (error) {
       console.error('Error updating group:', error);
       throw error;
