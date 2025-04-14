@@ -44,14 +44,24 @@ export class GroupScoreDbService extends BaseScoreService {
     const supabase = this.checkSupabaseClient();
     
     try {
-      // First, archive ALL existing scores with the same combination
-      // This is critical to avoid unique constraint violations
-      await this.archiveAllExistingScores(score.groupId, score.tournamentId);
+      // First do a direct cleanup of any existing records to prevent constraint violations
+      const { error: cleanupError } = await supabase
+        .from('group_scores')
+        .update({ record_type: 'H' })
+        .eq('group_id', score.groupId)
+        .eq('judge_id', judgeId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('record_type', 'C');
+        
+      if (cleanupError) {
+        console.error('Warning - error during cleanup phase:', cleanupError);
+        // Continue anyway since we'll handle it in the insert
+      }
       
-      // Add a small delay to ensure DB has processed the archive operation
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Add a delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Now create the new score
+      // Now create the new score with a direct insert
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
@@ -73,30 +83,48 @@ export class GroupScoreDbService extends BaseScoreService {
         if (error.code === '23503') {
           throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
         } else if (error.code === '23505') {
-          // If we still hit a unique constraint, try one more time with a more aggressive approach
-          await this.forceArchiveExistingScores(score.groupId, judgeId, score.tournamentId);
+          // Handle the unique constraint violation with a direct update approach
+          console.log('Unique constraint violation detected, trying direct update approach');
           
-          // Try inserting again after forced archive
-          const { data: retryData, error: retryError } = await supabase
+          // First get the conflicting record
+          const { data: existingRecord, error: fetchError } = await supabase
             .from('group_scores')
-            .insert([{
-              group_id: score.groupId,
-              judge_id: judgeId,
+            .select('id')
+            .eq('group_id', score.groupId)
+            .eq('judge_id', judgeId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C')
+            .single();
+            
+          if (fetchError) {
+            console.error('Error fetching existing record:', fetchError);
+            throw new Error('Datenbankfehler beim Aktualisieren der bestehenden Bewertung.');
+          }
+          
+          if (!existingRecord) {
+            throw new Error('Fehler: Die bestehende Bewertung konnte nicht gefunden werden.');
+          }
+          
+          // Now update the existing record
+          const { data: updatedData, error: updateError } = await supabase
+            .from('group_scores')
+            .update({
               whip_strikes: score.whipStrikes,
               rhythm: score.rhythm,
               tempo: score.tempo,
               time: score.time,
-              tournament_id: score.tournamentId,
-              record_type: 'C'
-            }])
+              modified_at: new Date().toISOString()
+            })
+            .eq('id', existingRecord.id)
             .select()
             .single();
             
-          if (retryError) {
-            throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter. Bitte versuchen Sie es erneut oder laden Sie die Seite neu.');
+          if (updateError) {
+            console.error('Error updating existing record:', updateError);
+            throw new Error('Fehler beim Aktualisieren der bestehenden Bewertung.');
           }
           
-          return retryData;
+          return updatedData;
         } else {
           throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
         }
@@ -128,7 +156,6 @@ export class GroupScoreDbService extends BaseScoreService {
     return validJudge.id;
   }
   
-  // Archive all existing records for a group and tournament
   static async archiveAllExistingScores(groupId: number, tournamentId: number) {
     const supabase = this.checkSupabaseClient();
     
@@ -155,7 +182,6 @@ export class GroupScoreDbService extends BaseScoreService {
     }
   }
   
-  // More aggressive approach for handling specific constraint issues
   static async forceArchiveExistingScores(groupId: number, judgeId: string, tournamentId: number) {
     const supabase = this.checkSupabaseClient();
     

@@ -24,40 +24,54 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Mutation for saving scores with improved handling of constraint errors
+  // Mutation for saving scores with improved handling
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to database:', score);
       
-      // Always force a refetch first to get the latest state before mutation
+      // Always refetch first
       await refetchScores();
       
       try {
-        // Attempt to create or update the score
-        const result = await GroupScoreService.createOrUpdateGroupScore(score);
+        // Set a longer timeout for the operation
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Operation timed out')), 15000)
+        );
+        
+        // The actual score submission operation
+        const submissionPromise = GroupScoreService.createOrUpdateGroupScore(score);
+        
+        // Race the operation against a timeout
+        const result = await Promise.race([submissionPromise, timeoutPromise]);
         return result;
       } catch (error) {
         console.error('Error in score mutation:', error);
         
-        // Handle constraint errors specially
+        // Handle constraint errors with retries
         if (error instanceof Error && 
             (error.message.includes('unique constraint') || 
-             error.message.includes('bereits eine Bewertung'))) {
+             error.message.includes('bereits eine Bewertung') ||
+             error.message.includes('duplicate key'))) {
           console.log('Handling constraint error in mutation');
           
-          // Force another refetch to update UI with latest state
+          // Force another refetch
           await refetchScores();
           
-          // Add a slight delay before retrying to ensure DB operations complete
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Longer delay before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Try one more time with a fresh state
           try {
-            return await GroupScoreService.createOrUpdateGroupScore(score);
+            // Try direct update approach
+            return await GroupScoreService.createOrUpdateGroupScore(score, true);
           } catch (retryError) {
             console.error('Error after retry:', retryError);
             throw new Error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder laden Sie die Seite neu.');
           }
+        }
+        
+        // If it's a timeout, provide a specific message
+        if (error instanceof Error && error.message === 'Operation timed out') {
+          throw new Error('Die Operation hat zu lange gedauert. Bitte versuchen Sie es erneut.');
         }
         
         throw error;

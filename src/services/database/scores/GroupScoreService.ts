@@ -38,9 +38,9 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
-  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
+  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>, isRetry: boolean = false): Promise<GroupScore> {
     try {
-      console.log('Creating or updating group score:', score);
+      console.log('Creating or updating group score:', score, 'Is retry:', isRetry);
       
       // Validate inputs
       ScoreValidationService.validateScoreData(score);
@@ -57,12 +57,22 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Very important: First archive ALL existing scores for this group/tournament
-      try {
-        await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
-      } catch (archiveError) {
-        console.error('Error archiving existing scores:', archiveError);
-        // Continue with create attempt even if archive fails
+      // Use a more aggressive clean-up approach on retry
+      if (isRetry) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await GroupScoreDbService.forceArchiveExistingScores(score.groupId, judgeId, tournamentId);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (archiveError) {
+          console.error('Error with aggressive archiving on retry:', archiveError);
+        }
+      } else {
+        // First archive ALL existing scores for this group/tournament
+        try {
+          await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
+        } catch (archiveError) {
+          console.error('Error archiving existing scores:', archiveError);
+        }
       }
       
       // If it's an admin creating a score, use a valid judge ID
@@ -99,7 +109,10 @@ export class GroupScoreService extends BaseScoreService {
     originalJudgeId?: string
   ): Promise<GroupScore> {
     try {
-      // Create the new score (archiving is now done centrally before calling this)
+      // Add a delay to ensure archiving is complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Create the new score with improved error handling
       const data = await GroupScoreDbService.createScore(score, dbJudgeId);
       
       return {
