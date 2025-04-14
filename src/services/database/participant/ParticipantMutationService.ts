@@ -7,6 +7,11 @@ export class ParticipantMutationService extends BaseParticipantService {
     try {
       console.log("Creating new participant:", participant);
       
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized in createParticipant');
+        throw new Error('Supabase client is not initialized');
+      }
+      
       const { data, error } = await this.supabase
         .from('participants')
         .insert([{
@@ -53,6 +58,11 @@ export class ParticipantMutationService extends BaseParticipantService {
 
   static async updateParticipant(participant: Participant) {
     try {
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized in updateParticipant');
+        throw new Error('Supabase client is not initialized');
+      }
+      
       const { data, error } = await this.supabase
         .from('participants')
         .update({
@@ -93,6 +103,22 @@ export class ParticipantMutationService extends BaseParticipantService {
 
   static async deleteParticipant(id: number) {
     try {
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized in deleteParticipant');
+        throw new Error('Supabase client is not initialized');
+      }
+      
+      // First delete from group_participants
+      const { error: groupParticipantsError } = await this.supabase
+        .from('group_participants')
+        .delete()
+        .eq('participant_id', id);
+        
+      if (groupParticipantsError) {
+        console.error('Error deleting group participants:', groupParticipantsError);
+      }
+      
+      // Then delete the participant
       const { error } = await this.supabase
         .from('participants')
         .delete()

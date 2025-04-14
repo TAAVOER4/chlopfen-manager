@@ -1,7 +1,7 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DatabaseService } from '@/services/DatabaseService';
+import { DatabaseService } from '@/services/database';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Participant, Group } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -22,11 +22,13 @@ export const useParticipantsData = () => {
     refetch: refetchParticipants
   } = useQuery({
     queryKey: ['participants', activeTournament?.id],
-    queryFn: () => {
+    queryFn: async () => {
       console.log("Fetching participants...");
-      return DatabaseService.getAllParticipants();
+      const result = await DatabaseService.getAllParticipants();
+      console.log("Participants fetched:", result.length);
+      return result;
     },
-    staleTime: 0, // Set to 0 to always fetch fresh data
+    staleTime: 0, // Always fetch fresh data
     gcTime: 0,
     retry: 1,
     meta: {
@@ -52,11 +54,13 @@ export const useParticipantsData = () => {
     refetch: refetchGroups
   } = useQuery({
     queryKey: ['groups', activeTournament?.id],
-    queryFn: () => {
+    queryFn: async () => {
       console.log("Fetching groups...");
-      return DatabaseService.getAllGroups();
+      const result = await DatabaseService.getAllGroups();
+      console.log("Groups fetched:", result.length);
+      return result;
     },
-    staleTime: 0, // Set to 0 to always fetch fresh data
+    staleTime: 0, // Always fetch fresh data
     gcTime: 0,
     retry: 1,
     meta: {
@@ -100,31 +104,35 @@ export const useParticipantsData = () => {
     });
   }, [tournamentParticipants, searchTerm, selectedCategory]);
   
-  const handleDeleteClick = (participant: Participant) => {
+  const handleDeleteClick = useCallback((participant: Participant) => {
     setSelectedParticipant(participant);
     setDeleteDialogOpen(true);
-  };
+  }, []);
   
-  const handleParticipantDeleted = () => {
+  const handleParticipantDeleted = useCallback(() => {
     // Force immediate data refresh
     queryClient.invalidateQueries({ queryKey: ['participants'] });
     queryClient.invalidateQueries({ queryKey: ['groups'] });
-  };
+    toast({
+      title: "Erfolg",
+      description: "Teilnehmer wurde gelöscht",
+    });
+  }, [queryClient]);
   
-  const getGroupsForParticipant = (participantId: number): Group[] => {
+  const getGroupsForParticipant = useCallback((participantId: number): Group[] => {
     if (!groups || !activeTournament) return [];
     return groups.filter(group => 
       group.participantIds.includes(participantId) && 
       group.tournamentId === activeTournament.id
     );
-  };
+  }, [groups, activeTournament]);
 
-  // Add manual refetch methods
-  const refetchAll = () => {
+  // Add manual refetch method
+  const refetchAll = useCallback(() => {
     console.log("Manually refetching all data...");
     refetchParticipants();
     refetchGroups();
-  };
+  }, [refetchParticipants, refetchGroups]);
 
   return {
     participants,

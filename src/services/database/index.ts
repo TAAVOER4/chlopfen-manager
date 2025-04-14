@@ -1,5 +1,5 @@
 
-import { ParticipantService } from './ParticipantService';
+import { ParticipantService } from './participant';
 import { GroupService } from './GroupService';
 import { ScoreService } from './ScoreService';
 import { StatisticsService } from './StatisticsService';
