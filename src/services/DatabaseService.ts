@@ -1,12 +1,13 @@
-import { BaseGroupService } from './group/BaseGroupService';
-import { GroupQueryService } from './group/GroupQueryService';
-import { GroupMutationService } from './group/GroupMutationService';
-import { GroupOrderService } from './group/GroupOrderService';
-import { ParticipantQueryService } from './participant/ParticipantQueryService';
-import { ParticipantMutationService } from './participant/ParticipantMutationService';
-import { ParticipantOrderService } from './participant/ParticipantOrderService';
-import { IndividualScoreService } from './scores/IndividualScoreService';
-import { GroupScoreService } from './scores/GroupScoreService';
+
+import { BaseGroupService } from './database/group/BaseGroupService';
+import { GroupQueryService } from './database/group/GroupQueryService';
+import { GroupMutationService } from './database/group/GroupMutationService';
+import { GroupOrderService } from './database/group/GroupOrderService';
+import { ParticipantQueryService } from './database/participant/ParticipantQueryService';
+import { ParticipantMutationService } from './database/participant/ParticipantMutationService';
+import { ParticipantOrderService } from './database/participant/ParticipantOrderService';
+import { IndividualScoreService } from './database/scores/IndividualScoreService';
+import { GroupScoreService } from './database/scores/GroupScoreService';
 
 export class DatabaseService {
   // Participant management
