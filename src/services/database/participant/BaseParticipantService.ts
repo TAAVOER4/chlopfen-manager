@@ -1,6 +1,10 @@
 
 import { BaseService } from '../BaseService';
+import { Participant } from '@/types';
 
 export class BaseParticipantService extends BaseService {
-  // The supabase client is inherited from BaseService
+  protected static handleError(error: unknown, context: string) {
+    console.error(`Error ${context}:`, error);
+    throw error;
+  }
 }

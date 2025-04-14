@@ -19,7 +19,7 @@ export class GroupQueryService extends BaseGroupService {
       
       if (!data) return [];
       
-      console.log("Database returned groups data:", data);
+      console.log("Database returned groups data:", data.length, "records");
       
       // Create initial groups without participants
       const groups = data.map(group => ({
@@ -50,7 +50,7 @@ export class GroupQueryService extends BaseGroupService {
         });
       }
       
-      console.log("Processed groups with participants:", groups);
+      console.log("Processed groups with participants:", groups.length, "groups");
       return groups as Group[];
     } catch (error) {
       console.error('Error in getAllGroups method:', error);
