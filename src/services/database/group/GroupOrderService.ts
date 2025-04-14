@@ -6,6 +6,11 @@ export class GroupOrderService extends BaseGroupService {
     try {
       console.log(`Updating group ${groupId} display order to ${displayOrder}`);
       
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized in GroupOrderService');
+        throw new Error('Supabase client is not initialized');
+      }
+      
       const { error } = await this.supabase
         .from('groups')
         .update({ display_order: displayOrder })
@@ -28,6 +33,11 @@ export class GroupOrderService extends BaseGroupService {
       if (groupUpdates.length === 0) return true;
       
       console.log("Bulk updating group display orders:", groupUpdates);
+      
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized in GroupOrderService');
+        throw new Error('Supabase client is not initialized');
+      }
       
       // Update one by one to match the pattern in ParticipantOrderService
       const updatePromises = groupUpdates.map(update => 

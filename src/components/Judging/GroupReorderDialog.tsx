@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect } from 'react';
-import { Move } from 'lucide-react';
+import { Move, PlusCircle } from 'lucide-react';
 import { GroupCategory, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import {
@@ -12,6 +12,7 @@ import {
   DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface GroupReorderDialogProps {
   activeReorderSize: GroupSize | null;
@@ -84,8 +85,14 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
         
         <div className="space-y-2 max-h-[60vh] overflow-y-auto py-2">
           {groupsList.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              Keine Gruppen vorhanden für diese Kategorie.
+            <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+              <p className="mb-4">Keine Gruppen vorhanden für diese Kategorie.</p>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/participants/register-group">
+                  <PlusCircle className="h-4 w-4" />
+                  Gruppe erstellen
+                </Link>
+              </Button>
             </div>
           ) : (
             groupsList.map((group, index) => (

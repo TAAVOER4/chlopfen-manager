@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { GroupService } from '@/services/database/group';
+import { DatabaseService } from '@/services/DatabaseService';
 import { Card, CardContent } from '@/components/ui/card';
 import { GroupSize, GroupCategory, Group } from '../../types';
 import { useUser } from '@/contexts/UserContext';
@@ -10,11 +10,13 @@ import CategoryGroupCard from './CategoryGroupCard';
 import GroupJudgingTabHeader from './GroupJudgingTabHeader';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { checkSupabaseConnection } from '@/lib/supabase';
 
 const GroupJudgingTab = () => {
   const { isAdmin, selectedTournament } = useUser();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
   
   const [groupsBySizeAndCategory, setGroupsBySizeAndCategory] = useState<Record<GroupSize, Record<GroupCategory, Group[]>>>({
     three: { kids_juniors: [], active: [] },
@@ -25,8 +27,22 @@ const GroupJudgingTab = () => {
     const loadGroups = async () => {
       setLoading(true);
       try {
+        // First check if the Supabase connection is working
+        const isConnected = await checkSupabaseConnection();
+        if (!isConnected) {
+          console.error('Supabase connection failed');
+          setConnectionError(true);
+          setLoading(false);
+          toast({
+            title: "Verbindungsfehler",
+            description: "Die Verbindung zur Datenbank konnte nicht hergestellt werden.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         console.log('Loading groups for GroupJudgingTab...');
-        const allGroups = await GroupService.getAllGroups();
+        const allGroups = await DatabaseService.getAllGroups();
         console.log('Loaded groups from database:', allGroups);
         
         const tournamentGroups = selectedTournament?.id 
@@ -122,6 +138,20 @@ const GroupJudgingTab = () => {
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-[200px] w-full" />
             ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (connectionError) {
+    return (
+      <Card>
+        <GroupJudgingTabHeader />
+        <CardContent className="pt-0">
+          <div className="p-6 text-center">
+            <p className="text-red-500 font-medium mb-2">Verbindungsfehler</p>
+            <p className="text-muted-foreground">Die Verbindung zur Datenbank konnte nicht hergestellt werden.</p>
           </div>
         </CardContent>
       </Card>
