@@ -112,8 +112,8 @@ export class GroupScoreService extends BaseScoreService {
       // Add a delay to ensure archiving is complete
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Create the new score with improved error handling
-      const data = await GroupScoreDbService.createScore(score, dbJudgeId);
+      // Create the new score with improved error handling - pass the original judgeId as userId for modified_by
+      const data = await GroupScoreDbService.createScore(score, dbJudgeId, originalJudgeId);
       
       return {
         id: data.id,

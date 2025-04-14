@@ -32,7 +32,8 @@ export class BaseScoreService extends BaseService {
       .from(tableName)
       .update({ 
         record_type: 'H',
-        modified_at: new Date().toISOString() 
+        modified_at: new Date().toISOString(),
+        modified_by: newData.modified_by || oldData.modified_by
       })
       .eq('id', id);
       
@@ -47,12 +48,18 @@ export class BaseScoreService extends BaseService {
       // und wir entfernen eventuell vorhandene unique constraints (group_id, judge_id, tournament_id)
       const { id: oldId, ...dataWithoutId } = oldData;
       
+      // Log what we're doing for debugging
+      console.log(`Creating new record for ${tableName} after historizing ID ${id}`);
+      
       // Kombiniere alte Daten mit neuen Daten und setze record_type auf 'C'
       const insertData = {
         ...dataWithoutId,
         ...newData,
-        record_type: 'C'
+        record_type: 'C',
+        modified_at: new Date().toISOString()
       };
+      
+      console.log('New record data:', insertData);
       
       // 4. Neuen Eintrag einfügen
       const { data: newEntry, error: insertError } = await supabase
@@ -73,11 +80,18 @@ export class BaseScoreService extends BaseService {
           if (tableName === 'group_scores' && 'group_id' in oldData && 'tournament_id' in oldData && 'judge_id' in oldData) {
             await supabase
               .from(tableName)
-              .update({ record_type: 'H' })
+              .update({ 
+                record_type: 'H',
+                modified_at: new Date().toISOString(),
+                modified_by: newData.modified_by || oldData.modified_by
+              })
               .eq('group_id', oldData.group_id)
               .eq('judge_id', oldData.judge_id)
               .eq('tournament_id', oldData.tournament_id)
               .eq('record_type', 'C');
+            
+            // Delay to ensure consistency
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             // Dann den neuen Eintrag erneut versuchen
             const { data: retryEntry, error: retryError } = await supabase

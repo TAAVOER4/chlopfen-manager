@@ -38,6 +38,9 @@ export const useScoreMutation = () => {
           setTimeout(() => reject(new Error('Operation timed out')), 15000)
         );
         
+        // Log user info for debugging
+        console.log('Current user submitting score:', currentUser?.id);
+        
         // The actual score submission operation
         const submissionPromise = GroupScoreService.createOrUpdateGroupScore(score);
         
