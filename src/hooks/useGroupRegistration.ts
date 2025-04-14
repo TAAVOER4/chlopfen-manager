@@ -55,7 +55,8 @@ export const useGroupRegistration = ({ activeTournament, selectedParticipants }:
 
       // Check if a duplicate group already exists
       const participantIds = selectedParticipants.map(p => p.id);
-      if (isDuplicateGroup(participantIds)) {
+      // Fix: Pass both participantIds and size to isDuplicateGroup
+      if (isDuplicateGroup(participantIds, data.size)) {
         toast({
           title: "Doppelte Gruppe",
           description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
