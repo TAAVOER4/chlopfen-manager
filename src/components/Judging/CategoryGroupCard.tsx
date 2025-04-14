@@ -69,6 +69,7 @@ const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({
         <Button 
           asChild 
           className="w-full mt-2"
+          disabled={groups.length === 0}
         >
           <Link to={`/judging/group/${size}?category=${category}`}>
             Bewerten
