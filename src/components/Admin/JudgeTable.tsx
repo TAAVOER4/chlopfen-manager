@@ -12,27 +12,33 @@ import JudgeRow from './JudgeRow';
 
 interface JudgeTableProps {
   judges: Judge[];
-  editingJudge: Judge | null;
   onEdit: (judge: Judge) => void;
   onSave: () => void;
-  onImpersonate: (judgeId: number) => void;
+  onImpersonate: (judgeId: string) => void; // Changed from number to string
   onDeleteClick: (judge: Judge) => void;
-  onJudgeChange: (judge: Judge) => void;
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
 }
 
 const JudgeTable: React.FC<JudgeTableProps> = ({ 
   judges, 
-  editingJudge, 
   onEdit, 
   onSave,
   onImpersonate,
   onDeleteClick,
-  onJudgeChange,
   individualCriteria,
   groupCriteria
 }) => {
+  // Create maps for quick lookup
+  const criteriaMap = {
+    individual: Object.fromEntries(
+      individualCriteria.map(c => [c.value, c.label])
+    ),
+    group: Object.fromEntries(
+      groupCriteria.map(c => [c.value, c.label])
+    )
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -49,14 +55,11 @@ const JudgeTable: React.FC<JudgeTableProps> = ({
           <JudgeRow
             key={judge.id}
             judge={judge}
-            editingJudge={editingJudge}
             onEdit={onEdit}
             onSave={onSave}
             onImpersonate={onImpersonate}
             onDeleteClick={onDeleteClick}
-            onJudgeChange={onJudgeChange}
-            individualCriteria={individualCriteria}
-            groupCriteria={groupCriteria}
+            criteriaMap={criteriaMap}
           />
         ))}
       </TableBody>

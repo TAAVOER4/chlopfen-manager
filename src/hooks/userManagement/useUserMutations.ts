@@ -55,7 +55,8 @@ export const useUserMutations = () => {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string): Promise<boolean> => {
-      return await UserService.deleteUser(userId);
+      await UserService.deleteUser(userId);
+      return true; // Return boolean instead of void
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -75,7 +76,7 @@ export const useUserMutations = () => {
 
   const updatePasswordMutation = useMutation({
     mutationFn: async ({ userId, password }: { userId: string, password: string }): Promise<boolean> => {
-      return await UserService.updatePassword(userId, password);
+      return await UserService.changePassword(userId, password);
     },
     onSuccess: () => {
       toast({

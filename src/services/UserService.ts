@@ -55,7 +55,7 @@ export class UserService extends BaseSupabaseService {
           : [];
           
         return {
-          id: parseInt(user.id.toString(), 10), // Convert string ID to number
+          id: user.id, // Use the string ID directly
           name: user.name,
           username: user.username,
           role: user.role as UserRole,

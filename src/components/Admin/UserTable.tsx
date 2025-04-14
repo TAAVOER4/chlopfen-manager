@@ -9,10 +9,10 @@ interface UserTableProps {
   editingUser: User | null;
   onEdit: (user: User) => void;
   onSave: () => void;
-  onImpersonate: (userId: number) => void;
+  onImpersonate: (userId: string) => void; // Changed from number to string
   onDeleteClick: (user: User) => void;
   onUserChange: (user: User) => void;
-  onPasswordChange: (userId: number, newPassword: string) => Promise<boolean>;
+  onPasswordChange: (userId: string, newPassword: string) => Promise<boolean>; // Changed from number to string
   individualCriteria: { value: CriterionKey; label: string }[];
   groupCriteria: { value: GroupCriterionKey; label: string }[];
   tournaments: Tournament[];

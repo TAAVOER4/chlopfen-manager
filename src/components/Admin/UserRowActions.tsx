@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Edit, Trash, UserCheck, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ interface UserRowActionsProps {
   isEditing: boolean;
   onEdit: (user: User) => void;
   onSave: () => void;
-  onImpersonate: (userId: string) => void;
+  onImpersonate: (userId: string) => void; // Changed from number to string
   onDeleteClick: (user: User) => void;
   onPasswordDialogOpen: () => void;
 }

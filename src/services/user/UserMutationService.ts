@@ -1,8 +1,8 @@
-
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { User, UserRole } from '@/types';
 import { hashPassword } from '@/utils/authUtils';
 import { updateUserTournaments } from './UserTournamentService';
+import { mapDatabaseUserToAppUser } from './UserMapper';
 
 export class UserMutationService extends BaseSupabaseService {
   static async createUser(user: Omit<User, 'id'>): Promise<User> {
@@ -41,19 +41,11 @@ export class UserMutationService extends BaseSupabaseService {
         await updateUserTournaments(newUser.id, user.tournamentIds);
       }
       
-      // Return the user with the assigned tournaments
-      return {
-        id: parseInt(newUser.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
-        name: newUser.name,
-        username: newUser.username,
-        role: newUser.role as UserRole,
-        passwordHash: newUser.password_hash,
-        assignedCriteria: {
-          individual: newUser.individual_criterion as any,
-          group: newUser.group_criterion as any
-        },
-        tournamentIds: user.tournamentIds || []
-      };
+      // Convert the database user to an app user
+      const appUser = mapDatabaseUserToAppUser(newUser);
+      appUser.tournamentIds = user.tournamentIds || [];
+      
+      return appUser;
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -122,19 +114,11 @@ export class UserMutationService extends BaseSupabaseService {
       
       console.log('User updated successfully:', updatedUser);
       
-      // Return the updated user with the new tournament assignments
-      return {
-        id: parseInt(updatedUser.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000,
-        name: updatedUser.name,
-        username: updatedUser.username,
-        role: updatedUser.role as UserRole,
-        passwordHash: updatedUser.password_hash,
-        assignedCriteria: {
-          individual: updatedUser.individual_criterion as any,
-          group: updatedUser.group_criterion as any
-        },
-        tournamentIds: user.tournamentIds || []
-      };
+      // Convert the database user to an app user
+      const appUser = mapDatabaseUserToAppUser(updatedUser);
+      appUser.tournamentIds = user.tournamentIds || [];
+      
+      return appUser;
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;

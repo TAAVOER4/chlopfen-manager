@@ -27,69 +27,11 @@ export const useUserEditing = () => {
     setEditingUser(updatedUser);
   };
 
-  const handleSave = async () => {
-    if (!editingUser) return;
-    
-    try {
-      const result = await UserService.updateUser(editingUser);
-      
-      if (result) {
-        toast({
-          title: "Benutzer aktualisiert",
-          description: "Die Benutzerinformationen wurden aktualisiert."
-        });
-        setEditingUser(null);
-      } else {
-        toast({
-          title: "Fehler beim Speichern",
-          description: "Die Benutzerinformationen konnten nicht aktualisiert werden.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast({
-        title: "Fehler beim Speichern",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleAddUser = () => {
-    // Create a new user with default values
-    const newUser: User = {
-      id: crypto.randomUUID(), // Generate a UUID for new users
-      name: '',
-      username: '',
-      role: 'judge',
-      passwordHash: '',
-      password: '',
-      assignedCriteria: {
-        individual: undefined,
-        group: undefined
-      },
-      tournamentIds: []
-    };
-    
-    setEditingUser(newUser);
-  };
-
   const handlePasswordChange = async (userId: string, newPassword: string): Promise<boolean> => {
     setIsChangingPassword(true);
     try {
-      const user = await UserService.getUserById(userId);
-      
-      if (!user) {
-        toast({
-          title: "Benutzer nicht gefunden",
-          description: "Der Benutzer konnte nicht gefunden werden.",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      const result = await UserService.updatePassword(userId, newPassword);
+      // Remove the getUserById call as it doesn't exist
+      const result = await UserService.changePassword(userId, newPassword);
       
       if (result) {
         toast({
@@ -122,8 +64,6 @@ export const useUserEditing = () => {
     editingUser,
     handleEdit,
     handleUserChange,
-    handleSave,
-    handleAddUser,
     handlePasswordChange,
     isChangingPassword
   };

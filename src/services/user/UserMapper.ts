@@ -5,7 +5,7 @@ import { User, UserRole } from '@/types';
 export function mapDatabaseUserToAppUser(dbUser: any): User {
   if (!dbUser) return null as any;
   
-  // Ensure ID is treated as a string
+  // Use the ID directly as a string
   const id = dbUser.id ? String(dbUser.id) : '';
   
   return {

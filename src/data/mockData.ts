@@ -1,4 +1,3 @@
-
 import { Participant, IndividualScore, GroupScore, Judge, Sponsor, Group, GroupCategory } from '../types';
 import { determineCategory } from '../utils/categoryUtils';
 
@@ -573,10 +572,10 @@ export const mockGroups: Group[] = [
 // Default password hash (for the password "password")
 const defaultPasswordHash = "$2a$10$8DArxIj8AvMXCg7BXNgRhuGZfXxqpArWJI.uF9DS9T3EqYAPWIjPi";
 
-// Mock Judges
+// Mock Judges - Update ID types to string
 export const mockJudges: Judge[] = [
   { 
-    id: 1, 
+    id: "f5b2c3a7-1e5d-4839-a7dd-1c25f4b3a74f", // Changed from number to string UUID
     name: 'Hans Fischer', 
     username: 'hans', 
     role: 'admin',
@@ -587,7 +586,7 @@ export const mockJudges: Judge[] = [
     tournamentIds: [] // Admin can see all tournaments
   },
   { 
-    id: 2, 
+    id: "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d", // Changed from number to string UUID
     name: 'Maria Gerber', 
     username: 'maria', 
     role: 'judge',
@@ -598,7 +597,7 @@ export const mockJudges: Judge[] = [
     tournamentIds: [] // Judge can see all tournaments
   },
   { 
-    id: 3, 
+    id: "a1b2c3d4-e5f6-4a3b-8c9d-0e1f2a3b4c5d", // Changed from number to string UUID
     name: 'Peter Keller', 
     username: 'peter', 
     role: 'judge',
@@ -609,7 +608,7 @@ export const mockJudges: Judge[] = [
     tournamentIds: [] // Judge can see all tournaments
   },
   { 
-    id: 4, 
+    id: "b2c3d4e5-f6a7-4b3c-9d0e-1f2a3b4c5d6e", // Changed from number to string UUID
     name: 'Christine Wagner', 
     username: 'christine', 
     role: 'judge',
@@ -620,7 +619,7 @@ export const mockJudges: Judge[] = [
     tournamentIds: [] // Judge can see all tournaments
   },
   { 
-    id: 5, 
+    id: "c3d4e5f6-a7b8-4c3d-0e1f-2a3b4c5d6e7f", // Changed from number to string UUID
     name: 'Thomas Schneider', 
     username: 'thomas', 
     role: 'judge',

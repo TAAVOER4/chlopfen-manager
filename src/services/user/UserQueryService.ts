@@ -2,6 +2,7 @@
 import { BaseSupabaseService } from '../BaseSupabaseService';
 import { User } from '@/types';
 import { getUserTournaments } from './UserTournamentService';
+import { mapDatabaseUserToAppUser } from './UserMapper';
 
 export class UserQueryService extends BaseSupabaseService {
   static async getAllUsers(): Promise<User[]> {
@@ -28,18 +29,11 @@ export class UserQueryService extends BaseSupabaseService {
         // Get tournament IDs for this user
         const tournamentIds = await getUserTournaments(user.id);
           
-        return {
-          id: parseInt(user.id.toString().replace(/-/g, '').substring(0, 8), 16) % 1000, // Convert string ID to number
-          name: user.name,
-          username: user.username,
-          role: user.role,
-          passwordHash: user.password_hash,
-          assignedCriteria: {
-            individual: user.individual_criterion as any,
-            group: user.group_criterion as any
-          },
-          tournamentIds
-        };
+        // Map database user to app user
+        const appUser = mapDatabaseUserToAppUser(user);
+        appUser.tournamentIds = tournamentIds;
+        
+        return appUser;
       }));
       
       console.log('Found', users.length, 'users in database');

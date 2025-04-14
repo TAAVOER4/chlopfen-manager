@@ -7,7 +7,7 @@ import { AuthUserData } from './types/AuthTypes';
  */
 export function mapDatabaseUserToUser(userData: AuthUserData): User {
   return {
-    id: parseInt(userData.id.toString().substring(0, 8), 16) % 1000,
+    id: userData.id, // Keep the string UUID instead of parsing to number
     name: userData.name,
     username: userData.username,
     role: userData.role as UserRole,

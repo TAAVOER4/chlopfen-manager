@@ -36,25 +36,17 @@ export const useUserDeletion = () => {
     
     setIsDeleting(true);
     try {
-      const result = await UserService.deleteUser(userId);
+      await UserService.deleteUser(userId);
       
-      if (result) {
-        toast({
-          title: "Benutzer gelöscht",
-          description: "Der Benutzer wurde erfolgreich gelöscht."
-        });
-      } else {
-        toast({
-          title: "Fehler beim Löschen",
-          description: "Der Benutzer konnte nicht gelöscht werden.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Benutzer gelöscht",
+        description: "Der Benutzer wurde erfolgreich gelöscht."
+      });
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
         title: "Fehler beim Löschen",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        description: "Der Benutzer konnte nicht gelöscht werden.",
         variant: "destructive"
       });
     } finally {

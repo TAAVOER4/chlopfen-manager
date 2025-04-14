@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   DropdownMenu,
@@ -17,7 +18,7 @@ interface JudgeRowProps {
   judge: Judge;
   onEdit: (judge: Judge) => void;
   onDelete: (judge: Judge) => void;
-  onImpersonate: (userId: string) => void;
+  onImpersonate: (userId: string) => void; // Changed from number to string
   criteriaMap: {
     individual: Record<string, string>;
     group: Record<string, string>;

@@ -6,19 +6,41 @@ import { useUserMutations } from './useUserMutations';
 
 export const useUserManagement = () => {
   // Load users
-  const { users, setUsers, loading, loadUsers } = useUserLoading();
+  const { users, loading, loadUsers } = useUserLoading();
   
   // User editing operations
-  const { editingUser, setEditingUser, handleEdit, handleUserChange, handlePasswordChange, isChangingPassword } = 
-    useUserEditing(users, setUsers);
+  const { editingUser, handleEdit, handleUserChange, handlePasswordChange, isChangingPassword } = 
+    useUserEditing();
   
   // User deletion operations
   const { userToDelete, deleteDialogOpen, setDeleteDialogOpen, handleDeleteClick, handleDeleteUser } = 
-    useUserDeletion(users, setUsers);
+    useUserDeletion();
   
   // User mutation operations (create/update)
-  const { handleSave, handleAddUser } = 
-    useUserMutations(users, setUsers, editingUser, setEditingUser);
+  const { createUser, updateUser, isCreating, isUpdating } = 
+    useUserMutations();
+
+  const handleSave = () => {
+    if (editingUser) {
+      updateUser(editingUser);
+    }
+  };
+
+  const handleAddUser = () => {
+    handleEdit({
+      id: crypto.randomUUID(),
+      name: '',
+      username: '',
+      role: 'judge',
+      passwordHash: '',
+      password: '',
+      assignedCriteria: {
+        individual: undefined,
+        group: undefined
+      },
+      tournamentIds: []
+    });
+  };
 
   return {
     users,

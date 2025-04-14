@@ -47,7 +47,7 @@ const UsersPage = () => {
     ? users 
     : users.filter(user => user.role === activeTab);
 
-  const handleImpersonate = (userId: string) => {
+  const handleImpersonate = (userId: string) => { // Changed from number to string
     const user = users.find(u => u.id === userId);
     if (user) {
       impersonate(user);
