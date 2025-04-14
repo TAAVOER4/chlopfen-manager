@@ -53,7 +53,7 @@ export class GroupScoreService extends BaseScoreService {
       }
       
       // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
-      if (score.judgeId.indexOf('-') < 0 || score.judgeId.length !== 36) {
+      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
         throw new Error('Judge ID must be in valid UUID format');
       }
       
@@ -62,6 +62,18 @@ export class GroupScoreService extends BaseScoreService {
         : score.tournamentId;
       
       const supabase = this.checkSupabaseClient();
+      
+      // First check if the user actually exists in the users table
+      const { data: userExists, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', score.judgeId)
+        .single();
+        
+      if (userError || !userExists) {
+        console.error('Error checking user existence:', userError);
+        throw new Error(`User with ID ${score.judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
+      }
       
       // Log the judgeId for debugging
       console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Length:', score.judgeId.length);
