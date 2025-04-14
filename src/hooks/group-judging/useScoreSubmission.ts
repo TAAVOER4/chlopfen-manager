@@ -116,14 +116,10 @@ export const useScoreSubmission = (
         throw new Error("Kein Turnier ausgewählt");
       }
 
-      // Make sure we're using a properly formatted UUID string for judgeId
-      // The UUID format is required by the database
-      let judgeId = currentUser.id;
-      
-      // Ensure judgeId is a string (UUID format)
-      if (typeof judgeId === 'number') {
-        judgeId = judgeId.toString();
-      }
+      // Ensure judgeId is a string (UUID format required by database)
+      const judgeId = typeof currentUser.id === 'number' 
+        ? String(currentUser.id) // Convert number to string safely
+        : currentUser.id; // Already a string
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
 
