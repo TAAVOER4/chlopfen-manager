@@ -23,27 +23,22 @@ export class GroupScoreDbService extends BaseScoreService {
   }
 
   static async updateScore(scoreId: number, score: Partial<GroupScore>) {
-    const supabase = this.checkSupabaseClient();
-    
-    const { data, error } = await supabase
-      .from('group_scores')
-      .update({
+    try {
+      console.log('Historizing and creating new score entry with:', score);
+      
+      // Anstatt zu aktualisieren, historisieren wir den alten Eintrag und erstellen einen neuen
+      const updatedData = await this.historizeAndCreate('group_scores', scoreId, {
         whip_strikes: score.whipStrikes,
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
-      })
-      .eq('id', scoreId)
-      .eq('record_type', 'C')
-      .select()
-      .single();
+      });
       
-    if (error) {
+      return updatedData;
+    } catch (error) {
       console.error('Error updating group score:', error);
-      throw new Error(`Error updating group score: ${error.message}`);
+      throw new Error(`Error updating group score: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
-    return data;
   }
 
   static async createScore(score: Omit<GroupScore, 'id'>, judgeId: string) {
@@ -86,6 +81,7 @@ export class GroupScoreDbService extends BaseScoreService {
       .from('users')
       .select('id')
       .eq('role', 'judge')
+      .eq('record_type', 'C')
       .limit(1)
       .single();
       

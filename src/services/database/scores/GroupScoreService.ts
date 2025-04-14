@@ -61,7 +61,7 @@ export class GroupScoreService extends BaseScoreService {
       const existingScore = await GroupScoreDbService.getExistingScore(score.groupId, tournamentId);
       
       if (existingScore) {
-        console.log(`Found existing score with ID ${existingScore.id}, updating instead of creating`);
+        console.log(`Found existing score with ID ${existingScore.id}, historizing and creating new entry`);
         
         // If it's an admin updating a score, use a valid judge ID from the database
         let updatedJudgeId = judgeId;
