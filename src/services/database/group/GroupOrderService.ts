@@ -1,6 +1,5 @@
 
 import { BaseGroupService } from './BaseGroupService';
-import { Group } from '@/types';
 
 export class GroupOrderService extends BaseGroupService {
   static async updateGroupDisplayOrder(groupId: number, displayOrder: number) {
