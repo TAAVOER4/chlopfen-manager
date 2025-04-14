@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowRight, MoveVertical, User } from 'lucide-react';
+import { ArrowRight, MoveVertical, Users } from 'lucide-react';
 import { GroupCategory, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 
@@ -40,7 +40,7 @@ const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({
       <CardHeader className="pb-2">
         <CardTitle className="flex justify-between items-center text-base">
           <div className="flex items-center">
-            <User className="mr-2 h-5 w-5" />
+            <Users className="mr-2 h-5 w-5" />
             {categoryLabel} - {getGroupSizeDisplay(size)}
           </div>
           {isAdmin && (
@@ -48,7 +48,10 @@ const CategoryGroupCard: React.FC<CategoryGroupCardProps> = ({
               variant="ghost" 
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={() => openReorderDialog(size, category)}
+              onClick={() => {
+                console.log("Reorder button clicked for:", size, category);
+                openReorderDialog(size, category);
+              }}
               title="Reihenfolge anpassen"
             >
               <MoveVertical className="h-4 w-4" />

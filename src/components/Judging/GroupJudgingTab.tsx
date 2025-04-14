@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GroupService } from '@/services/database/group';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,7 @@ const GroupJudgingTab = () => {
     const loadGroups = async () => {
       setLoading(true);
       try {
+        console.log('Loading groups for GroupJudgingTab...');
         const allGroups = await GroupService.getAllGroups();
         console.log('Loaded groups from database:', allGroups);
         
@@ -31,12 +33,30 @@ const GroupJudgingTab = () => {
           ? allGroups.filter(group => group.tournamentId === selectedTournament.id)
           : allGroups;
         
+        console.log('Filtered for tournament:', tournamentGroups.length, 'groups');
+        
         const initialGroups: Record<GroupSize, Record<GroupCategory, Group[]>> = {
           three: { kids_juniors: [], active: [] },
           four: { kids_juniors: [], active: [] }
         };
         
         tournamentGroups.forEach(group => {
+          // Skip groups with invalid size or category
+          if (!group.size || !group.category) {
+            console.warn('Group with missing size or category:', group);
+            return;
+          }
+          
+          if (!initialGroups[group.size]) {
+            console.warn('Unknown group size:', group.size);
+            return;
+          }
+          
+          if (!initialGroups[group.size][group.category]) {
+            console.warn('Unknown group category:', group.category);
+            return;
+          }
+          
           initialGroups[group.size][group.category].push(group);
         });
         
@@ -45,16 +65,17 @@ const GroupJudgingTab = () => {
           Object.keys(initialGroups[sizeKey]).forEach((category) => {
             const categoryKey = category as GroupCategory;
             initialGroups[sizeKey][categoryKey].sort((a, b) => {
-              if (a.displayOrder && b.displayOrder) {
+              if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
                 return a.displayOrder - b.displayOrder;
               }
-              if (a.displayOrder) return -1;
-              if (b.displayOrder) return 1;
+              if (a.displayOrder !== undefined) return -1;
+              if (b.displayOrder !== undefined) return 1;
               return a.id - b.id;
             });
           });
         });
         
+        console.log('Organized groups:', initialGroups);
         setGroupsBySizeAndCategory(initialGroups);
       } catch (error) {
         console.error('Error loading groups:', error);

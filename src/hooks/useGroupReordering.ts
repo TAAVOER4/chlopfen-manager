@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { Group, GroupSize, GroupCategory } from '../types';
 import { reorderGroups } from '@/utils/scoreUtils';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseService } from '@/services/DatabaseService';
+import { GroupOrderService } from '@/services/database/group/GroupOrderService';
 
 export const useGroupReordering = (
   groupsBySizeAndCategory: Record<GroupSize, Record<GroupCategory, Group[]>>,
@@ -138,7 +139,7 @@ export const useGroupReordering = (
       }));
 
       // Bulk update the display orders
-      await DatabaseService.bulkUpdateGroupDisplayOrder(updates);
+      await GroupOrderService.bulkUpdateGroupDisplayOrder(updates);
       console.log('Group display order saved to database');
     } catch (error) {
       console.error('Error saving group order to database:', error);
@@ -151,6 +152,7 @@ export const useGroupReordering = (
   };
 
   const openReorderDialog = (size: GroupSize, category: GroupCategory) => {
+    console.log("Opening reorder dialog for:", size, category);
     setActiveReorderSize(size);
     setActiveReorderCategory(category);
   };

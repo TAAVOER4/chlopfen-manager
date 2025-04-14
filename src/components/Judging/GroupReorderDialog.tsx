@@ -1,7 +1,7 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Move } from 'lucide-react';
-import { GroupCategory, Group, GroupSize } from '../../types';
+import { GroupCategory, GroupSize, Group } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import {
   Dialog,
@@ -42,6 +42,8 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
 }) => {
   const positionInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   
+  const isOpen = activeReorderSize !== null && activeReorderCategory !== null;
+  
   const sizeLabel = activeReorderSize === 'three' ? 'Dreier' : 'Vierer';
   
   const getCategoryLabel = () => {
@@ -49,9 +51,25 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
     return getCategoryDisplay(activeReorderCategory);
   };
 
+  const groupsList = isOpen && activeReorderSize && activeReorderCategory 
+    ? groupsBySizeAndCategory[activeReorderSize][activeReorderCategory] || []
+    : [];
+
+  // Debug logging
+  useEffect(() => {
+    if (isOpen) {
+      console.log("Dialog open with:", { 
+        activeReorderSize, 
+        activeReorderCategory,
+        groupCount: groupsList.length,
+        groups: groupsList
+      });
+    }
+  }, [isOpen, activeReorderSize, activeReorderCategory, groupsList]);
+
   return (
     <Dialog 
-      open={activeReorderSize !== null && activeReorderCategory !== null} 
+      open={isOpen} 
       onOpenChange={(open) => !open && closeReorderDialog()}
     >
       <DialogContent className="max-w-md">
@@ -65,51 +83,56 @@ const GroupReorderDialog: React.FC<GroupReorderDialogProps> = ({
         </DialogHeader>
         
         <div className="space-y-2 max-h-[60vh] overflow-y-auto py-2">
-          {activeReorderSize && activeReorderCategory && 
-           groupsBySizeAndCategory[activeReorderSize]?.[activeReorderCategory]?.map((group, index) => (
-            <div 
-              key={group.id}
-              draggable
-              onDragStart={e => handleDragStart(e, index, activeReorderSize, activeReorderCategory)}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={e => handleDrop(e, index, activeReorderSize, activeReorderCategory)}
-              className={`flex items-center justify-between p-3 rounded-md border 
-                ${(draggingSize === activeReorderSize && draggingCategory === activeReorderCategory) 
-                  ? 'cursor-grab' : ''} hover:bg-accent/50`}
-            >
-              <div className="flex items-center gap-2">
-                <Move className="h-4 w-4 text-muted-foreground cursor-grab" />
-                <span>{group.name}</span>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min={1}
-                  max={groupsBySizeAndCategory[activeReorderSize][activeReorderCategory].length}
-                  defaultValue={index + 1}
-                  className="w-16 h-8 text-center border rounded-md"
-                  ref={(el) => {
-                    if (el) positionInputRefs.current.set(group.id, el);
-                  }}
-                  onBlur={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val)) {
-                      updateGroupOrder(activeReorderSize, activeReorderCategory, group.id, val);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = parseInt((e.target as HTMLInputElement).value);
-                      if (!isNaN(val)) {
+          {groupsList.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Keine Gruppen vorhanden für diese Kategorie.
+            </div>
+          ) : (
+            groupsList.map((group, index) => (
+              <div 
+                key={group.id}
+                draggable
+                onDragStart={e => handleDragStart(e, index, activeReorderSize!, activeReorderCategory!)}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={e => handleDrop(e, index, activeReorderSize!, activeReorderCategory!)}
+                className={`flex items-center justify-between p-3 rounded-md border 
+                  ${(draggingSize === activeReorderSize && draggingCategory === activeReorderCategory) 
+                    ? 'cursor-grab' : ''} hover:bg-accent/50`}
+              >
+                <div className="flex items-center gap-2">
+                  <Move className="h-4 w-4 text-muted-foreground cursor-grab" />
+                  <span>{group.name}</span>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={groupsList.length}
+                    defaultValue={index + 1}
+                    className="w-16 h-8 text-center border rounded-md"
+                    ref={(el) => {
+                      if (el) positionInputRefs.current.set(group.id, el);
+                    }}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && activeReorderSize && activeReorderCategory) {
                         updateGroupOrder(activeReorderSize, activeReorderCategory, group.id, val);
                       }
-                    }
-                  }}
-                />
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = parseInt((e.target as HTMLInputElement).value);
+                        if (!isNaN(val) && activeReorderSize && activeReorderCategory) {
+                          updateGroupOrder(activeReorderSize, activeReorderCategory, group.id, val);
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="flex justify-end mt-4">
