@@ -1,14 +1,14 @@
 
 import { User } from '@/types';
-import { AuthenticationService } from './auth/AuthenticationService';
-import { InitializationService } from './auth/InitializationService';
+import { login, logout } from './auth/AuthenticationService';
+import { initializeAuth } from './auth/InitializationService';
 import { PasswordService } from './auth/PasswordService';
 import { BaseSupabaseService } from './BaseSupabaseService';
 
 export class AuthService extends BaseSupabaseService {
   // Authentication methods
   static async authenticateUser(usernameOrEmail: string, password: string): Promise<User | null> {
-    return AuthenticationService.authenticateUser(usernameOrEmail, password);
+    return login(usernameOrEmail, password);
   }
 
   // User password management
@@ -18,6 +18,6 @@ export class AuthService extends BaseSupabaseService {
 
   // Initialization methods
   static async initializeUsers(): Promise<void> {
-    return InitializationService.initializeUsers();
+    return initializeAuth();
   }
 }

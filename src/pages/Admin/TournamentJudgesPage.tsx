@@ -33,7 +33,7 @@ const TournamentJudgesPage = () => {
   const [judges, setJudges] = useState<Judge[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const [selectedJudges, setSelectedJudges] = useState<number[]>([]);
+  const [selectedJudges, setSelectedJudges] = useState<string[]>([]);
 
   // Get tournament data
   useEffect(() => {
@@ -69,7 +69,7 @@ const TournamentJudgesPage = () => {
     return matchesSearch;
   });
 
-  const toggleJudge = (judgeId: number) => {
+  const toggleJudge = (judgeId: string) => {
     setSelectedJudges(prevSelected => {
       if (prevSelected.includes(judgeId)) {
         return prevSelected.filter(id => id !== judgeId);

@@ -1,103 +1,100 @@
-
 import React from 'react';
-import { Edit, Save, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Judge, CriterionKey, GroupCriterionKey } from '@/types';
-import JudgeForm from './JudgeForm';
-import JudgeDisplay from './JudgeDisplay';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Judge } from '@/types';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Edit, MoreHorizontal, Trash, UserCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface JudgeRowProps {
   judge: Judge;
-  editingJudge: Judge | null;
   onEdit: (judge: Judge) => void;
-  onSave: () => void;
-  onImpersonate: (judgeId: number) => void;
-  onDeleteClick: (judge: Judge) => void;
-  onJudgeChange: (judge: Judge) => void;
-  individualCriteria: { value: CriterionKey; label: string }[];
-  groupCriteria: { value: GroupCriterionKey; label: string }[];
+  onDelete: (judge: Judge) => void;
+  onImpersonate: (userId: string) => void;
+  criteriaMap: {
+    individual: Record<string, string>;
+    group: Record<string, string>;
+  };
 }
 
 const JudgeRow: React.FC<JudgeRowProps> = ({ 
   judge, 
-  editingJudge, 
   onEdit, 
-  onSave, 
+  onDelete, 
   onImpersonate,
-  onDeleteClick,
-  onJudgeChange,
-  individualCriteria,
-  groupCriteria
+  criteriaMap
 }) => {
-  const isEditing = editingJudge?.id === judge.id;
   
-  // Create maps for quick lookup
-  const individualCriteriaMap = Object.fromEntries(
-    individualCriteria.map(c => [c.value, c.label])
-  );
-  
-  const groupCriteriaMap = Object.fromEntries(
-    groupCriteria.map(c => [c.value, c.label])
-  );
-
   return (
     <TableRow>
+      <TableCell className="font-medium">{judge.name}</TableCell>
+      <TableCell>{judge.username}</TableCell>
       <TableCell>
-        {isEditing ? (
-          <JudgeForm 
-            judge={editingJudge}
-            onJudgeChange={onJudgeChange}
-            individualCriteria={individualCriteria}
-            groupCriteria={groupCriteria}
-          />
-        ) : (
-          judge.name
+        <Badge variant="outline">
+          {judge.role === 'admin' ? 'Administrator' : 'Richter'}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        {/* Display individual criterion */}
+        {judge.assignedCriteria?.individual && (
+          <div className="mb-1">
+            <Badge variant="secondary" className="mr-1">Einzel</Badge>
+            <span className="text-sm">
+              {criteriaMap.individual[judge.assignedCriteria.individual]}
+            </span>
+          </div>
         )}
-      </TableCell>
-      <TableCell>
-        {isEditing ? null : judge.username}
-      </TableCell>
-      <TableCell>
-        {isEditing ? null : (judge.role === 'admin' ? 'Administrator' : 'Richter')}
-      </TableCell>
-      <TableCell>
-        {isEditing ? null : (
-          <JudgeDisplay 
-            judge={judge}
-            individualCriteriaMap={individualCriteriaMap}
-            groupCriteriaMap={groupCriteriaMap}
-          />
+
+        {/* Display group criterion */}
+        {judge.assignedCriteria?.group && (
+          <div>
+            <Badge variant="secondary" className="mr-1">Gruppe</Badge>
+            <span className="text-sm">
+              {criteriaMap.group[judge.assignedCriteria.group]}
+            </span>
+          </div>
+        )}
+
+        {/* If no criteria assigned */}
+        {!judge.assignedCriteria?.individual && !judge.assignedCriteria?.group && (
+          <span className="text-muted-foreground text-sm">Keine Kriterien zugewiesen</span>
         )}
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          {isEditing ? (
-            <Button size="sm" onClick={onSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Speichern
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => onEdit(judge)}>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onEdit(judge)}>
               <Edit className="h-4 w-4 mr-2" />
               Bearbeiten
-            </Button>
-          )}
-          <Button 
-            size="sm" 
-            variant="secondary" 
-            onClick={() => onImpersonate(judge.id)}
-          >
-            Als Benutzer anmelden
-          </Button>
-          <Button 
-            size="sm" 
-            variant="destructive" 
-            onClick={() => onDeleteClick(judge)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onImpersonate(judge.id)}>
+              <UserCheck className="h-4 w-4 mr-2" />
+              Als dieser Benutzer anmelden
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => onDelete(judge)}
+              className="text-destructive"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Löschen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );

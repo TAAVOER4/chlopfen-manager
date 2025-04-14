@@ -1,21 +1,29 @@
-
 import React from 'react';
-import { Edit, Save, Trash2 } from 'lucide-react';
+import { Edit, Trash, UserCheck, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { User } from '@/types';
+import { MoreHorizontal } from 'lucide-react';
 
 interface UserRowActionsProps {
   user: User;
   isEditing: boolean;
   onEdit: (user: User) => void;
   onSave: () => void;
-  onImpersonate: (userId: number) => void;
+  onImpersonate: (userId: string) => void;
   onDeleteClick: (user: User) => void;
   onPasswordDialogOpen: () => void;
 }
 
-const UserRowActions: React.FC<UserRowActionsProps> = ({ 
-  user, 
+const UserRowActions: React.FC<UserRowActionsProps> = ({
+  user,
   isEditing,
   onEdit,
   onSave,
@@ -24,35 +32,37 @@ const UserRowActions: React.FC<UserRowActionsProps> = ({
   onPasswordDialogOpen
 }) => {
   return (
-    <div className="flex justify-end gap-2">
-      {isEditing ? (
-        <Button size="sm" onClick={onSave}>
-          <Save className="h-4 w-4 mr-2" />
-          Speichern
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
         </Button>
-      ) : (
-        <>
-          <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Bearbeiten
-          </Button>
-          <Button 
-            size="sm" 
-            variant="secondary" 
-            onClick={() => onImpersonate(user.id)}
-          >
-            Als Benutzer anmelden
-          </Button>
-          <Button 
-            size="sm" 
-            variant="destructive" 
-            onClick={() => onDeleteClick(user)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onEdit(user)}>
+          <Edit className="h-4 w-4 mr-2" />
+          Bearbeiten
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onImpersonate(user.id)}>
+          <UserCheck className="h-4 w-4 mr-2" />
+          Als dieser Benutzer anmelden
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onPasswordDialogOpen}>
+          <Key className="h-4 w-4 mr-2" />
+          Passwort ändern
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={() => onDeleteClick(user)}
+          className="text-destructive"
+        >
+          <Trash className="h-4 w-4 mr-2" />
+          Löschen
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

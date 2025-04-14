@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import LoginFormFields from './LoginFormFields';
-import { AuthenticationService } from '@/services/auth/AuthenticationService';
+import { login } from '@/services/auth/AuthenticationService';
 import { hashPassword } from '@/utils/authUtils';
 
 type FormValues = {

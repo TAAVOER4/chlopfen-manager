@@ -2,61 +2,114 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { UserService } from '@/services/user/UserService';
+import { UserService } from '@/services/UserService';
 
-export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>) => {
+export const useUserEditing = () => {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const handleEdit = (user: User) => {
-    setEditingUser({ ...user });
+    // Don't allow editing the default admin
+    if (user.id === '00000000-0000-4000-a000-000000000001' && user.role === 'admin') {
+      toast({
+        title: "Aktion nicht erlaubt",
+        description: "Der Hauptadministrator kann nicht bearbeitet werden.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setEditingUser({...user});
   };
 
   const handleUserChange = (updatedUser: User) => {
     setEditingUser(updatedUser);
   };
 
-  const handlePasswordChange = async (userId: number, newPassword: string): Promise<boolean> => {
+  const handleSave = async () => {
+    if (!editingUser) return;
+    
     try {
-      setIsChangingPassword(true);
+      const result = await UserService.updateUser(editingUser);
       
-      // Find the user in our local state
-      const user = users.find(u => u.id === userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      console.log('Attempting to change password for user:', user.username);
-      
-      // Use the dedicated service for password changes
-      const success = await UserService.changePassword(user.username, newPassword);
-      
-      if (success) {
+      if (result) {
         toast({
-          title: "Passwort geändert",
-          description: "Das Passwort wurde erfolgreich geändert."
+          title: "Benutzer aktualisiert",
+          description: "Die Benutzerinformationen wurden aktualisiert."
         });
-        
-        // Update the local user state to reflect the password change
-        const updatedUsers = users.map(u => {
-          if (u.id === userId) {
-            return { ...u, passwordUpdated: true };
-          }
-          return u;
-        });
-        setUsers(updatedUsers);
-        
-        return true;
+        setEditingUser(null);
       } else {
-        console.error('Password change failed');
-        throw new Error('Password update failed');
+        toast({
+          title: "Fehler beim Speichern",
+          description: "Die Benutzerinformationen konnten nicht aktualisiert werden.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error('Fehler beim Ändern des Passworts:', error);
+      console.error('Error updating user:', error);
       toast({
-        title: "Fehler",
-        description: "Beim Ändern des Passworts ist ein Fehler aufgetreten.",
+        title: "Fehler beim Speichern",
+        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddUser = () => {
+    // Create a new user with default values
+    const newUser: User = {
+      id: crypto.randomUUID(), // Generate a UUID for new users
+      name: '',
+      username: '',
+      role: 'judge',
+      passwordHash: '',
+      password: '',
+      assignedCriteria: {
+        individual: undefined,
+        group: undefined
+      },
+      tournamentIds: []
+    };
+    
+    setEditingUser(newUser);
+  };
+
+  const handlePasswordChange = async (userId: string, newPassword: string): Promise<boolean> => {
+    setIsChangingPassword(true);
+    try {
+      const user = await UserService.getUserById(userId);
+      
+      if (!user) {
+        toast({
+          title: "Benutzer nicht gefunden",
+          description: "Der Benutzer konnte nicht gefunden werden.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      const result = await UserService.updatePassword(userId, newPassword);
+      
+      if (result) {
+        toast({
+          title: "Passwort aktualisiert",
+          description: "Das Passwort wurde erfolgreich aktualisiert."
+        });
+        return true;
+      } else {
+        toast({
+          title: "Fehler beim Aktualisieren",
+          description: "Das Passwort konnte nicht aktualisiert werden.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Fehler beim Aktualisieren",
+        description: "Ein unerwarteter Fehler ist aufgetreten.",
         variant: "destructive"
       });
       return false;
@@ -67,9 +120,10 @@ export const useUserEditing = (users: User[], setUsers: React.Dispatch<React.Set
 
   return {
     editingUser,
-    setEditingUser,
     handleEdit,
     handleUserChange,
+    handleSave,
+    handleAddUser,
     handlePasswordChange,
     isChangingPassword
   };

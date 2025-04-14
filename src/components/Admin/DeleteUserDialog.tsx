@@ -1,70 +1,63 @@
-
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { User } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 
 interface DeleteUserDialogProps {
+  user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User | null;
-  onDelete: (userId: number) => void;
+  onDelete: (userId: string) => void;
 }
 
 const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
+  user,
   open,
   onOpenChange,
-  user,
   onDelete
 }) => {
-  const { toast } = useToast();
-
   const handleDelete = () => {
-    if (!user) return;
-    
-    onDelete(user.id);
-    onOpenChange(false);
-    
-    toast({
-      title: "Benutzer gelöscht",
-      description: `${user.name} wurde erfolgreich gelöscht.`
-    });
+    if (user) {
+      onDelete(user.id);
+    }
   };
 
   if (!user) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Benutzer löschen</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Benutzer löschen</AlertDialogTitle>
+          <AlertDialogDescription>
             Sind Sie sicher, dass Sie {user.name} löschen möchten?
             {user.role === 'admin' && (
               <p className="mt-2 text-destructive font-medium">
                 Achtung: Dieser Benutzer ist ein Administrator.
               </p>
             )}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>
             Abbrechen
-          </Button>
-          <Button variant="destructive" onClick={handleDelete}>
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>
             Löschen
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
