@@ -12,7 +12,8 @@ export class GroupScoreService extends BaseScoreService {
       
       const { data, error } = await supabase
         .from('group_scores')
-        .select('*');
+        .select('*')
+        .eq('record_type', 'C');
         
       if (error) {
         console.error('Error fetching group scores:', error);

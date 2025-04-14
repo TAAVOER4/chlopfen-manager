@@ -11,7 +11,8 @@ export class GroupScoreDbService extends BaseScoreService {
       .from('group_scores')
       .select('id, judge_id')
       .eq('group_id', groupId)
-      .eq('tournament_id', tournamentId);
+      .eq('tournament_id', tournamentId)
+      .eq('record_type', 'C');
       
     if (queryError) {
       console.error('Error checking for existing scores:', queryError);
@@ -33,6 +34,7 @@ export class GroupScoreDbService extends BaseScoreService {
         time: score.time,
       })
       .eq('id', scoreId)
+      .eq('record_type', 'C')
       .select()
       .single();
       
@@ -56,7 +58,8 @@ export class GroupScoreDbService extends BaseScoreService {
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
-        tournament_id: score.tournamentId
+        tournament_id: score.tournamentId,
+        record_type: 'C'
       }])
       .select()
       .single();

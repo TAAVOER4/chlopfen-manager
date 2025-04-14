@@ -22,7 +22,8 @@ export class ParticipantMutationService extends BaseParticipantService {
           category: participant.category,
           is_group_only: participant.isGroupOnly || false,
           tournament_id: participant.tournamentId,
-          display_order: participant.displayOrder
+          display_order: participant.displayOrder,
+          record_type: 'C'
         }])
         .select()
         .single();

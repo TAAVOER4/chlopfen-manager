@@ -16,6 +16,7 @@ export class GroupQueryService extends BaseGroupService {
       const { data, error } = await this.supabase
         .from('groups')
         .select('*')
+        .eq('record_type', 'C')
         .order('display_order', { ascending: true, nullsFirst: false });
         
       if (error) {
@@ -48,6 +49,7 @@ export class GroupQueryService extends BaseGroupService {
       const { data: groupParticipants, error: relError } = await this.supabase
         .from('group_participants')
         .select('*')
+        .eq('record_type', 'C')
         .in('group_id', groupIds);
         
       if (relError) {

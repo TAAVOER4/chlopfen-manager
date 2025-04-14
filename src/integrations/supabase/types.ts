@@ -12,15 +12,24 @@ export type Database = {
       group_participants: {
         Row: {
           group_id: number
+          modified_at: string | null
+          modified_by: string | null
           participant_id: number
+          record_type: string | null
         }
         Insert: {
           group_id: number
+          modified_at?: string | null
+          modified_by?: string | null
           participant_id: number
+          record_type?: string | null
         }
         Update: {
           group_id?: number
+          modified_at?: string | null
+          modified_by?: string | null
           participant_id?: number
+          record_type?: string | null
         }
         Relationships: [
           {
@@ -44,6 +53,9 @@ export type Database = {
           group_id: number
           id: number
           judge_id: string
+          modified_at: string | null
+          modified_by: string | null
+          record_type: string | null
           rhythm: number
           tempo: number
           time: boolean
@@ -54,6 +66,9 @@ export type Database = {
           group_id: number
           id?: number
           judge_id: string
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           rhythm: number
           tempo: number
           time?: boolean
@@ -64,6 +79,9 @@ export type Database = {
           group_id?: number
           id?: number
           judge_id?: string
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           rhythm?: number
           tempo?: number
           time?: boolean
@@ -99,7 +117,10 @@ export type Database = {
           category: Database["public"]["Enums"]["group_category"]
           display_order: number | null
           id: number
+          modified_at: string | null
+          modified_by: string | null
           name: string
+          record_type: string | null
           size: Database["public"]["Enums"]["group_size"]
           tournament_id: number | null
         }
@@ -107,7 +128,10 @@ export type Database = {
           category: Database["public"]["Enums"]["group_category"]
           display_order?: number | null
           id?: number
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
+          record_type?: string | null
           size: Database["public"]["Enums"]["group_size"]
           tournament_id?: number | null
         }
@@ -115,7 +139,10 @@ export type Database = {
           category?: Database["public"]["Enums"]["group_category"]
           display_order?: number | null
           id?: number
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
+          record_type?: string | null
           size?: Database["public"]["Enums"]["group_size"]
           tournament_id?: number | null
         }
@@ -133,8 +160,11 @@ export type Database = {
         Row: {
           id: number
           judge_id: string
+          modified_at: string | null
+          modified_by: string | null
           participant_id: number
           posture: number
+          record_type: string | null
           rhythm: number
           round: number
           stance: number
@@ -145,8 +175,11 @@ export type Database = {
         Insert: {
           id?: number
           judge_id: string
+          modified_at?: string | null
+          modified_by?: string | null
           participant_id: number
           posture: number
+          record_type?: string | null
           rhythm: number
           round: number
           stance: number
@@ -157,8 +190,11 @@ export type Database = {
         Update: {
           id?: number
           judge_id?: string
+          modified_at?: string | null
+          modified_by?: string | null
           participant_id?: number
           posture?: number
+          record_type?: string | null
           rhythm?: number
           round?: number
           stance?: number
@@ -200,6 +236,9 @@ export type Database = {
           is_group_only: boolean | null
           last_name: string
           location: string
+          modified_at: string | null
+          modified_by: string | null
+          record_type: string | null
           tournament_id: number | null
         }
         Insert: {
@@ -211,6 +250,9 @@ export type Database = {
           is_group_only?: boolean | null
           last_name: string
           location: string
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           tournament_id?: number | null
         }
         Update: {
@@ -222,6 +264,9 @@ export type Database = {
           is_group_only?: boolean | null
           last_name?: string
           location?: string
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           tournament_id?: number | null
         }
         Relationships: [
@@ -240,6 +285,9 @@ export type Database = {
           description: string | null
           end_time: string
           id: number
+          modified_at: string | null
+          modified_by: string | null
+          record_type: string | null
           start_time: string
           title: string
           tournament_id: number
@@ -250,6 +298,9 @@ export type Database = {
           description?: string | null
           end_time: string
           id?: number
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           start_time: string
           title: string
           tournament_id: number
@@ -260,6 +311,9 @@ export type Database = {
           description?: string | null
           end_time?: string
           id?: number
+          modified_at?: string | null
+          modified_by?: string | null
+          record_type?: string | null
           start_time?: string
           title?: string
           tournament_id?: number
@@ -281,8 +335,11 @@ export type Database = {
           id: number
           is_main_sponsor: boolean | null
           logo: string | null
+          modified_at: string | null
+          modified_by: string | null
           name: string
           rank: number | null
+          record_type: string | null
           tournament_id: number | null
           type: Database["public"]["Enums"]["sponsor_type"]
           website_url: string | null
@@ -292,8 +349,11 @@ export type Database = {
           id?: number
           is_main_sponsor?: boolean | null
           logo?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
           rank?: number | null
+          record_type?: string | null
           tournament_id?: number | null
           type: Database["public"]["Enums"]["sponsor_type"]
           website_url?: string | null
@@ -303,8 +363,11 @@ export type Database = {
           id?: number
           is_main_sponsor?: boolean | null
           logo?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
           rank?: number | null
+          record_type?: string | null
           tournament_id?: number | null
           type?: Database["public"]["Enums"]["sponsor_type"]
           website_url?: string | null
@@ -325,7 +388,10 @@ export type Database = {
           id: number
           is_active: boolean
           location: string
+          modified_at: string | null
+          modified_by: string | null
           name: string
+          record_type: string | null
           year: number
         }
         Insert: {
@@ -333,7 +399,10 @@ export type Database = {
           id?: number
           is_active?: boolean
           location: string
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
+          record_type?: string | null
           year: number
         }
         Update: {
@@ -341,7 +410,10 @@ export type Database = {
           id?: number
           is_active?: boolean
           location?: string
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
+          record_type?: string | null
           year?: number
         }
         Relationships: []
@@ -381,8 +453,11 @@ export type Database = {
           group_criterion: string | null
           id: string
           individual_criterion: string | null
+          modified_at: string | null
+          modified_by: string | null
           name: string
           password_hash: string
+          record_type: string | null
           role: Database["public"]["Enums"]["user_role"]
           username: string
         }
@@ -390,8 +465,11 @@ export type Database = {
           group_criterion?: string | null
           id?: string
           individual_criterion?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
           password_hash: string
+          record_type?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           username: string
         }
@@ -399,8 +477,11 @@ export type Database = {
           group_criterion?: string | null
           id?: string
           individual_criterion?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
           password_hash?: string
+          record_type?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           username?: string
         }

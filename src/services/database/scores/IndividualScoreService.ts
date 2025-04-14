@@ -7,7 +7,8 @@ export class IndividualScoreService extends BaseScoreService {
     try {
       const { data, error } = await this.supabase
         .from('individual_scores')
-        .select('*');
+        .select('*')
+        .eq('record_type', 'C');
         
       if (error) {
         this.handleError(error, 'fetching individual scores');
@@ -45,7 +46,8 @@ export class IndividualScoreService extends BaseScoreService {
           stance: score.stance,
           posture: score.posture,
           whip_control: score.whipControl,
-          tournament_id: score.tournamentId
+          tournament_id: score.tournamentId,
+          record_type: 'C'
         }])
         .select()
         .single();
@@ -91,6 +93,7 @@ export class IndividualScoreService extends BaseScoreService {
           tournament_id: score.tournamentId
         })
         .eq('id', score.id)
+        .eq('record_type', 'C')
         .select()
         .single();
         
