@@ -105,9 +105,18 @@ export const useScoreSubmission = (
       
       // Check if required fields are filled in for current judge's criteria
       const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
-      const missingFields = requiredFields.filter(field => 
-        canEditCriterion(field) && (currentScore[field] === undefined || currentScore[field] === null)
-      );
+      let missingFields: string[] = [];
+      
+      // For each criterion that the user can edit, check if a value was provided
+      requiredFields.forEach(field => {
+        if (canEditCriterion(field)) {
+          // Check if value is undefined, null, or empty string
+          const value = currentScore[field];
+          if (value === undefined || value === null || value === '') {
+            missingFields.push(field);
+          }
+        }
+      });
       
       if (missingFields.length > 0) {
         toast({
@@ -130,13 +139,39 @@ export const useScoreSubmission = (
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId, 'Role:', currentUser.role);
 
-      // Prepare score data for saving
+      // Make sure all numeric values are properly converted to numbers
+      const whipStrikes = canEditCriterion('whipStrikes') 
+        ? Number(currentScore.whipStrikes) 
+        : null;
+      
+      const rhythm = canEditCriterion('rhythm') 
+        ? Number(currentScore.rhythm) 
+        : null;
+      
+      const tempo = canEditCriterion('tempo') 
+        ? Number(currentScore.tempo) 
+        : null;
+      
+      // Ensure numeric values are not NaN before submitting
+      if (canEditCriterion('whipStrikes') && (isNaN(whipStrikes as number))) {
+        throw new Error("Ungültiger Wert für Schläge");
+      }
+      
+      if (canEditCriterion('rhythm') && (isNaN(rhythm as number))) {
+        throw new Error("Ungültiger Wert für Rhythmus");
+      }
+      
+      if (canEditCriterion('tempo') && (isNaN(tempo as number))) {
+        throw new Error("Ungültiger Wert für Takt");
+      }
+      
+      // Prepare score data for saving with validated numeric values
       const scoreData: Omit<GroupScore, 'id'> = {
         groupId: currentGroup.id,
         judgeId,
-        whipStrikes: canEditCriterion('whipStrikes') ? currentScore.whipStrikes : null,
-        rhythm: canEditCriterion('rhythm') ? currentScore.rhythm : null,
-        tempo: canEditCriterion('tempo') ? currentScore.tempo : null,
+        whipStrikes,
+        rhythm,
+        tempo,
         time: currentScore.time !== undefined ? currentScore.time : true,
         tournamentId: tournamentId
       };

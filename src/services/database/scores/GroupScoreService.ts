@@ -1,4 +1,3 @@
-
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 
@@ -62,6 +61,29 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID must be a string');
       }
       
+      // Ensure numeric fields have values or defaults
+      // This is critical since database has NOT NULL constraints
+      // For judges, these should have values if they are assigned to judge this criterion
+      
+      // Handle null values for fields that might be null in the request
+      // but are required as NOT NULL in the database
+      const whipStrikes = score.whipStrikes === null ? 0 : score.whipStrikes;
+      const rhythm = score.rhythm === null ? 0 : score.rhythm;
+      const tempo = score.tempo === null ? 0 : score.tempo;
+
+      // Validate numeric fields have valid values
+      if (whipStrikes !== undefined && (isNaN(Number(whipStrikes)) || whipStrikes < 0)) {
+        throw new Error('Invalid value for whip strikes');
+      }
+      
+      if (rhythm !== undefined && (isNaN(Number(rhythm)) || rhythm < 0)) {
+        throw new Error('Invalid value for rhythm');
+      }
+      
+      if (tempo !== undefined && (isNaN(Number(tempo)) || tempo < 0)) {
+        throw new Error('Invalid value for tempo');
+      }
+
       const tournamentId = typeof score.tournamentId === 'string' 
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
@@ -88,14 +110,15 @@ export class GroupScoreService extends BaseScoreService {
       // Log the judgeId for debugging
       console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Role:', userExists.role);
       
+      // Insert the data, ensuring we have values for all required fields
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
           judge_id: score.judgeId,
-          whip_strikes: score.whipStrikes,
-          rhythm: score.rhythm,
-          tempo: score.tempo,
+          whip_strikes: whipStrikes,
+          rhythm: rhythm,
+          tempo: tempo,
           time: score.time,
           tournament_id: tournamentId
         }])
