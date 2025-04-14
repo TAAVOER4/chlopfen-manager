@@ -7,6 +7,11 @@ export class ParticipantQueryService extends BaseParticipantService {
     try {
       console.log("Getting all participants from database...");
       
+      if (!this.supabase) {
+        console.error('Supabase client is not initialized');
+        throw new Error('Supabase client is not initialized');
+      }
+      
       const { data, error } = await this.supabase
         .from('participants')
         .select('*')

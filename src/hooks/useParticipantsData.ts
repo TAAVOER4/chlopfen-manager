@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
@@ -27,18 +26,16 @@ export const useParticipantsData = () => {
       return DatabaseService.getAllParticipants();
     },
     staleTime: 0, // Set to 0 to always fetch fresh data
-    meta: {
-      onSuccess: (data: Participant[]) => {
-        console.log("Successfully fetched participants:", data.length);
-      },
-      onError: (error: Error) => {
-        console.error("Error fetching participants:", error);
-        toast({
-          title: "Fehler",
-          description: "Teilnehmer konnten nicht geladen werden",
-          variant: "destructive"
-        });
-      }
+    onSuccess: (data: Participant[]) => {
+      console.log("Successfully fetched participants:", data.length);
+    },
+    onError: (error: any) => {
+      console.error("Error fetching participants:", error);
+      toast({
+        title: "Fehler",
+        description: "Teilnehmer konnten nicht geladen werden",
+        variant: "destructive"
+      });
     }
   });
   
@@ -55,18 +52,16 @@ export const useParticipantsData = () => {
       return DatabaseService.getAllGroups();
     },
     staleTime: 0, // Set to 0 to always fetch fresh data
-    meta: {
-      onSuccess: (data: Group[]) => {
-        console.log("Successfully fetched groups:", data.length);
-      },
-      onError: (error: Error) => {
-        console.error("Error fetching groups:", error);
-        toast({
-          title: "Fehler",
-          description: "Gruppen konnten nicht geladen werden",
-          variant: "destructive"
-        });
-      }
+    onSuccess: (data: Group[]) => {
+      console.log("Successfully fetched groups:", data.length);
+    },
+    onError: (error: any) => {
+      console.error("Error fetching groups:", error);
+      toast({
+        title: "Fehler",
+        description: "Gruppen konnten nicht geladen werden",
+        variant: "destructive"
+      });
     }
   });
   
