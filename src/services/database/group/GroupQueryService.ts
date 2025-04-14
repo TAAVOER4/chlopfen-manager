@@ -7,51 +7,59 @@ export class GroupQueryService extends BaseGroupService {
     try {
       console.log("Getting all groups from database...");
       
-      const { data, error } = await this.supabase
+      // Check if Supabase client is initialized
+      const supabase = this.checkSupabaseClient();
+      
+      const { data, error } = await supabase
         .from('groups')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
         
       if (error) {
         console.error('Error loading groups:', error);
-        throw error;
+        return [];
       }
       
       if (!data) return [];
       
       console.log("Database returned groups data:", data.length, "records");
       
-      // Create initial groups without participants
-      const groups = data.map(group => ({
+      // Create a list of all group IDs to fetch participant relationships
+      const groupIds = data.map(group => group.id);
+      
+      // Map the database column names to the frontend property names
+      const transformedData = data.map(group => ({
         id: group.id,
         name: group.name,
         category: group.category,
         size: group.size,
         tournamentId: group.tournament_id,
         displayOrder: group.display_order,
-        participantIds: [] as number[]
+        participantIds: [] // Will be populated below
       }));
       
-      // Fetch group-participant associations
-      const { data: groupParticipants, error: groupError } = await this.supabase
-        .from('group_participants')
-        .select('*');
-        
-      if (groupError) {
-        console.error('Error loading group participants:', groupError);
-      }
+      // If there are no groups, return empty array
+      if (groupIds.length === 0) return transformedData;
       
-      if (groupParticipants) {
-        // Add participant IDs to each group
-        groups.forEach(group => {
+      // Fetch all group-participant relationships for the groups
+      const { data: groupParticipants, error: relError } = await supabase
+        .from('group_participants')
+        .select('*')
+        .in('group_id', groupIds);
+        
+      if (relError) {
+        console.error('Error loading group-participant relationships:', relError);
+      } else if (groupParticipants) {
+        // Populate participantIds for each group
+        transformedData.forEach(group => {
           group.participantIds = groupParticipants
             .filter(gp => gp.group_id === group.id)
             .map(gp => gp.participant_id);
         });
       }
       
-      console.log("Processed groups with participants:", groups.length, "groups");
-      return groups as Group[];
+      console.log("Processed groups with participants:", transformedData.length);
+      return transformedData as Group[];
     } catch (error) {
       console.error('Error in getAllGroups method:', error);
       return [];

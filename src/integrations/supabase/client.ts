@@ -10,3 +10,20 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Export a function to check if the Supabase client is correctly configured
+export const checkSupabaseConnection = async () => {
+  try {
+    console.log("Checking Supabase connection...");
+    const { data, error } = await supabase.from('tournaments').select('count');
+    if (error) {
+      console.error('Error connecting to Supabase:', error);
+      return false;
+    }
+    console.log("Supabase connection successful");
+    return true;
+  } catch (error) {
+    console.error('Error checking Supabase connection:', error);
+    return false;
+  }
+};

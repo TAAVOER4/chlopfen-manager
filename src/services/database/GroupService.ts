@@ -3,54 +3,60 @@ import { BaseService } from './BaseService';
 import { Group } from '@/types';
 
 export class GroupService extends BaseService {
-  static async getAllGroups(): Promise<Group[]> {
+  static async getAllGroups() {
     try {
       console.log("Getting all groups from database...");
       
-      if (!this.supabase) {
-        console.error('Supabase client is not initialized');
-        throw new Error('Supabase client is not initialized');
-      }
+      // Check if Supabase client is initialized
+      const supabase = this.checkSupabaseClient();
       
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('groups')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
         
       if (error) {
         console.error('Error loading groups:', error);
-        throw error;
+        return [];
       }
       
       if (!data) return [];
       
       console.log("Database returned groups data:", data.length, "records");
       
-      // Transform the data to the frontend format
-      const transformedData = await Promise.all(data.map(async (group) => {
-        // Get participant IDs for this group
-        const { data: groupParticipants, error: participantsError } = await this.supabase
-          .from('group_participants')
-          .select('participant_id')
-          .eq('group_id', group.id);
-          
-        if (participantsError) {
-          console.error('Error loading group participants:', participantsError);
-        }
-        
-        const participantIds = groupParticipants ? 
-          groupParticipants.map(gp => gp.participant_id) : [];
-          
-        return {
-          id: group.id,
-          name: group.name,
-          category: group.category,
-          size: group.size,
-          tournamentId: group.tournament_id,
-          displayOrder: group.display_order,
-          participantIds
-        };
+      // Create a list of all group IDs to fetch participant relationships
+      const groupIds = data.map(group => group.id);
+      
+      // Map the database column names to the frontend property names
+      const transformedData = data.map(group => ({
+        id: group.id,
+        name: group.name,
+        category: group.category,
+        size: group.size,
+        tournamentId: group.tournament_id,
+        displayOrder: group.display_order,
+        participantIds: [] // Will be populated below
       }));
+      
+      // If there are no groups, return empty array
+      if (groupIds.length === 0) return transformedData;
+      
+      // Fetch all group-participant relationships for the groups
+      const { data: groupParticipants, error: relError } = await supabase
+        .from('group_participants')
+        .select('*')
+        .in('group_id', groupIds);
+        
+      if (relError) {
+        console.error('Error loading group-participant relationships:', relError);
+      } else if (groupParticipants) {
+        // Populate participantIds for each group
+        transformedData.forEach(group => {
+          group.participantIds = groupParticipants
+            .filter(gp => gp.group_id === group.id)
+            .map(gp => gp.participant_id);
+        });
+      }
       
       console.log("Processed groups with participants:", transformedData.length);
       return transformedData as Group[];
@@ -60,9 +66,12 @@ export class GroupService extends BaseService {
     }
   }
 
-  static async createGroup(group: Omit<Group, 'id'>): Promise<Group> {
+  static async createGroup(group: Omit<Group, 'id'>) {
     try {
-      const { data, error } = await this.supabase
+      const supabase = this.checkSupabaseClient();
+      
+      // Create the group
+      const { data, error } = await supabase
         .from('groups')
         .insert([{
           name: group.name,
@@ -74,27 +83,15 @@ export class GroupService extends BaseService {
         .select()
         .single();
         
-      if (error) throw error;
-      
-      if (!data) throw new Error('No data returned from group creation');
-      
-      // Insert group participants
-      if (group.participantIds && group.participantIds.length > 0) {
-        const groupParticipants = group.participantIds.map(participantId => ({
-          group_id: data.id,
-          participant_id: participantId
-        }));
-        
-        const { error: participantsError } = await this.supabase
-          .from('group_participants')
-          .insert(groupParticipants);
-          
-        if (participantsError) {
-          console.error('Error adding participants to group:', participantsError);
-        }
+      if (error) {
+        this.handleError(error, 'creating group');
       }
       
-      return {
+      if (!data) {
+        throw new Error('No data returned from group creation');
+      }
+      
+      const newGroup: Group = {
         id: data.id,
         name: data.name,
         category: data.category,
@@ -102,16 +99,37 @@ export class GroupService extends BaseService {
         tournamentId: data.tournament_id,
         displayOrder: data.display_order,
         participantIds: group.participantIds || []
-      } as Group;
+      };
+      
+      // If there are participants to associate, create those relationships
+      if (group.participantIds && group.participantIds.length > 0) {
+        const participantInserts = group.participantIds.map(participantId => ({
+          group_id: newGroup.id,
+          participant_id: participantId
+        }));
+        
+        const { error: relError } = await supabase
+          .from('group_participants')
+          .insert(participantInserts);
+          
+        if (relError) {
+          console.error('Error creating group-participant relationships:', relError);
+        }
+      }
+      
+      return newGroup;
     } catch (error) {
-      console.error('Error creating group:', error);
+      this.handleError(error, 'creating group');
       throw error;
     }
   }
 
-  static async updateGroup(group: Group): Promise<Group> {
+  static async updateGroup(group: Group) {
     try {
-      const { data, error } = await this.supabase
+      const supabase = this.checkSupabaseClient();
+      
+      // Update the group
+      const { data, error } = await supabase
         .from('groups')
         .update({
           name: group.name,
@@ -124,104 +142,124 @@ export class GroupService extends BaseService {
         .select()
         .single();
         
-      if (error) throw error;
+      if (error) {
+        this.handleError(error, 'updating group');
+      }
       
-      if (!data) throw new Error('No data returned from group update');
+      if (!data) {
+        throw new Error('No data returned from group update');
+      }
       
-      // Update group participants (first delete all existing, then insert new)
-      const { error: deleteError } = await this.supabase
+      // Delete existing relationships
+      const { error: deleteError } = await supabase
         .from('group_participants')
         .delete()
         .eq('group_id', group.id);
         
       if (deleteError) {
-        console.error('Error removing participants from group:', deleteError);
+        console.error('Error deleting group-participant relationships:', deleteError);
       }
       
-      // Insert new participants
+      // Create new relationships if needed
       if (group.participantIds && group.participantIds.length > 0) {
-        const groupParticipants = group.participantIds.map(participantId => ({
+        const participantInserts = group.participantIds.map(participantId => ({
           group_id: group.id,
           participant_id: participantId
         }));
         
-        const { error: participantsError } = await this.supabase
+        const { error: insertError } = await supabase
           .from('group_participants')
-          .insert(groupParticipants);
+          .insert(participantInserts);
           
-        if (participantsError) {
-          console.error('Error adding participants to group:', participantsError);
+        if (insertError) {
+          console.error('Error creating group-participant relationships:', insertError);
         }
       }
       
       return {
-        id: data.id,
+        ...group,
         name: data.name,
         category: data.category,
         size: data.size,
         tournamentId: data.tournament_id,
-        displayOrder: data.display_order,
-        participantIds: group.participantIds || []
-      } as Group;
+        displayOrder: data.display_order
+      };
     } catch (error) {
-      console.error('Error updating group:', error);
+      this.handleError(error, 'updating group');
       throw error;
     }
   }
 
-  static async deleteGroup(id: number): Promise<boolean> {
+  static async deleteGroup(groupId: number) {
     try {
-      // First delete all group participants
-      const { error: participantsError } = await this.supabase
+      const supabase = this.checkSupabaseClient();
+      
+      // First delete all group-participant relationships
+      const { error: relError } = await supabase
         .from('group_participants')
         .delete()
-        .eq('group_id', id);
+        .eq('group_id', groupId);
         
-      if (participantsError) {
-        console.error('Error removing participants from group:', participantsError);
+      if (relError) {
+        console.error('Error deleting group-participant relationships:', relError);
       }
       
       // Then delete the group
-      const { error } = await this.supabase
+      const { error } = await supabase
         .from('groups')
         .delete()
-        .eq('id', id);
+        .eq('id', groupId);
         
-      if (error) throw error;
-      
-      return true;
-    } catch (error) {
-      console.error('Error deleting group:', error);
-      throw error;
-    }
-  }
-
-  static async updateGroupDisplayOrder(id: number, displayOrder: number): Promise<boolean> {
-    try {
-      const { error } = await this.supabase
-        .from('groups')
-        .update({ display_order: displayOrder })
-        .eq('id', id);
-        
-      if (error) throw error;
-      
-      return true;
-    } catch (error) {
-      console.error('Error updating group display order:', error);
-      throw error;
-    }
-  }
-
-  static async bulkUpdateGroupDisplayOrder(groups: { id: number; displayOrder: number }[]): Promise<boolean> {
-    try {
-      // Execute in sequence to avoid conflicts
-      for (const group of groups) {
-        await this.updateGroupDisplayOrder(group.id, group.displayOrder);
+      if (error) {
+        this.handleError(error, 'deleting group');
       }
       
       return true;
     } catch (error) {
-      console.error('Error bulk updating group display orders:', error);
+      this.handleError(error, 'deleting group');
+      throw error;
+    }
+  }
+
+  static async updateGroupDisplayOrder(groupId: number, displayOrder: number) {
+    try {
+      const supabase = this.checkSupabaseClient();
+      
+      const { error } = await supabase
+        .from('groups')
+        .update({ display_order: displayOrder })
+        .eq('id', groupId);
+        
+      if (error) {
+        this.handleError(error, 'updating group display order');
+      }
+      
+      return true;
+    } catch (error) {
+      this.handleError(error, 'updating group display order');
+      throw error;
+    }
+  }
+
+  static async bulkUpdateGroupDisplayOrder(updates: { id: number; displayOrder: number }[]) {
+    try {
+      const supabase = this.checkSupabaseClient();
+      
+      // We need to execute these updates sequentially to avoid conflicts
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('groups')
+          .update({ display_order: update.displayOrder })
+          .eq('id', update.id);
+          
+        if (error) {
+          console.error(`Error updating display order for group ${update.id}:`, error);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      this.handleError(error, 'bulk updating group display orders');
       throw error;
     }
   }
