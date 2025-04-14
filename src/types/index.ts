@@ -55,7 +55,7 @@ export interface GroupScore {
 }
 
 export interface User {
-  id: number;
+  id: string; // Changed from number to string to support UUID format
   name: string;
   username: string;
   role: UserRole;

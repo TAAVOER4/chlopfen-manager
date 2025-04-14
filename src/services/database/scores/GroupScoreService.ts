@@ -129,7 +129,7 @@ export class GroupScoreService extends BaseScoreService {
       }
       
       // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
-      if (score.judgeId.indexOf('-') < 0 || score.judgeId.length !== 36) {
+      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
         throw new Error('Judge ID must be in valid UUID format');
       }
       
