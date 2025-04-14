@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Category, Participant } from '../../types';
-import CategoryCard from './CategoryCard';
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import IndividualCategories from './IndividualJudgingTab/IndividualCategories';
 
 interface IndividualJudgingTabProps {
   categories: Category[];
@@ -44,20 +44,12 @@ const IndividualJudgingTab: React.FC<IndividualJudgingTabProps> = ({
         </ul>
         <p className="mb-4">Wählen Sie eine Kategorie für die Bewertung:</p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {categories.map((category) => {
-            const participants = participantsByCategory[category] || [];
-            return (
-              <CategoryCard
-                key={category}
-                category={category}
-                isAdmin={isAdmin}
-                participants={participants}
-                openReorderDialog={openReorderDialog}
-              />
-            );
-          })}
-        </div>
+        <IndividualCategories 
+          categories={categories}
+          participantsByCategory={participantsByCategory}
+          isAdmin={isAdmin}
+          openReorderDialog={openReorderDialog}
+        />
       </CardContent>
     </Card>
   );

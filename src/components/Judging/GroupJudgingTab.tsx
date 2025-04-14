@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
+import { GroupService } from '@/services/database/group';
 import { Card, CardContent } from '@/components/ui/card';
 import { GroupSize, GroupCategory, Group } from '../../types';
 import { useUser } from '@/contexts/UserContext';
-import { GroupService } from '@/services/database/GroupService';
 import { useGroupReordering } from '@/hooks/useGroupReordering';
 import GroupReorderDialog from './GroupReorderDialog';
 import CategoryGroupCard from './CategoryGroupCard';
@@ -16,13 +15,11 @@ const GroupJudgingTab = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   
-  // State for groups organized by size and category
   const [groupsBySizeAndCategory, setGroupsBySizeAndCategory] = useState<Record<GroupSize, Record<GroupCategory, Group[]>>>({
     three: { kids_juniors: [], active: [] },
     four: { kids_juniors: [], active: [] }
   });
   
-  // Load groups from the database
   useEffect(() => {
     const loadGroups = async () => {
       setLoading(true);
@@ -30,36 +27,29 @@ const GroupJudgingTab = () => {
         const allGroups = await GroupService.getAllGroups();
         console.log('Loaded groups from database:', allGroups);
         
-        // Filter by tournament if available
         const tournamentGroups = selectedTournament?.id 
           ? allGroups.filter(group => group.tournamentId === selectedTournament.id)
           : allGroups;
         
-        // Initialize with empty arrays
         const initialGroups: Record<GroupSize, Record<GroupCategory, Group[]>> = {
           three: { kids_juniors: [], active: [] },
           four: { kids_juniors: [], active: [] }
         };
         
-        // Organize groups by size and category
         tournamentGroups.forEach(group => {
           initialGroups[group.size][group.category].push(group);
         });
         
-        // Sort groups by displayOrder if available
         Object.keys(initialGroups).forEach((size) => {
           const sizeKey = size as GroupSize;
           Object.keys(initialGroups[sizeKey]).forEach((category) => {
             const categoryKey = category as GroupCategory;
             initialGroups[sizeKey][categoryKey].sort((a, b) => {
-              // If both have displayOrder, sort by it
               if (a.displayOrder && b.displayOrder) {
                 return a.displayOrder - b.displayOrder;
               }
-              // If only one has displayOrder, prioritize it
               if (a.displayOrder) return -1;
               if (b.displayOrder) return 1;
-              // Default to id sort
               return a.id - b.id;
             });
           });
@@ -81,7 +71,6 @@ const GroupJudgingTab = () => {
     loadGroups();
   }, [selectedTournament, toast]);
   
-  // Use the custom hook for group reordering
   const {
     draggingSize,
     draggingCategory,
@@ -96,7 +85,6 @@ const GroupJudgingTab = () => {
     closeReorderDialog,
   } = useGroupReordering(groupsBySizeAndCategory, setGroupsBySizeAndCategory);
 
-  // Create an array of card configurations based on the requested layout
   const cardConfigs = [
     { categoryLabel: 'Kids/Junioren', size: 'three' as GroupSize, category: 'kids_juniors' as GroupCategory },
     { categoryLabel: 'Kids/Junioren', size: 'four' as GroupSize, category: 'kids_juniors' as GroupCategory },
