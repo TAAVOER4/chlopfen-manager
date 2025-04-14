@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 import NoActiveTournamentAlert from '@/components/Participants/NoActiveTournamentAlert';
 import DeleteParticipantDialog from '@/components/Participants/DeleteParticipantDialog';
 import ParticipantsHeader from '@/components/Participants/ParticipantsHeader';
@@ -9,8 +11,11 @@ import ParticipantsFilter from '@/components/Participants/ParticipantsFilter';
 import ParticipantsList from '@/components/Participants/ParticipantsList';
 import GroupsList from '@/components/Participants/GroupsList';
 import { useParticipantsData } from '@/hooks/useParticipantsData';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 const ParticipantsPage = () => {
+  const queryClient = useQueryClient();
   const {
     participants,
     groups,
@@ -28,8 +33,25 @@ const ParticipantsPage = () => {
     setDeleteDialogOpen,
     handleDeleteClick,
     handleParticipantDeleted,
-    getGroupsForParticipant
+    getGroupsForParticipant,
+    refetchAll
   } = useParticipantsData();
+  
+  // Force refresh data when component mounts
+  useEffect(() => {
+    console.log("ParticipantsPage mounted, invalidating queries...");
+    queryClient.invalidateQueries({ queryKey: ['participants'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
+  }, [queryClient]);
+  
+  const handleRefresh = () => {
+    console.log("Manual refresh requested");
+    refetchAll();
+    toast({
+      title: "Aktualisierung",
+      description: "Daten werden neu geladen...",
+    });
+  };
   
   // Loading state
   if (isLoading) {
@@ -51,9 +73,10 @@ const ParticipantsPage = () => {
           <p className="text-muted-foreground">
             Bitte versuchen Sie die Seite neu zu laden oder kontaktieren Sie den Administrator.
           </p>
-          <button className="mt-4" onClick={() => window.location.reload()}>
-            Seite neu laden
-          </button>
+          <Button className="mt-4" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Daten neu laden
+          </Button>
         </div>
       </div>
     );
@@ -61,7 +84,13 @@ const ParticipantsPage = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fade-in">
-      <ParticipantsHeader activeTournament={activeTournament} />
+      <div className="flex justify-between items-center mb-4">
+        <ParticipantsHeader activeTournament={activeTournament} />
+        <Button variant="outline" onClick={handleRefresh} className="ml-auto">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Aktualisieren
+        </Button>
+      </div>
       
       {!activeTournament && (
         <NoActiveTournamentAlert />

@@ -5,7 +5,12 @@ import { GroupMutationService } from './GroupMutationService';
 import { GroupOrderService } from './GroupOrderService';
 
 // Re-export for ease of use
-export { BaseGroupService, GroupQueryService, GroupMutationService, GroupOrderService };
+export { 
+  BaseGroupService, 
+  GroupQueryService, 
+  GroupMutationService,
+  GroupOrderService
+};
 
 // Main service that combines all functionality
 export class GroupService {

@@ -7,13 +7,10 @@ export class GroupQueryService extends BaseGroupService {
     try {
       console.log("Getting all groups from database...");
       
-      // Use the supabase directly from this class
-      if (!this.supabase) {
-        console.error('Supabase client is not initialized in GroupQueryService');
-        throw new Error('Supabase client is not initialized');
-      }
+      // Use the checkSupabaseClient method from the base class
+      const supabase = this.checkSupabaseClient();
       
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('groups')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
@@ -45,7 +42,7 @@ export class GroupQueryService extends BaseGroupService {
       if (groupIds.length === 0) return transformedData;
       
       // Fetch all group-participant relationships for the groups
-      const { data: groupParticipants, error: relError } = await this.supabase
+      const { data: groupParticipants, error: relError } = await supabase
         .from('group_participants')
         .select('*')
         .in('group_id', groupIds);

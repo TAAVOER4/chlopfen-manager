@@ -1,10 +1,11 @@
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/database';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Participant, Group } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 export const useParticipantsData = () => {
   const { activeTournament } = useTournament();
@@ -13,6 +14,20 @@ export const useParticipantsData = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  
+  // First check if Supabase connection is established
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const { data } = await supabase.from('participants').select('count');
+        console.log('Supabase connection test:', data ? 'successful' : 'no data');
+      } catch (error) {
+        console.error('Supabase connection test failed:', error);
+      }
+    };
+    
+    checkConnection();
+  }, []);
   
   // Fetch participants from the database
   const { 
@@ -24,13 +39,19 @@ export const useParticipantsData = () => {
     queryKey: ['participants', activeTournament?.id],
     queryFn: async () => {
       console.log("Fetching participants...");
-      const result = await DatabaseService.getAllParticipants();
-      console.log("Participants fetched:", result.length);
-      return result;
+      try {
+        const result = await DatabaseService.getAllParticipants();
+        console.log("Participants fetched:", result.length);
+        return result;
+      } catch (error) {
+        console.error("Error in queryFn for participants:", error);
+        throw error;
+      }
     },
     staleTime: 0, // Always fetch fresh data
     gcTime: 0,
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
     meta: {
       onSuccess: (data) => {
         console.log("Successfully fetched participants:", data.length);
@@ -56,13 +77,19 @@ export const useParticipantsData = () => {
     queryKey: ['groups', activeTournament?.id],
     queryFn: async () => {
       console.log("Fetching groups...");
-      const result = await DatabaseService.getAllGroups();
-      console.log("Groups fetched:", result.length);
-      return result;
+      try {
+        const result = await DatabaseService.getAllGroups();
+        console.log("Groups fetched:", result.length);
+        return result;
+      } catch (error) {
+        console.error("Error in queryFn for groups:", error);
+        throw error;
+      }
     },
     staleTime: 0, // Always fetch fresh data
     gcTime: 0,
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
     meta: {
       onSuccess: (data) => {
         console.log("Successfully fetched groups:", data.length);
@@ -103,6 +130,21 @@ export const useParticipantsData = () => {
       return matchesSearch && matchesCategory;
     });
   }, [tournamentParticipants, searchTerm, selectedCategory]);
+  
+  // Force immediate data refresh when the component mounts
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        console.log("Initial data fetch triggered");
+        await refetchParticipants();
+        await refetchGroups();
+      } catch (error) {
+        console.error("Error during initial data fetch:", error);
+      }
+    };
+    
+    fetchAllData();
+  }, [refetchParticipants, refetchGroups]);
   
   const handleDeleteClick = useCallback((participant: Participant) => {
     setSelectedParticipant(participant);

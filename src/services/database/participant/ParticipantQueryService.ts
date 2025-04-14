@@ -7,13 +7,10 @@ export class ParticipantQueryService extends BaseParticipantService {
     try {
       console.log("Getting all participants from database...");
       
-      // Access supabase directly from this class
-      if (!this.supabase) {
-        console.error('Supabase client is not initialized in ParticipantQueryService');
-        throw new Error('Supabase client is not initialized');
-      }
+      // Use the checkSupabaseClient method from the base class
+      const supabase = this.checkSupabaseClient();
       
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('participants')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
@@ -42,7 +39,7 @@ export class ParticipantQueryService extends BaseParticipantService {
       }));
       
       // Fetch group associations for all participants
-      const { data: groupParticipants, error: groupError } = await this.supabase
+      const { data: groupParticipants, error: groupError } = await supabase
         .from('group_participants')
         .select('*');
         
