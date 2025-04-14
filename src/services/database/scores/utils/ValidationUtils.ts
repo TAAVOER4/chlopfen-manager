@@ -6,6 +6,7 @@ import { GroupScore, IndividualScore } from '@/types';
  * @param id The ID to check
  */
 export const isValidUuid = (id: string): boolean => {
+  if (!id) return false;
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidPattern.test(id);
 };
@@ -15,6 +16,7 @@ export const isValidUuid = (id: string): boolean => {
  * @param judgeId The judge ID to check
  */
 export const isAdminId = (judgeId: string): boolean => {
+  if (!judgeId) return false;
   // Admin users often use numeric IDs instead of UUIDs
   return /^\d+$/.test(judgeId);
 };
@@ -31,10 +33,11 @@ export const normalizeUuid = (id: string): string => {
   }
   
   // Convert to string if it's not already
-  const stringId = String(id);
+  const stringId = String(id).trim();
   
+  // Already a valid UUID
   if (isValidUuid(stringId)) {
-    return stringId; // Already a valid UUID
+    return stringId;
   }
   
   // For numeric IDs, always return a consistent UUID-like string for that ID
@@ -45,7 +48,7 @@ export const normalizeUuid = (id: string): string => {
     return `00000000-0000-0000-0000-${paddedId}`;
   }
   
-  // If not valid UUID and not numeric, return a default placeholder
+  // If not valid UUID and not numeric, log the problem and return a default placeholder
   console.error('Invalid ID format:', stringId);
   return '00000000-0000-0000-0000-000000000000';
 };
@@ -58,6 +61,11 @@ export const normalizeUuid = (id: string): string => {
  * @param substituteId Optional substitute ID to use for admin users
  */
 export const getDatabaseJudgeId = (judgeId: string, substituteId?: string): string => {
+  if (!judgeId) {
+    console.error('Received empty judge ID');
+    return '00000000-0000-0000-0000-000000000000';
+  }
+  
   // First normalize the judge ID
   const normalizedId = normalizeUuid(judgeId);
   

@@ -45,6 +45,10 @@ export class GroupScoreService extends BaseScoreService {
       // Validate inputs
       ScoreValidationService.validateScoreData(score);
       
+      if (!score.judgeId) {
+        throw new Error('Judge ID is required');
+      }
+      
       // Track the original judge ID for response formatting and modified_by tracking
       const originalJudgeId = String(score.judgeId);
       
@@ -58,33 +62,12 @@ export class GroupScoreService extends BaseScoreService {
       const rhythm = score.rhythm === null ? 0 : score.rhythm;
       const tempo = score.tempo === null ? 0 : score.tempo;
       
-      // First archive ALL existing scores for this group/tournament
-      // Use a more aggressive clean-up approach on retry
-      try {
-        if (isRetry) {
-          // Add delay to ensure database consistency
-          await new Promise(resolve => setTimeout(resolve, 800));
-          
-          // Use normalized judge ID for database operations
-          const normalizedJudgeId = normalizeUuid(originalJudgeId);
-          console.log('Using normalized judge ID for aggressive archiving:', normalizedJudgeId);
-          
-          await GroupScoreDbService.forceArchiveExistingScores(
-            score.groupId, 
-            normalizedJudgeId, 
-            tournamentId
-          );
-          
-          // Add another delay before attempting insert
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } else {
-          // Standard archive approach first
-          await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
-          await new Promise(resolve => setTimeout(resolve, 400));
-        }
-      } catch (archiveError) {
-        console.error('Error archiving existing scores:', archiveError);
-      }
+      // Force archive any existing scores for this combination
+      await GroupScoreDbService.forceArchiveExistingScores(
+        score.groupId, 
+        originalJudgeId, 
+        tournamentId
+      );
       
       // If it's an admin creating a score, use a valid judge ID for database constraints
       if (isAdminId(originalJudgeId)) {
@@ -122,9 +105,6 @@ export class GroupScoreService extends BaseScoreService {
     originalJudgeId: string
   ): Promise<GroupScore> {
     try {
-      // Add a delay to ensure archiving is complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       // Create the new score with improved error handling - pass the original judgeId as userId for modified_by
       const data = await GroupScoreDbService.createScore(score, dbJudgeId, originalJudgeId);
       

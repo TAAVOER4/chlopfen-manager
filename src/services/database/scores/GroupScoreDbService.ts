@@ -1,7 +1,7 @@
 
 import { BaseScoreService } from './BaseScoreService';
 import { GroupScore } from '@/types';
-import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid, getDatabaseJudgeId } from './utils/ValidationUtils';
 
 export class GroupScoreDbService extends BaseScoreService {
   static async getExistingScore(groupId: number, tournamentId: number) {
@@ -55,6 +55,16 @@ export class GroupScoreDbService extends BaseScoreService {
     const supabase = this.checkSupabaseClient();
     
     try {
+      // First, force clean up any potential conflicting records
+      await this.forceArchiveExistingScores(
+        score.groupId, 
+        judgeId,
+        score.tournamentId
+      );
+      
+      // Add a delay to ensure DB consistency
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Ensure judgeId and modifiedBy are in the correct format
       const normalizedJudgeId = normalizeUuid(judgeId);
       const normalizedModifiedBy = modifiedBy ? normalizeUuid(modifiedBy) : null;
@@ -63,27 +73,6 @@ export class GroupScoreDbService extends BaseScoreService {
         judgeId: normalizedJudgeId,
         modifiedBy: normalizedModifiedBy
       });
-      
-      // First do a direct cleanup of any existing records to prevent constraint violations
-      const { error: cleanupError } = await supabase
-        .from('group_scores')
-        .update({ 
-          record_type: 'H',
-          modified_by: normalizedModifiedBy,
-          modified_at: new Date().toISOString()
-        })
-        .eq('group_id', score.groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', score.tournamentId)
-        .eq('record_type', 'C');
-        
-      if (cleanupError) {
-        console.error('Warning - error during cleanup phase:', cleanupError);
-        // Continue anyway since we'll handle it in the insert
-      }
-      
-      // Add a delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 700));
       
       // Now create the new score with a direct insert
       const { data, error } = await supabase
@@ -105,44 +94,8 @@ export class GroupScoreDbService extends BaseScoreService {
       if (error) {
         console.error('Error creating group score:', error);
         
-        if (error.code === '23503') {
-          throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
-        } else if (error.code === '23505') {
-          // Handle the unique constraint violation with historization approach
-          console.log('Unique constraint violation detected, using historization approach');
-          
-          // First get the conflicting record
-          const { data: existingRecord, error: fetchError } = await supabase
-            .from('group_scores')
-            .select('id')
-            .eq('group_id', score.groupId)
-            .eq('judge_id', normalizedJudgeId)
-            .eq('tournament_id', score.tournamentId)
-            .eq('record_type', 'C')
-            .single();
-            
-          if (fetchError) {
-            console.error('Error fetching existing record:', fetchError);
-            throw new Error('Datenbankfehler beim Aktualisieren der bestehenden Bewertung.');
-          }
-          
-          if (!existingRecord) {
-            throw new Error('Fehler: Die bestehende Bewertung konnte nicht gefunden werden.');
-          }
-          
-          // Now properly historize and create a new record
-          const historyResult = await this.historizeAndCreate('group_scores', existingRecord.id, {
-            group_id: score.groupId,
-            judge_id: normalizedJudgeId,
-            whip_strikes: score.whipStrikes,
-            rhythm: score.rhythm,
-            tempo: score.tempo,
-            time: score.time,
-            tournament_id: score.tournamentId,
-            modified_by: normalizedModifiedBy
-          });
-          
-          return historyResult;
+        if (error.code === '23505') {
+          throw new Error('Eine bestehende Bewertung konnte nicht aktualisiert werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.');
         } else {
           throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
         }
@@ -174,32 +127,6 @@ export class GroupScoreDbService extends BaseScoreService {
     return validJudge.id;
   }
   
-  static async archiveAllExistingScores(groupId: number, tournamentId: number) {
-    const supabase = this.checkSupabaseClient();
-    
-    try {
-      console.log(`Archiving all existing scores for group ${groupId} in tournament ${tournamentId}`);
-      
-      const { error } = await supabase
-        .from('group_scores')
-        .update({ record_type: 'H' })
-        .eq('group_id', groupId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (error) {
-        console.error('Error archiving all existing scores:', error);
-        throw new Error(`Error archiving all existing scores: ${error.message}`);
-      }
-      
-      console.log(`Successfully archived all existing scores for group ${groupId} in tournament ${tournamentId}`);
-      return true;
-    } catch (error) {
-      console.error('Error in archiveAllExistingScores:', error);
-      throw error;
-    }
-  }
-  
   static async forceArchiveExistingScores(groupId: number, judgeId: string, tournamentId: number) {
     const supabase = this.checkSupabaseClient();
     
@@ -210,18 +137,25 @@ export class GroupScoreDbService extends BaseScoreService {
       console.log(`Force archiving specific scores for group ${groupId}, judge ${normalizedJudgeId}, tournament ${tournamentId}`);
       
       // First - directly delete any records in error state that might be causing issues
-      await supabase
+      const { error: deleteError } = await supabase
         .from('group_scores')
         .delete()
         .eq('group_id', groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'E');
+        
+      if (deleteError) {
+        console.error('Warning - error during error record cleanup:', deleteError);
+      }
       
       // Then archive all current records for this specific combination
       const { error } = await supabase
         .from('group_scores')
-        .update({ record_type: 'H' })
+        .update({ 
+          record_type: 'H',
+          modified_at: new Date().toISOString()
+        })
         .eq('group_id', groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', tournamentId)
@@ -231,9 +165,6 @@ export class GroupScoreDbService extends BaseScoreService {
         console.error('Error in force archiving scores:', error);
         throw new Error(`Error force archiving scores: ${error.message}`);
       }
-      
-      // Add a delay to ensure DB consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       return true;
     } catch (error) {
