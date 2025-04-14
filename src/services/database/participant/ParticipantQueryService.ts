@@ -7,7 +7,7 @@ export class ParticipantQueryService extends BaseParticipantService {
     try {
       console.log("Getting all participants from database...");
       
-      // Check if Supabase client is initialized
+      // Check if Supabase client is initialized using the inherited method
       const supabase = this.checkSupabaseClient();
       
       const { data, error } = await supabase

@@ -2,5 +2,5 @@
 import { BaseService } from '../BaseService';
 
 export class BaseScoreService extends BaseService {
-  // Inherit the supabase client and error handling from BaseService
+  // Inherit all methods from BaseService including checkSupabaseClient
 }
