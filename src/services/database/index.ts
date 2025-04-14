@@ -30,10 +30,10 @@ export class DatabaseService {
   // Score operations
   static getIndividualScores = ScoreService.getIndividualScores;
   static createIndividualScore = ScoreService.createIndividualScore;
-  static updateIndividualScore = ScoreService.createIndividualScore; // Use existing method as fallback
+  static updateIndividualScore = ScoreService.updateIndividualScore; 
   static getGroupScores = ScoreService.getGroupScores;
   static createGroupScore = ScoreService.createGroupScore;
-  static updateGroupScore = ScoreService.createGroupScore; // Use existing method as fallback
+  static updateGroupScore = ScoreService.updateGroupScore;
 
   // Statistics operations
   static getParticipantStatistics = StatisticsService.getParticipantStatistics;

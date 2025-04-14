@@ -42,7 +42,9 @@ export const useParticipantRegistration = () => {
     if (!participant.firstName || !participant.lastName || !participant.birthYear) return false;
     
     try {
+      console.log("Checking if participant exists...");
       const allParticipants = await DatabaseService.getAllParticipants();
+      console.log("Received all participants:", allParticipants.length);
       
       return allParticipants.some(
         p => p.firstName.toLowerCase() === participant.firstName?.toLowerCase() && 
@@ -81,6 +83,7 @@ export const useParticipantRegistration = () => {
 
     try {
       // Check if participant already exists
+      console.log("Checking if participant exists before creating...");
       const participantExists = await checkParticipantExists();
       
       if (participantExists) {
@@ -106,8 +109,11 @@ export const useParticipantRegistration = () => {
         groupIds: []
       };
       
+      console.log("Creating new participant:", newParticipant);
+      
       // Save to database
       await DatabaseService.createParticipant(newParticipant);
+      console.log("Participant created successfully");
       
       // Immediately invalidate the participants query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ['participants'] });

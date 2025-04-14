@@ -10,11 +10,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Export a function to check if the Supabase client is correctly configured
 export const checkSupabaseConnection = async () => {
   try {
+    console.log("Checking Supabase connection...");
     const { data, error } = await supabase.from('tournaments').select('count');
     if (error) {
       console.error('Error connecting to Supabase:', error);
       return false;
     }
+    console.log("Supabase connection successful");
     return true;
   } catch (error) {
     console.error('Error checking Supabase connection:', error);
