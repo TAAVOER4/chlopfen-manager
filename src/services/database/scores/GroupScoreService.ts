@@ -56,10 +56,8 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID is required');
       }
       
-      // Validate judgeId type - just make sure it's a string
-      if (typeof score.judgeId !== 'string') {
-        throw new Error('Judge ID must be a string');
-      }
+      // Make sure judgeId is a string
+      const judgeId = String(score.judgeId);
       
       // Ensure numeric fields have values or defaults
       // This is critical since database has NOT NULL constraints
@@ -72,15 +70,15 @@ export class GroupScoreService extends BaseScoreService {
       const tempo = score.tempo === null ? 0 : score.tempo;
 
       // Validate numeric fields have valid values
-      if (whipStrikes !== undefined && (isNaN(Number(whipStrikes)) || whipStrikes < 0)) {
+      if (whipStrikes !== undefined && (isNaN(Number(whipStrikes)) || Number(whipStrikes) < 0)) {
         throw new Error('Invalid value for whip strikes');
       }
       
-      if (rhythm !== undefined && (isNaN(Number(rhythm)) || rhythm < 0)) {
+      if (rhythm !== undefined && (isNaN(Number(rhythm)) || Number(rhythm) < 0)) {
         throw new Error('Invalid value for rhythm');
       }
       
-      if (tempo !== undefined && (isNaN(Number(tempo)) || tempo < 0)) {
+      if (tempo !== undefined && (isNaN(Number(tempo)) || Number(tempo) < 0)) {
         throw new Error('Invalid value for tempo');
       }
 
@@ -94,28 +92,23 @@ export class GroupScoreService extends BaseScoreService {
       const { data: userExists, error: userError } = await supabase
         .from('users')
         .select('id, role')
-        .eq('id', score.judgeId)
+        .eq('id', judgeId)
         .single();
         
       if (userError || !userExists) {
         console.error('Error checking user existence:', userError);
-        throw new Error(`User with ID ${score.judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
-      }
-      
-      // Only validate UUID format for judges, not for admins
-      if (userExists.role === 'judge' && !this.isValidUUID(score.judgeId)) {
-        throw new Error('Judge ID must be in valid UUID format for judges');
+        throw new Error(`User with ID ${judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
       }
       
       // Log the judgeId for debugging
-      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Role:', userExists.role);
+      console.log('Judge ID before saving:', judgeId, 'Type:', typeof judgeId, 'Role:', userExists.role);
       
       // Insert the data, ensuring we have values for all required fields
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: score.judgeId,
+          judge_id: judgeId,
           whip_strikes: whipStrikes,
           rhythm: rhythm,
           tempo: tempo,

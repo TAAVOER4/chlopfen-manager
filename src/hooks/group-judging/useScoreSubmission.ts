@@ -93,10 +93,9 @@ export const useScoreSubmission = (
         throw new Error("Fehlende Benutzerinformationen");
       }
       
-      // Only validate UUID format for judges, not for admins
-      if (isJudge && (typeof currentUser.id !== 'string' || !currentUser.id.includes('-'))) {
-        throw new Error("Ungültige Richter-ID. Bitte kontaktieren Sie den Administrator.");
-      }
+      // Ensure judgeId is always treated as a string regardless of user role
+      const judgeId = String(currentUser.id);
+      console.log('User ID being used for score submission:', judgeId, 'Type:', typeof judgeId, 'Role:', currentUser.role);
       
       const currentScore = scores[currentGroup.id];
       if (!currentScore) {
@@ -134,12 +133,7 @@ export const useScoreSubmission = (
       if (!tournamentId) {
         throw new Error("Kein Turnier ausgewählt");
       }
-
-      // Use the currentUser.id directly as the judgeId
-      const judgeId = currentUser.id;
       
-      console.log('User ID being used:', judgeId, 'Type:', typeof judgeId, 'Role:', currentUser.role);
-
       // Make sure all numeric values are properly converted to numbers
       const whipStrikes = canEditCriterion('whipStrikes') 
         ? Number(currentScore.whipStrikes) 
