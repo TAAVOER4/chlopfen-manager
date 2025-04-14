@@ -22,12 +22,15 @@ export class GroupScoreDbService extends BaseScoreService {
     return existingScores?.[0];
   }
 
-  static async updateScore(scoreId: number, score: Partial<GroupScore>, userId?: string) {
+  static async updateScore(scoreId: number, score: Partial<GroupScore>, modifiedBy?: string) {
     try {
       console.log('Historizing and creating new score entry with:', score);
       
-      // If userId is provided, ensure it's in the correct format
-      const normalizedUserId = userId ? normalizeUuid(userId) : null;
+      // If modifiedBy is provided, ensure it's in the correct format
+      const normalizedModifiedBy = modifiedBy ? normalizeUuid(modifiedBy) : null;
+      
+      // Make sure judgeId is normalized if provided
+      const normalizedJudgeId = score.judgeId ? normalizeUuid(String(score.judgeId)) : undefined;
       
       // Historize the old entry and create a new one with modified_by set if available
       const historyData = {
@@ -35,28 +38,30 @@ export class GroupScoreDbService extends BaseScoreService {
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
-        judge_id: score.judgeId ? normalizeUuid(String(score.judgeId)) : undefined,
-        modified_by: normalizedUserId
+        judge_id: normalizedJudgeId,
+        modified_by: normalizedModifiedBy
       };
       
-      return await this.historizeAndCreate('group_scores', scoreId, historyData);
+      const result = await this.historizeAndCreate('group_scores', scoreId, historyData);
+      console.log('Historization and creation successful:', result);
+      return result;
     } catch (error) {
       console.error('Error updating group score:', error);
       throw new Error(`Error updating group score: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  static async createScore(score: Omit<GroupScore, 'id'>, judgeId: string, userId?: string) {
+  static async createScore(score: Omit<GroupScore, 'id'>, judgeId: string, modifiedBy?: string) {
     const supabase = this.checkSupabaseClient();
     
     try {
-      // Ensure judgeId and userId are in the correct format
+      // Ensure judgeId and modifiedBy are in the correct format
       const normalizedJudgeId = normalizeUuid(judgeId);
-      const normalizedUserId = userId ? normalizeUuid(userId) : null;
+      const normalizedModifiedBy = modifiedBy ? normalizeUuid(modifiedBy) : null;
       
       console.log('Creating score with normalized IDs:', {
         judgeId: normalizedJudgeId,
-        userId: normalizedUserId
+        modifiedBy: normalizedModifiedBy
       });
       
       // First do a direct cleanup of any existing records to prevent constraint violations
@@ -64,7 +69,7 @@ export class GroupScoreDbService extends BaseScoreService {
         .from('group_scores')
         .update({ 
           record_type: 'H',
-          modified_by: normalizedUserId,
+          modified_by: normalizedModifiedBy,
           modified_at: new Date().toISOString()
         })
         .eq('group_id', score.groupId)
@@ -78,7 +83,7 @@ export class GroupScoreDbService extends BaseScoreService {
       }
       
       // Add a delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 700));
       
       // Now create the new score with a direct insert
       const { data, error } = await supabase
@@ -92,7 +97,7 @@ export class GroupScoreDbService extends BaseScoreService {
           time: score.time,
           tournament_id: score.tournamentId,
           record_type: 'C',
-          modified_by: normalizedUserId
+          modified_by: normalizedModifiedBy
         }])
         .select()
         .single();
@@ -134,7 +139,7 @@ export class GroupScoreDbService extends BaseScoreService {
             tempo: score.tempo,
             time: score.time,
             tournament_id: score.tournamentId,
-            modified_by: normalizedUserId
+            modified_by: normalizedModifiedBy
           });
           
           return historyResult;
@@ -228,7 +233,7 @@ export class GroupScoreDbService extends BaseScoreService {
       }
       
       // Add a delay to ensure DB consistency
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       return true;
     } catch (error) {

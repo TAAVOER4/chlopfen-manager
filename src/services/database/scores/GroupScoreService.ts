@@ -3,7 +3,7 @@ import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
 import { GroupScoreDbService } from './GroupScoreDbService';
-import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid, getDatabaseJudgeId } from './utils/ValidationUtils';
 
 export class GroupScoreService extends BaseScoreService {
   static async getGroupScores(): Promise<GroupScore[]> {
@@ -45,48 +45,54 @@ export class GroupScoreService extends BaseScoreService {
       // Validate inputs
       ScoreValidationService.validateScoreData(score);
       
-      // Normalize judgeId to ensure it's in the correct format for database operations
+      // Track the original judge ID for response formatting and modified_by tracking
       const originalJudgeId = String(score.judgeId);
-      const normalizedJudgeId = normalizeUuid(originalJudgeId);
       
-      console.log('Judge ID conversion:', {
-        original: originalJudgeId,
-        normalized: normalizedJudgeId
-      });
+      // Get the tournament ID as a number
+      const tournamentId = typeof score.tournamentId === 'string' 
+        ? parseInt(score.tournamentId, 10) 
+        : score.tournamentId;
       
       // Ensure numeric fields have values or defaults
       const whipStrikes = score.whipStrikes === null ? 0 : score.whipStrikes;
       const rhythm = score.rhythm === null ? 0 : score.rhythm;
       const tempo = score.tempo === null ? 0 : score.tempo;
-
-      const tournamentId = typeof score.tournamentId === 'string' 
-        ? parseInt(score.tournamentId, 10) 
-        : score.tournamentId;
       
+      // First archive ALL existing scores for this group/tournament
       // Use a more aggressive clean-up approach on retry
-      if (isRetry) {
-        try {
+      try {
+        if (isRetry) {
+          // Add delay to ensure database consistency
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Use normalized judge ID for database operations
+          const normalizedJudgeId = normalizeUuid(originalJudgeId);
+          console.log('Using normalized judge ID for aggressive archiving:', normalizedJudgeId);
+          
+          await GroupScoreDbService.forceArchiveExistingScores(
+            score.groupId, 
+            normalizedJudgeId, 
+            tournamentId
+          );
+          
+          // Add another delay before attempting insert
           await new Promise(resolve => setTimeout(resolve, 500));
-          await GroupScoreDbService.forceArchiveExistingScores(score.groupId, normalizedJudgeId, tournamentId);
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (archiveError) {
-          console.error('Error with aggressive archiving on retry:', archiveError);
-        }
-      } else {
-        // First archive ALL existing scores for this group/tournament
-        try {
+        } else {
+          // Standard archive approach first
           await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
-        } catch (archiveError) {
-          console.error('Error archiving existing scores:', archiveError);
+          await new Promise(resolve => setTimeout(resolve, 400));
         }
+      } catch (archiveError) {
+        console.error('Error archiving existing scores:', archiveError);
       }
       
-      // If it's an admin creating a score, use a valid judge ID
+      // If it's an admin creating a score, use a valid judge ID for database constraints
       if (isAdminId(originalJudgeId)) {
         console.log('Admin user detected with ID:', originalJudgeId);
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
         console.log('Using judge ID for admin submission:', validJudgeId);
         
+        // For admin users, we use a valid judge ID in DB, but track the admin's ID as modified_by
         return await this.createNewScore({
           ...score,
           whipStrikes,
@@ -95,6 +101,7 @@ export class GroupScoreService extends BaseScoreService {
         }, validJudgeId, originalJudgeId);
       } else {
         // Regular judge case - use the normalized UUID
+        const normalizedJudgeId = normalizeUuid(originalJudgeId);
         return await this.createNewScore({
           ...score,
           whipStrikes,
@@ -112,7 +119,7 @@ export class GroupScoreService extends BaseScoreService {
   private static async createNewScore(
     score: Omit<GroupScore, 'id'>, 
     dbJudgeId: string, 
-    originalJudgeId?: string
+    originalJudgeId: string
   ): Promise<GroupScore> {
     try {
       // Add a delay to ensure archiving is complete
@@ -124,7 +131,7 @@ export class GroupScoreService extends BaseScoreService {
       return {
         id: data.id,
         groupId: data.group_id,
-        judgeId: originalJudgeId || data.judge_id, // Use original ID for UI if provided
+        judgeId: originalJudgeId, // Use original ID for UI if provided
         whipStrikes: data.whip_strikes,
         rhythm: data.rhythm,
         tempo: data.tempo,
