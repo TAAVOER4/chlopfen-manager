@@ -93,8 +93,7 @@ export const useScoreSubmission = (
         throw new Error("Fehlende Benutzerinformationen");
       }
       
-      // Only validate the UUID format for judges, not for admins
-      // Admins might have different ID formats and should still be allowed to submit scores
+      // Only validate UUID format for judges, not for admins
       if (isJudge && (typeof currentUser.id !== 'string' || !currentUser.id.includes('-'))) {
         throw new Error("Ungültige Richter-ID. Bitte kontaktieren Sie den Administrator.");
       }
@@ -129,7 +128,7 @@ export const useScoreSubmission = (
       // Use the currentUser.id directly as the judgeId
       const judgeId = currentUser.id;
       
-      console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
+      console.log('User ID being used:', judgeId, 'Type:', typeof judgeId, 'Role:', currentUser.role);
 
       // Prepare score data for saving
       const scoreData: Omit<GroupScore, 'id'> = {

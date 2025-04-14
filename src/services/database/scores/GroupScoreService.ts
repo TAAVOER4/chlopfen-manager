@@ -57,7 +57,7 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID is required');
       }
       
-      // Validate judgeId format
+      // Validate judgeId type - just make sure it's a string
       if (typeof score.judgeId !== 'string') {
         throw new Error('Judge ID must be a string');
       }
@@ -80,13 +80,13 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error(`User with ID ${score.judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
       }
       
-      // No need to validate UUID format for admin users
-      if (userExists.role !== 'admin' && !this.isValidUUID(score.judgeId)) {
+      // Only validate UUID format for judges, not for admins
+      if (userExists.role === 'judge' && !this.isValidUUID(score.judgeId)) {
         throw new Error('Judge ID must be in valid UUID format for judges');
       }
       
       // Log the judgeId for debugging
-      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Length:', score.judgeId.length);
+      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Role:', userExists.role);
       
       const { data, error } = await supabase
         .from('group_scores')
@@ -133,7 +133,7 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Validate UUID format
+      // Validate judgeId type
       if (typeof score.judgeId !== 'string') {
         throw new Error('Judge ID must be a string');
       }
@@ -144,7 +144,7 @@ export class GroupScoreService extends BaseScoreService {
       
       const supabase = this.checkSupabaseClient();
       
-      // Check if the user is an admin before enforcing UUID format
+      // Check if the user exists and get their role
       const { data: userExists, error: userError } = await supabase
         .from('users')
         .select('role')
@@ -155,8 +155,8 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error(`User with ID ${score.judgeId} does not exist`);
       }
       
-      // Only validate UUID format for non-admin users
-      if (userExists.role !== 'admin' && !this.isValidUUID(score.judgeId)) {
+      // Only validate UUID format for judges, not for admins
+      if (userExists.role === 'judge' && !this.isValidUUID(score.judgeId)) {
         throw new Error('Judge ID must be in valid UUID format for judges');
       }
       
