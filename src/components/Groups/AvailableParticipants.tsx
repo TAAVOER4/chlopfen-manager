@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui';
 import { Plus } from 'lucide-react';
@@ -74,7 +75,7 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
   } = useQuery({
     queryKey: ['direct-participants', activeTournament?.id],
     queryFn: async () => {
-      console.log("Direct fetching participants due to empty availableParticipants");
+      console.log("Direct fetching participants in AvailableParticipants component");
       try {
         const { data: participants, error } = await supabase
           .from('participants')
@@ -82,6 +83,17 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
           .order('display_order', { ascending: true });
           
         if (error) throw error;
+        
+        console.log(`Fetched ${participants.length} participants directly in AvailableParticipants`);
+        
+        // Fetch all group-participant relationships
+        const { data: groupParticipants, error: relError } = await supabase
+          .from('group_participants')
+          .select('*');
+          
+        if (relError) {
+          console.error('Error loading group-participant relationships:', relError);
+        }
         
         return participants.map(p => ({
           id: p.id,
@@ -93,35 +105,34 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
           isGroupOnly: p.is_group_only || false,
           tournamentId: p.tournament_id,
           displayOrder: p.display_order,
-          groupIds: []
+          groupIds: groupParticipants
+            ? groupParticipants.filter(gp => gp.participant_id === p.id).map(gp => gp.group_id)
+            : []
         }));
       } catch (error) {
         console.error('Error directly fetching participants:', error);
         return [];
       }
     },
-    enabled: availableParticipants.length === 0,
-    retry: 1
+    enabled: true, // Always fetch directly, don't rely on availableParticipants prop
+    retry: 1,
+    staleTime: 0 // Don't cache this data
   });
   
   const filteredParticipants = useMemo(() => {
-    console.log("Filtering participants:");
-    console.log("- availableParticipants:", availableParticipants.length);
+    console.log("Filtering participants in AvailableParticipants:");
+    console.log("- selectedCategory:", selectedCategory);
     console.log("- directParticipants:", directParticipants.length);
-    console.log("- selectedParticipants:", selectedParticipants.length);
+    console.log("- selectedParticipants:", selectedParticipants.map(p => p.id));
     console.log("- activeTournament:", activeTournament?.id);
     
-    const baseParticipants = availableParticipants.length > 0 
-      ? availableParticipants 
-      : directParticipants;
-    
-    return baseParticipants
+    // Always use directParticipants as the base, don't depend on availableParticipants prop
+    return directParticipants
       .filter(p => !selectedParticipants.some(sp => sp.id === p.id))
       .filter(p => !p.tournamentId || p.tournamentId === activeTournament?.id)
       .filter(p => {
+        // Apply category filtering
         if (!selectedCategory || selectedCategory === 'all') return true;
-        
-        if (selectedCategory === 'active') return p.category === 'active';
         
         if (selectedCategory === 'kids_juniors') {
           return p.category === 'kids' || p.category === 'juniors';
@@ -129,7 +140,9 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
         
         return p.category === selectedCategory;
       });
-  }, [availableParticipants, directParticipants, selectedParticipants, activeTournament, selectedCategory]);
+  }, [directParticipants, selectedParticipants, activeTournament, selectedCategory]);
+
+  console.log(`Final filtered participants: ${filteredParticipants.length}`);
 
   const isLoading = isLoadingGroups || isLoadingDirectParticipants;
 

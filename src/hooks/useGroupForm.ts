@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { GroupFormValues } from '@/components/Groups/GroupInfoForm';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { determineGroupCategory } from '../utils/categoryUtils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useTournament } from '@/contexts/TournamentContext';
 
 interface UseGroupFormProps {
   form: UseFormReturn<GroupFormValues>;
@@ -21,6 +21,7 @@ export const useGroupForm = ({
   currentGroupId
 }: UseGroupFormProps) => {
   const { toast } = useToast();
+  const { activeTournament } = useTournament();
   const [selectedParticipants, setSelectedParticipants] = useState<Participant[]>(initialParticipants);
   const [availableParticipants, setAvailableParticipants] = useState<Participant[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<GroupCategory>(form.watch('category') as GroupCategory);
@@ -28,7 +29,7 @@ export const useGroupForm = ({
 
   // Fetch participants directly from Supabase
   const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
-    queryKey: ['participants-for-group'],
+    queryKey: ['participants-for-group', activeTournament?.id],
     queryFn: async () => {
       console.log("Fetching participants directly from Supabase in useGroupForm");
       try {
@@ -41,6 +42,8 @@ export const useGroupForm = ({
           console.error('Error loading participants:', error);
           return [];
         }
+        
+        console.log(`Fetched ${data.length} participants in useGroupForm`);
         
         // Map the database column names to the frontend property names
         const transformedData = data.map(participant => ({
@@ -72,15 +75,25 @@ export const useGroupForm = ({
           });
         }
         
-        console.log(`Fetched ${transformedData.length} participants directly`);
         return transformedData;
       } catch (error) {
         console.error('Error in direct participant fetch:', error);
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Don't cache this data
+    gcTime: 0,    // Don't keep this data in memory
   });
+
+  // Watch form changes for category and update selectedCategory
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'category') {
+        setSelectedCategory(value.category as GroupCategory);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // Get the current values from the form
   const { size } = form.watch();
@@ -93,15 +106,22 @@ export const useGroupForm = ({
     console.log("- participants:", participants.length);
     console.log("- initialParticipants:", initialParticipants.length);
     
-    // Make all participants available, regardless of category
+    // Filter participants to those relevant to the current tournament
+    const tournamentParticipants = activeTournament 
+      ? participants.filter(p => !p.tournamentId || p.tournamentId === activeTournament.id)
+      : participants;
+    
+    console.log("- tournamentParticipants:", tournamentParticipants.length);
+    
+    // Make all participants available
     // The category filtering will be handled in the AvailableParticipants component
-    setAvailableParticipants(participants);
+    setAvailableParticipants(tournamentParticipants);
     
     // If we have participants already selected, don't clear them when category changes
-    if (initialParticipants.length === 0) {
-      setSelectedParticipants([]); // Clear selected participants when category changes if not editing
+    if (initialParticipants.length === 0 && selectedParticipants.length === 0) {
+      // Keep selected participants empty if we're not editing
     }
-  }, [participants, initialParticipants.length, isLoadingParticipants]);
+  }, [participants, initialParticipants.length, isLoadingParticipants, activeTournament]);
 
   // Auto-generate group name when selected participants change
   useEffect(() => {
