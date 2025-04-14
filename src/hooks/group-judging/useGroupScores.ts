@@ -21,7 +21,7 @@ export const useGroupScores = (groups: Group[]) => {
       // If it's a mock user with numeric ID, we'll generate a UUID-like string
       let judgeId: string;
       
-      if (typeof currentUser.id === 'string' && currentUser.id.includes('-')) {
+      if (typeof currentUser.id === 'string' && currentUser.id.indexOf('-') >= 0) {
         // Already a UUID format
         judgeId = currentUser.id;
       } else {

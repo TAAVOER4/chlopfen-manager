@@ -119,7 +119,7 @@ export const useScoreSubmission = (
       // For user ID, ensure it's in a valid UUID format
       let judgeId: string;
       
-      if (typeof currentUser.id === 'string' && currentUser.id.includes('-')) {
+      if (typeof currentUser.id === 'string' && currentUser.id.indexOf('-') >= 0) {
         // Already a UUID format
         judgeId = currentUser.id;
       } else {
