@@ -53,16 +53,26 @@ export class GroupScoreService extends BaseScoreService {
       
       const supabase = this.checkSupabaseClient();
       
-      // Convert judgeId to string for UUID compatibility
-      const judgeId = score.judgeId.toString();
+      // Make sure judgeId is a valid UUID - we should NOT convert numbers to string
+      let judgeIdFormatted = score.judgeId;
       
-      console.log('Saving score with judge ID:', judgeId, 'Type:', typeof judgeId);
+      // Log the judgeId for debugging
+      console.log('Judge ID before formatting:', judgeIdFormatted, 'Type:', typeof judgeIdFormatted);
+      
+      // If it's not already a UUID format string, we need to make sure it's valid
+      if (typeof judgeIdFormatted === 'number') {
+        // This is just a fallback - the judgeId should already be a valid UUID string
+        console.warn('Judge ID is a number, this is unexpected:', judgeIdFormatted);
+        judgeIdFormatted = judgeIdFormatted.toString();
+      }
+      
+      console.log('Saving score with judge ID:', judgeIdFormatted, 'Type:', typeof judgeIdFormatted);
       
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: judgeIdFormatted,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
@@ -103,10 +113,15 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Convert judgeId to string for UUID compatibility
-      const judgeId = score.judgeId.toString();
+      // Make sure judgeId is a valid UUID
+      let judgeIdFormatted = score.judgeId;
       
-      if (!judgeId) {
+      if (typeof judgeIdFormatted === 'number') {
+        console.warn('Judge ID is a number, this is unexpected:', judgeIdFormatted);
+        judgeIdFormatted = judgeIdFormatted.toString();
+      }
+      
+      if (!judgeIdFormatted) {
         throw new Error('Judge ID is required');
       }
       
@@ -116,7 +131,7 @@ export class GroupScoreService extends BaseScoreService {
         .from('group_scores')
         .update({
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: judgeIdFormatted,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,

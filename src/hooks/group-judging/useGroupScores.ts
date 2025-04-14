@@ -17,9 +17,13 @@ export const useGroupScores = (groups: Group[]) => {
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
     groups.forEach(group => {
-      // For GroupScore, judgeId needs to be a string (UUID)
-      // Make sure it's always a string to match the database expectations
-      const judgeId = currentUser.id.toString();
+      // Make sure judgeId is a string, as it needs to be a UUID in the database
+      let judgeId = currentUser.id;
+      
+      // Convert to string if it's a number
+      if (typeof judgeId === 'number') {
+        judgeId = judgeId.toString();
+      }
       
       initialScores[group.id] = {
         groupId: group.id,
