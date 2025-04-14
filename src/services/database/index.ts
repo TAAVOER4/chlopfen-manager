@@ -1,8 +1,7 @@
-
 import { ParticipantService } from './participant';
 import { GroupService } from './GroupService';
-import { ScoreService } from './ScoreService';
 import { StatisticsService } from './StatisticsService';
+import { IndividualScoreService, GroupScoreService } from './scores';
 
 /**
  * DatabaseService acts as a facade for all database services
@@ -28,12 +27,12 @@ export class DatabaseService {
   static bulkUpdateGroupDisplayOrder = GroupService.bulkUpdateGroupDisplayOrder;
 
   // Score operations
-  static getIndividualScores = ScoreService.getIndividualScores;
-  static createIndividualScore = ScoreService.createIndividualScore;
-  static updateIndividualScore = ScoreService.updateIndividualScore; 
-  static getGroupScores = ScoreService.getGroupScores;
-  static createGroupScore = ScoreService.createGroupScore;
-  static updateGroupScore = ScoreService.updateGroupScore;
+  static getIndividualScores = IndividualScoreService.getIndividualScores;
+  static createIndividualScore = IndividualScoreService.createIndividualScore;
+  static updateIndividualScore = IndividualScoreService.updateIndividualScore; 
+  static getGroupScores = GroupScoreService.getGroupScores;
+  static createGroupScore = GroupScoreService.createGroupScore;
+  static updateGroupScore = GroupScoreService.updateGroupScore;
 
   // Statistics operations
   static getParticipantStatistics = StatisticsService.getParticipantStatistics;
