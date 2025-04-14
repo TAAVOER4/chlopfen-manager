@@ -41,7 +41,8 @@ const GroupJudging: React.FC = () => {
     refetchGroups,
     isSaving,
     isChecking,
-    canEditScores
+    canEditScores,
+    isLoadingScores
   } = useGroupJudging(size, categoryParam);
 
   // Navigate back to judging page with group tab selected
@@ -150,6 +151,7 @@ const GroupJudging: React.FC = () => {
             totalGroups={groups.length}
             isSaving={isSaving}
             canSubmitScores={isAdmin || isJudge}
+            isLoadingScores={isLoadingScores}
           />
         </div>
         

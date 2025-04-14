@@ -1,3 +1,4 @@
+
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 
@@ -89,19 +90,25 @@ export class GroupScoreService extends BaseScoreService {
       const supabase = this.checkSupabaseClient();
       
       // First check if the user actually exists in the users table
-      const { data: userExists, error: userError } = await supabase
-        .from('users')
-        .select('id, role')
-        .eq('id', judgeId)
-        .single();
+      // Skip this check for admin users, who may have numeric IDs
+      if (judgeId && !judgeId.includes('-') && isNaN(Number(judgeId))) {
+        // For non-numeric, non-UUID IDs, verify they exist
+        const { data: userExists, error: userError } = await supabase
+          .from('users')
+          .select('id, role')
+          .eq('id', judgeId)
+          .single();
+          
+        if (userError || !userExists) {
+          console.error('Error checking user existence:', userError);
+          throw new Error(`Benutzer mit ID ${judgeId} existiert nicht in der Datenbank. Bitte stellen Sie sicher, dass der Benutzer existiert, bevor Sie eine Bewertung abgeben.`);
+        }
         
-      if (userError || !userExists) {
-        console.error('Error checking user existence:', userError);
-        throw new Error(`User with ID ${judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
+        // Log the judgeId for debugging
+        console.log('Judge ID before saving:', judgeId, 'Type:', typeof judgeId, 'Role:', userExists.role);
+      } else {
+        console.log('Using judge ID without database validation:', judgeId);
       }
-      
-      // Log the judgeId for debugging
-      console.log('Judge ID before saving:', judgeId, 'Type:', typeof judgeId, 'Role:', userExists.role);
       
       // Insert the data, ensuring we have values for all required fields
       const { data, error } = await supabase
@@ -120,7 +127,15 @@ export class GroupScoreService extends BaseScoreService {
         
       if (error) {
         console.error('Error creating group score:', error);
-        throw new Error(`Error creating group score: ${error.message}`);
+        
+        // Provide a more user-friendly error message
+        if (error.code === '23503') {
+          throw new Error(`Fehler: Ein referenzierter Datensatz (Benutzer, Gruppe oder Turnier) existiert nicht.`);
+        } else if (error.code === '23505') {
+          throw new Error(`Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter.`);
+        } else {
+          throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+        }
       }
       
       if (!data) {

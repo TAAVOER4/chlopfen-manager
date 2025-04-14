@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Save } from 'lucide-react';
@@ -23,6 +23,7 @@ interface GroupJudgingFormProps {
   totalGroups: number;
   isSaving?: boolean;
   canSubmitScores?: boolean;
+  isLoadingScores?: boolean;
 }
 
 const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
@@ -34,7 +35,8 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
   currentGroupIndex,
   totalGroups,
   isSaving = false,
-  canSubmitScores = false
+  canSubmitScores = false,
+  isLoadingScores = false
 }) => {
   // All possible criteria
   const allCriteria = [
@@ -61,6 +63,13 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
     scores[currentGroup.id]?.[criterion.key] !== null
   );
 
+  // Log current scores for debugging
+  useEffect(() => {
+    if (scores && currentGroup) {
+      console.log('Current scores for group:', currentGroup.id, scores[currentGroup.id]);
+    }
+  }, [scores, currentGroup]);
+
   // Access denied message if user can't submit scores
   if (!canSubmitScores) {
     return (
@@ -73,6 +82,20 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
               Sie sind nicht berechtigt, Bewertungen zu speichern. Nur Administratoren und Richter können Bewertungen vornehmen.
             </AlertDescription>
           </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading state while scores are being fetched
+  if (isLoadingScores) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="py-6">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Spinner size="md" />
+            <p className="mt-4 text-muted-foreground">Bewertungen werden geladen...</p>
+          </div>
         </CardContent>
       </Card>
     );

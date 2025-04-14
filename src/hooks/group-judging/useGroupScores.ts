@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Group, GroupScore, GroupCriterionKey } from '../../types';
 import { useUser } from '@/contexts/UserContext';
+import { useQuery } from '@tanstack/react-query';
+import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 
 export const useGroupScores = (groups: Group[]) => {
   const { currentUser, selectedTournament, isAdmin, isJudge } = useUser();
@@ -10,29 +12,57 @@ export const useGroupScores = (groups: Group[]) => {
   // Check if user is authorized to submit scores
   const canEditScores = isAdmin || isJudge;
 
+  // Fetch existing scores for the current user
+  const { data: existingScores, isLoading: isLoadingScores } = useQuery({
+    queryKey: ['groupScores', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser?.id) return [];
+      try {
+        return await GroupScoreService.getGroupScores();
+      } catch (error) {
+        console.error('Error fetching group scores:', error);
+        return [];
+      }
+    },
+    enabled: !!currentUser?.id
+  });
+
   // Initialize scores for each group
   useEffect(() => {
     if (groups.length === 0 || !currentUser) return;
 
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
+    
     groups.forEach(group => {
       // Use the currentUser.id directly - we'll handle validation elsewhere
       const judgeId = currentUser.id;
       
-      initialScores[group.id] = {
-        groupId: group.id,
-        judgeId,
-        whipStrikes: undefined,
-        rhythm: undefined,
-        tempo: undefined,
-        time: true,
-        tournamentId: selectedTournament?.id || group.tournamentId
-      };
+      // Look for an existing score for this group by this judge
+      const existingScore = existingScores?.find(
+        score => score.groupId === group.id && 
+                 String(score.judgeId) === String(judgeId)
+      );
+      
+      console.log('Checking for existing score for group:', group.id, 'Judge:', judgeId);
+      if (existingScore) {
+        console.log('Found existing score:', existingScore);
+        initialScores[group.id] = existingScore;
+      } else {
+        initialScores[group.id] = {
+          groupId: group.id,
+          judgeId,
+          whipStrikes: undefined,
+          rhythm: undefined,
+          tempo: undefined,
+          time: true,
+          tournamentId: selectedTournament?.id || group.tournamentId
+        };
+      }
     });
     
     setScores(initialScores);
-  }, [groups, currentUser, selectedTournament]);
+  }, [groups, currentUser, selectedTournament, existingScores]);
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
@@ -69,6 +99,7 @@ export const useGroupScores = (groups: Group[]) => {
     scores,
     canEditCriterion,
     handleScoreChange,
-    canEditScores
+    canEditScores,
+    isLoadingScores
   };
 };

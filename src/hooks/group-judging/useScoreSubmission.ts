@@ -1,11 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Group, GroupScore, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 export const useScoreSubmission = (
   groups: Group[],
@@ -21,6 +21,48 @@ export const useScoreSubmission = (
 
   // Check if user is authorized to submit scores
   const canSubmitScores = isAdmin || isJudge;
+  
+  // Fetch existing scores for the current user and group
+  const { data: existingScores, refetch: refetchScores } = useQuery({
+    queryKey: ['groupScores', currentUser?.id],
+    queryFn: async () => {
+      try {
+        if (!currentUser?.id) return [];
+        return await GroupScoreService.getGroupScores();
+      } catch (error) {
+        console.error('Error fetching existing scores:', error);
+        return [];
+      }
+    },
+    enabled: !!currentUser?.id
+  });
+  
+  // Update scores state with existing scores when groups or existingScores change
+  useEffect(() => {
+    if (!existingScores || !existingScores.length || !groups.length || !currentUser) return;
+    
+    const currentGroup = groups[currentGroupIndex];
+    if (!currentGroup) return;
+    
+    // Find an existing score for this group by this judge
+    const existingScore = existingScores.find(
+      score => score.groupId === currentGroup.id && 
+               String(score.judgeId) === String(currentUser.id)
+    );
+    
+    if (existingScore) {
+      console.log('Found existing score for group:', currentGroup.id, 'Judge:', currentUser.id, 'Score:', existingScore);
+      
+      // Update the scores state with the existing score
+      setScores(prev => ({
+        ...prev,
+        [currentGroup.id]: {
+          ...prev[currentGroup.id],
+          ...existingScore
+        }
+      }));
+    }
+  }, [groups, currentGroupIndex, existingScores, currentUser]);
 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
@@ -50,6 +92,9 @@ export const useScoreSubmission = (
       }
       
       setIsSaving(false);
+      
+      // Refetch scores after successful save
+      refetchScores();
     },
     onError: (error: any) => {
       console.error('Error saving score:', error);
@@ -112,7 +157,8 @@ export const useScoreSubmission = (
           // Check if value is undefined, null, or empty
           const value = currentScore[field];
           // Fix: properly check for empty values based on type
-          if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
+          if (value === undefined || value === null || 
+             (typeof value === 'string' && value === '')) {
             missingFields.push(field);
           }
         }
@@ -193,6 +239,7 @@ export const useScoreSubmission = (
     setCurrentGroupIndex,
     handleSaveScore,
     isSaving,
-    canSubmitScores
+    canSubmitScores,
+    existingScores
   };
 };
