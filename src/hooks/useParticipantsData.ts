@@ -27,16 +27,18 @@ export const useParticipantsData = () => {
       return DatabaseService.getAllParticipants();
     },
     staleTime: 0, // Set to 0 to always fetch fresh data
-    onSuccess: (data) => {
-      console.log("Successfully fetched participants:", data.length);
-    },
-    onError: (error: Error) => {
-      console.error("Error fetching participants:", error);
-      toast({
-        title: "Fehler",
-        description: "Teilnehmer konnten nicht geladen werden",
-        variant: "destructive"
-      });
+    meta: {
+      onSuccess: (data: Participant[]) => {
+        console.log("Successfully fetched participants:", data.length);
+      },
+      onError: (error: Error) => {
+        console.error("Error fetching participants:", error);
+        toast({
+          title: "Fehler",
+          description: "Teilnehmer konnten nicht geladen werden",
+          variant: "destructive"
+        });
+      }
     }
   });
   
@@ -53,16 +55,18 @@ export const useParticipantsData = () => {
       return DatabaseService.getAllGroups();
     },
     staleTime: 0, // Set to 0 to always fetch fresh data
-    onSuccess: (data) => {
-      console.log("Successfully fetched groups:", data.length);
-    },
-    onError: (error: Error) => {
-      console.error("Error fetching groups:", error);
-      toast({
-        title: "Fehler",
-        description: "Gruppen konnten nicht geladen werden",
-        variant: "destructive"
-      });
+    meta: {
+      onSuccess: (data: Group[]) => {
+        console.log("Successfully fetched groups:", data.length);
+      },
+      onError: (error: Error) => {
+        console.error("Error fetching groups:", error);
+        toast({
+          title: "Fehler",
+          description: "Gruppen konnten nicht geladen werden",
+          variant: "destructive"
+        });
+      }
     }
   });
   
