@@ -27,8 +27,16 @@ import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Auth/LoginPage";
 import { UserProvider } from "./contexts/UserContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
+import SupabaseConnectionTest from "./components/SupabaseConnectionTest";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -37,6 +45,7 @@ const App = () => (
         <TournamentProvider>
           <Toaster />
           <Sonner />
+          <SupabaseConnectionTest />
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
