@@ -111,6 +111,55 @@ export class ScoreService extends BaseService {
     }
   }
   
+  static async updateIndividualScore(score: IndividualScore): Promise<IndividualScore> {
+    try {
+      console.log('Updating individual score:', score);
+      
+      const { data, error } = await this.supabase
+        .from('individual_scores')
+        .update({
+          participant_id: score.participantId,
+          judge_id: score.judgeId,
+          round: score.round,
+          whip_strikes: score.whipStrikes,
+          rhythm: score.rhythm,
+          stance: score.stance,
+          posture: score.posture,
+          whip_control: score.whipControl,
+          tournament_id: score.tournamentId
+        })
+        .eq('id', score.id)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error updating individual score:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from score update');
+      }
+      
+      // Transform the data back to the frontend format
+      return {
+        id: data.id,
+        participantId: data.participant_id,
+        judgeId: data.judge_id,
+        round: data.round,
+        whipStrikes: data.whip_strikes,
+        rhythm: data.rhythm,
+        stance: data.stance,
+        posture: data.posture,
+        whipControl: data.whip_control,
+        tournamentId: data.tournament_id
+      } as IndividualScore;
+    } catch (error) {
+      console.error('Error updating individual score:', error);
+      throw error;
+    }
+  }
+  
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Saving group score with data:', score);
@@ -165,6 +214,63 @@ export class ScoreService extends BaseService {
       } as GroupScore;
     } catch (error) {
       console.error('Error creating group score:', error);
+      throw error;
+    }
+  }
+  
+  static async updateGroupScore(score: GroupScore): Promise<GroupScore> {
+    try {
+      console.log('Updating group score:', score);
+      
+      // Ensure tournamentId is a number before sending to database
+      const tournamentId = typeof score.tournamentId === 'string' 
+        ? parseInt(score.tournamentId, 10) 
+        : score.tournamentId;
+      
+      // Ensure judgeId is a string for UUID compatibility
+      const judgeId = score.judgeId.toString();
+      
+      if (!judgeId) {
+        throw new Error('Judge ID is required');
+      }
+      
+      const { data, error } = await this.supabase
+        .from('group_scores')
+        .update({
+          group_id: score.groupId,
+          judge_id: judgeId,
+          whip_strikes: score.whipStrikes,
+          rhythm: score.rhythm,
+          tempo: score.tempo,
+          time: score.time,
+          tournament_id: tournamentId
+        })
+        .eq('id', score.id)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error updating group score:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from score update');
+      }
+      
+      // Transform the data back to the frontend format
+      return {
+        id: data.id,
+        groupId: data.group_id,
+        judgeId: data.judge_id,
+        whipStrikes: data.whip_strikes,
+        rhythm: data.rhythm,
+        tempo: data.tempo,
+        time: data.time,
+        tournamentId: data.tournament_id
+      } as GroupScore;
+    } catch (error) {
+      console.error('Error updating group score:', error);
       throw error;
     }
   }
