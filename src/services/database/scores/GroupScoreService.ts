@@ -38,7 +38,7 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
-  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>, isRetry: boolean = false): Promise<GroupScore> {
+  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Creating or updating group score:', score);
       
@@ -57,13 +57,6 @@ export class GroupScoreService extends BaseScoreService {
       const whipStrikes = score.whipStrikes ?? 0;
       const rhythm = score.rhythm ?? 0;
       const tempo = score.tempo ?? 0;
-      
-      // First, archive existing scores
-      await GroupScoreDbService.forceArchiveExistingScores(
-        score.groupId, 
-        originalJudgeId, 
-        tournamentId
-      );
       
       // If it's an admin, use a valid judge ID
       if (isAdminId(originalJudgeId)) {

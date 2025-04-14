@@ -38,9 +38,18 @@ export const useScoreMutation = () => {
     },
     onSuccess: () => {
       refetchScores();
+      toast({
+        title: "Erfolgreich gespeichert",
+        description: "Die Bewertung wurde erfolgreich gespeichert.",
+      });
     },
     onError: (error) => {
       console.error('Mutation error:', error);
+      toast({
+        title: "Fehler beim Speichern",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler beim Speichern der Bewertung",
+        variant: "destructive"
+      });
       refetchScores();
     }
   });
