@@ -5,14 +5,21 @@ import { Participant } from '@/types';
 export class ParticipantQueryService extends BaseParticipantService {
   static async getAllParticipants() {
     try {
+      console.log("Getting all participants from database...");
+      
       const { data, error } = await this.supabase
         .from('participants')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading participants:', error);
+        throw error;
+      }
       
       if (!data) return [];
+      
+      console.log("Database returned participants data:", data.length, "records");
       
       // Map the database column names to the frontend property names
       const transformedData = data.map(participant => ({
@@ -33,7 +40,11 @@ export class ParticipantQueryService extends BaseParticipantService {
         .from('group_participants')
         .select('*');
         
-      if (!groupError && groupParticipants) {
+      if (groupError) {
+        console.error('Error loading group participants:', groupError);
+      }
+      
+      if (groupParticipants) {
         // Populate groupIds for each participant
         transformedData.forEach(participant => {
           participant.groupIds = groupParticipants
@@ -42,9 +53,10 @@ export class ParticipantQueryService extends BaseParticipantService {
         });
       }
       
+      console.log("Processed participants with groups:", transformedData.length);
       return transformedData as Participant[];
     } catch (error) {
-      console.error('Error loading participants:', error);
+      console.error('Error in getAllParticipants method:', error);
       return [];
     }
   }

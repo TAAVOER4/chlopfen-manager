@@ -1,7 +1,6 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { BaseService } from '../BaseService';
 
-export class BaseGroupService {
-  // Make supabase client available to all derived classes
-  protected static supabase = supabase;
+export class BaseGroupService extends BaseService {
+  // The supabase client is inherited from BaseService
 }

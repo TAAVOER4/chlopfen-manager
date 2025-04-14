@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DatabaseService } from '@/services/DatabaseService';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Participant, Group } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 export const useParticipantsData = () => {
   const { activeTournament } = useTournament();
@@ -18,25 +19,51 @@ export const useParticipantsData = () => {
     data: participants = [], 
     isLoading: isLoadingParticipants,
     error: participantsError,
+    refetch: refetchParticipants
   } = useQuery({
     queryKey: ['participants', activeTournament?.id],
-    queryFn: DatabaseService.getAllParticipants,
+    queryFn: () => {
+      console.log("Fetching participants...");
+      return DatabaseService.getAllParticipants();
+    },
     staleTime: 0, // Set to 0 to always fetch fresh data
+    onError: (error) => {
+      console.error("Error fetching participants:", error);
+      toast({
+        title: "Fehler",
+        description: "Teilnehmer konnten nicht geladen werden",
+        variant: "destructive"
+      });
+    }
   });
   
   // Fetch groups from the database
   const { 
     data: groups = [], 
     isLoading: isLoadingGroups,
-    error: groupsError 
+    error: groupsError,
+    refetch: refetchGroups
   } = useQuery({
     queryKey: ['groups', activeTournament?.id],
-    queryFn: DatabaseService.getAllGroups,
+    queryFn: () => {
+      console.log("Fetching groups...");
+      return DatabaseService.getAllGroups();
+    },
     staleTime: 0, // Set to 0 to always fetch fresh data
+    onError: (error) => {
+      console.error("Error fetching groups:", error);
+      toast({
+        title: "Fehler",
+        description: "Gruppen konnten nicht geladen werden",
+        variant: "destructive"
+      });
+    }
   });
   
   // Filter participants by tournament
   const tournamentParticipants = useMemo(() => {
+    console.log("Filtering participants by tournament:", activeTournament?.id);
+    console.log("Total participants:", participants.length);
     return activeTournament 
       ? participants.filter(p => p.tournamentId === activeTournament.id)
       : [];
@@ -44,6 +71,7 @@ export const useParticipantsData = () => {
   
   // Filter participants based on search term and category
   const filteredParticipants = useMemo(() => {
+    console.log("Filtering participants by search and category");
     return tournamentParticipants.filter(participant => {
       const matchesSearch = 
         `${participant.firstName} ${participant.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,6 +105,13 @@ export const useParticipantsData = () => {
     );
   };
 
+  // Add manual refetch methods
+  const refetchAll = () => {
+    console.log("Manually refetching all data...");
+    refetchParticipants();
+    refetchGroups();
+  };
+
   return {
     participants,
     groups,
@@ -95,6 +130,7 @@ export const useParticipantsData = () => {
     setDeleteDialogOpen,
     handleDeleteClick,
     handleParticipantDeleted,
-    getGroupsForParticipant
+    getGroupsForParticipant,
+    refetchAll
   };
 };
