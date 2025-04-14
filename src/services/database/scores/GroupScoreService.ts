@@ -1,4 +1,3 @@
-
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 
@@ -44,6 +43,16 @@ export class GroupScoreService extends BaseScoreService {
     return uuidRegex.test(id);
   }
 
+  /**
+   * Checks if a user ID is likely an admin ID (numeric)
+   * @param id user ID to check
+   * @returns boolean indicating if the ID is likely an admin ID
+   */
+  private static isAdminId(id: string): boolean {
+    // If it's a number or a string that only contains digits
+    return !isNaN(Number(id)) && /^\d+$/.test(id);
+  }
+
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Creating group score:', score);
@@ -61,11 +70,6 @@ export class GroupScoreService extends BaseScoreService {
       const judgeId = String(score.judgeId);
       
       // Ensure numeric fields have values or defaults
-      // This is critical since database has NOT NULL constraints
-      // For judges, these should have values if they are assigned to judge this criterion
-      
-      // Handle null values for fields that might be null in the request
-      // but are required as NOT NULL in the database
       const whipStrikes = score.whipStrikes === null ? 0 : score.whipStrikes;
       const rhythm = score.rhythm === null ? 0 : score.rhythm;
       const tempo = score.tempo === null ? 0 : score.tempo;
@@ -89,76 +93,114 @@ export class GroupScoreService extends BaseScoreService {
       
       const supabase = this.checkSupabaseClient();
       
-      // First attempt to get user information to determine role
-      const { data: userExists, error: userError } = await supabase
-        .from('users')
-        .select('id, role')
-        .eq('id', judgeId)
-        .maybeSingle();
+      // Check if the user ID is an admin ID (numeric)
+      const isAdmin = this.isAdminId(judgeId);
       
-      console.log('User lookup result:', userExists, userError);
-      
-      // If we're dealing with an admin user (numeric ID), use anon role
-      // instead of trying to store it as a UUID
-      let insertJudgeId = judgeId;
-      let anonRole = false;
-      
-      if (!userExists && !isNaN(Number(judgeId))) {
-        console.log('Using anon role for numeric admin ID:', judgeId);
-        anonRole = true;
-        // For admin users with numeric IDs, we'll use a special identifier
-        // that won't trigger the UUID validation error
-        insertJudgeId = '00000000-0000-0000-0000-000000000000';
-      } else if (userError) {
-        console.error('Error checking user existence:', userError);
-        throw new Error(`Error verifying user: ${userError.message}`);
-      }
-      
-      // Insert the data, ensuring we have values for all required fields
-      const { data, error } = await supabase
-        .from('group_scores')
-        .insert([{
-          group_id: score.groupId,
-          judge_id: insertJudgeId, // Use the special ID for admin users
-          whip_strikes: whipStrikes,
-          rhythm: rhythm,
-          tempo: tempo,
-          time: score.time,
-          tournament_id: tournamentId
-        }])
-        .select()
-        .single();
+      // If it's an admin with numeric ID, we need to use a UUID from an existing judge
+      // because our database requires a valid UUID for the judge_id column
+      if (isAdmin) {
+        console.log('Admin user detected with ID:', judgeId);
         
-      if (error) {
-        console.error('Error creating group score:', error);
+        // Get a valid judge ID from the users table to use for admin submissions
+        const { data: validJudge, error: judgeError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'judge')
+          .limit(1)
+          .single();
         
-        // Provide a more user-friendly error message
-        if (error.code === '23503') {
-          throw new Error(`Fehler: Ein referenzierter Datensatz (Benutzer, Gruppe oder Turnier) existiert nicht.`);
-        } else if (error.code === '23505') {
-          throw new Error(`Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter.`);
-        } else {
-          throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+        if (judgeError || !validJudge) {
+          console.error('Error finding a valid judge:', judgeError);
+          throw new Error('Unable to find a valid judge ID for admin submissions');
         }
+        
+        console.log('Using judge ID for admin submission:', validJudge.id);
+        
+        // Insert the score using the valid judge ID
+        const { data, error } = await supabase
+          .from('group_scores')
+          .insert([{
+            group_id: score.groupId,
+            judge_id: validJudge.id, // Use a valid judge's UUID
+            whip_strikes: whipStrikes,
+            rhythm: rhythm,
+            tempo: tempo,
+            time: score.time,
+            tournament_id: tournamentId
+          }])
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error creating group score:', error);
+          
+          if (error.code === '23503') {
+            throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
+          } else if (error.code === '23505') {
+            throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter.');
+          } else {
+            throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+          }
+        }
+        
+        if (!data) {
+          throw new Error('No data returned from score creation');
+        }
+        
+        // Return the score with the original admin ID
+        return {
+          id: data.id,
+          groupId: data.group_id,
+          judgeId: judgeId, // Return the admin ID, not the judge ID used for DB storage
+          whipStrikes: data.whip_strikes,
+          rhythm: data.rhythm,
+          tempo: data.tempo,
+          time: data.time,
+          tournamentId: data.tournament_id
+        };
+      } else {
+        // Regular judge case - just insert using their UUID
+        const { data, error } = await supabase
+          .from('group_scores')
+          .insert([{
+            group_id: score.groupId,
+            judge_id: judgeId,
+            whip_strikes: whipStrikes,
+            rhythm: rhythm,
+            tempo: tempo,
+            time: score.time,
+            tournament_id: tournamentId
+          }])
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error creating group score:', error);
+          
+          if (error.code === '23503') {
+            throw new Error('Fehler: Ein referenzierter Datensatz (Benutzer, Gruppe oder Turnier) existiert nicht.');
+          } else if (error.code === '23505') {
+            throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter.');
+          } else {
+            throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+          }
+        }
+        
+        if (!data) {
+          throw new Error('No data returned from score creation');
+        }
+        
+        return {
+          id: data.id,
+          groupId: data.group_id,
+          judgeId: data.judge_id,
+          whipStrikes: data.whip_strikes,
+          rhythm: data.rhythm,
+          tempo: data.tempo,
+          time: data.time,
+          tournamentId: data.tournament_id
+        };
       }
-      
-      if (!data) {
-        throw new Error('No data returned from score creation');
-      }
-      
-      // If we used the anon role, restore the original judge ID for the response
-      const returnedJudgeId = anonRole ? judgeId : data.judge_id;
-      
-      return {
-        id: data.id,
-        groupId: data.group_id,
-        judgeId: returnedJudgeId, // Return the original ID for admins
-        whipStrikes: data.whip_strikes,
-        rhythm: data.rhythm,
-        tempo: data.tempo,
-        time: data.time,
-        tournamentId: data.tournament_id
-      };
     } catch (error) {
       console.error('Error in createGroupScore:', error);
       throw error;

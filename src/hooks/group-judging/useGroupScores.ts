@@ -40,28 +40,19 @@ export const useGroupScores = (groups: Group[]) => {
     const initialScores: Record<number, Partial<GroupScore>> = {};
     
     groups.forEach(group => {
-      // Use the currentUser.id directly - we'll handle validation elsewhere
-      const judgeId = currentUser.id;
+      // Convert to string for comparison
+      const judgeId = String(currentUser.id);
       
       // Look for an existing score for this group by this judge
-      // For admin users with numeric IDs, we need to handle both the original ID and the UUID placeholder
       const existingScore = existingScores?.find(score => {
-        const scoreGroupMatch = score.groupId === group.id;
-        const scoreJudgeMatch = String(score.judgeId) === String(judgeId) || 
-                              (isAdmin && score.judgeId === '00000000-0000-0000-0000-000000000000');
-        
-        return scoreGroupMatch && scoreJudgeMatch;
+        return score.groupId === group.id && 
+               String(score.judgeId) === judgeId;
       });
       
       console.log('Checking for existing score for group:', group.id, 'Judge:', judgeId);
       if (existingScore) {
         console.log('Found existing score:', existingScore);
-        // For admin users, ensure we're using their actual ID, not the placeholder
-        const adjustedScore = {
-          ...existingScore,
-          judgeId: currentUser.id
-        };
-        initialScores[group.id] = adjustedScore;
+        initialScores[group.id] = existingScore;
       } else {
         initialScores[group.id] = {
           groupId: group.id,

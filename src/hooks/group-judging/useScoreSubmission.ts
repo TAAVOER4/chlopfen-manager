@@ -37,7 +37,7 @@ export const useScoreSubmission = (
     enabled: !!currentUser?.id
   });
   
-  // Update scores state with existing scores when groups or existingScores change
+  // Update logging when existing scores change
   useEffect(() => {
     if (!existingScores || !existingScores.length || !groups.length || !currentUser) return;
     
@@ -52,10 +52,6 @@ export const useScoreSubmission = (
     
     if (existingScore) {
       console.log('Found existing score for group:', currentGroup.id, 'Judge:', currentUser.id, 'Score:', existingScore);
-      
-      // We can't directly update the scores state as it's passed in from a parent component
-      // Instead, we'll need to handle this differently, perhaps with a callback or context
-      console.log('Existing score found but cannot update scores state directly');
     }
   }, [groups, currentGroupIndex, existingScores, currentUser, scores]);
 
