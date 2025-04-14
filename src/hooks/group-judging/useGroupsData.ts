@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Group, GroupSize, GroupCategory } from '../../types';
 import { useToast } from '@/hooks/use-toast';
