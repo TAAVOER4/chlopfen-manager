@@ -89,25 +89,29 @@ export class GroupScoreService extends BaseScoreService {
       
       const supabase = this.checkSupabaseClient();
       
-      // First check if the user actually exists in the users table
-      // Skip this check for admin users, who may have numeric IDs
-      if (judgeId && !judgeId.includes('-') && isNaN(Number(judgeId))) {
-        // For non-numeric, non-UUID IDs, verify they exist
-        const { data: userExists, error: userError } = await supabase
-          .from('users')
-          .select('id, role')
-          .eq('id', judgeId)
-          .single();
-          
-        if (userError || !userExists) {
-          console.error('Error checking user existence:', userError);
-          throw new Error(`Benutzer mit ID ${judgeId} existiert nicht in der Datenbank. Bitte stellen Sie sicher, dass der Benutzer existiert, bevor Sie eine Bewertung abgeben.`);
-        }
-        
-        // Log the judgeId for debugging
-        console.log('Judge ID before saving:', judgeId, 'Type:', typeof judgeId, 'Role:', userExists.role);
-      } else {
-        console.log('Using judge ID without database validation:', judgeId);
+      // First attempt to get user information to determine role
+      const { data: userExists, error: userError } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', judgeId)
+        .maybeSingle();
+      
+      console.log('User lookup result:', userExists, userError);
+      
+      // If we're dealing with an admin user (numeric ID), use anon role
+      // instead of trying to store it as a UUID
+      let insertJudgeId = judgeId;
+      let anonRole = false;
+      
+      if (!userExists && !isNaN(Number(judgeId))) {
+        console.log('Using anon role for numeric admin ID:', judgeId);
+        anonRole = true;
+        // For admin users with numeric IDs, we'll use a special identifier
+        // that won't trigger the UUID validation error
+        insertJudgeId = '00000000-0000-0000-0000-000000000000';
+      } else if (userError) {
+        console.error('Error checking user existence:', userError);
+        throw new Error(`Error verifying user: ${userError.message}`);
       }
       
       // Insert the data, ensuring we have values for all required fields
@@ -115,7 +119,7 @@ export class GroupScoreService extends BaseScoreService {
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: insertJudgeId, // Use the special ID for admin users
           whip_strikes: whipStrikes,
           rhythm: rhythm,
           tempo: tempo,
@@ -142,10 +146,13 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('No data returned from score creation');
       }
       
+      // If we used the anon role, restore the original judge ID for the response
+      const returnedJudgeId = anonRole ? judgeId : data.judge_id;
+      
       return {
         id: data.id,
         groupId: data.group_id,
-        judgeId: data.judge_id,
+        judgeId: returnedJudgeId, // Return the original ID for admins
         whipStrikes: data.whip_strikes,
         rhythm: data.rhythm,
         tempo: data.tempo,

@@ -18,7 +18,9 @@ export const useGroupScores = (groups: Group[]) => {
     queryFn: async () => {
       if (!currentUser?.id) return [];
       try {
-        return await GroupScoreService.getGroupScores();
+        const allScores = await GroupScoreService.getGroupScores();
+        console.log('Fetched all scores:', allScores);
+        return allScores;
       } catch (error) {
         console.error('Error fetching group scores:', error);
         return [];
@@ -31,6 +33,9 @@ export const useGroupScores = (groups: Group[]) => {
   useEffect(() => {
     if (groups.length === 0 || !currentUser) return;
 
+    console.log('Initializing scores for groups:', groups.length, 'User:', currentUser.id);
+    console.log('Existing scores:', existingScores?.length || 0);
+    
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
     
@@ -39,15 +44,24 @@ export const useGroupScores = (groups: Group[]) => {
       const judgeId = currentUser.id;
       
       // Look for an existing score for this group by this judge
-      const existingScore = existingScores?.find(
-        score => score.groupId === group.id && 
-                 String(score.judgeId) === String(judgeId)
-      );
+      // For admin users with numeric IDs, we need to handle both the original ID and the UUID placeholder
+      const existingScore = existingScores?.find(score => {
+        const scoreGroupMatch = score.groupId === group.id;
+        const scoreJudgeMatch = String(score.judgeId) === String(judgeId) || 
+                              (isAdmin && score.judgeId === '00000000-0000-0000-0000-000000000000');
+        
+        return scoreGroupMatch && scoreJudgeMatch;
+      });
       
       console.log('Checking for existing score for group:', group.id, 'Judge:', judgeId);
       if (existingScore) {
         console.log('Found existing score:', existingScore);
-        initialScores[group.id] = existingScore;
+        // For admin users, ensure we're using their actual ID, not the placeholder
+        const adjustedScore = {
+          ...existingScore,
+          judgeId: currentUser.id
+        };
+        initialScores[group.id] = adjustedScore;
       } else {
         initialScores[group.id] = {
           groupId: group.id,
@@ -61,8 +75,9 @@ export const useGroupScores = (groups: Group[]) => {
       }
     });
     
+    console.log('Setting initial scores:', initialScores);
     setScores(initialScores);
-  }, [groups, currentUser, selectedTournament, existingScores]);
+  }, [groups, currentUser, selectedTournament, existingScores, isAdmin]);
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {

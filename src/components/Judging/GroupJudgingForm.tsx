@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +61,7 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
     scores[currentGroup.id]?.[criterion.key] !== undefined && 
     scores[currentGroup.id]?.[criterion.key] !== null
   );
-
+  
   // Log current scores for debugging
   useEffect(() => {
     if (scores && currentGroup) {
