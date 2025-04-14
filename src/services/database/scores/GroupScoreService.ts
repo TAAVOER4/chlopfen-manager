@@ -10,7 +10,7 @@ export class GroupScoreService extends BaseScoreService {
         .select('*');
         
       if (error) {
-        this.handleError(error, 'fetching group scores');
+        return this.handleError(error, 'fetching group scores');
       }
       
       if (!data) return [];
@@ -26,22 +26,30 @@ export class GroupScoreService extends BaseScoreService {
         tournamentId: score.tournament_id
       }));
     } catch (error) {
+      console.error('Error in getGroupScores:', error);
       return [];
     }
   }
 
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
+      console.log('Creating group score:', score);
+      
+      // Validate inputs
+      if (!score.groupId) {
+        throw new Error('Group ID is required');
+      }
+      
+      if (!score.judgeId) {
+        throw new Error('Judge ID is required');
+      }
+      
       const tournamentId = typeof score.tournamentId === 'string' 
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
       const judgeId = score.judgeId.toString();
       
-      if (!judgeId) {
-        throw new Error('Judge ID is required');
-      }
-        
       const { data, error } = await this.supabase
         .from('group_scores')
         .insert([{
@@ -57,7 +65,8 @@ export class GroupScoreService extends BaseScoreService {
         .single();
         
       if (error) {
-        this.handleError(error, 'creating group score');
+        console.error('Error creating group score:', error);
+        throw new Error(`Error creating group score: ${error.message}`);
       }
       
       if (!data) {
@@ -75,7 +84,8 @@ export class GroupScoreService extends BaseScoreService {
         tournamentId: data.tournament_id
       };
     } catch (error) {
-      this.handleError(error, 'creating group score');
+      console.error('Error in createGroupScore:', error);
+      throw error;
     }
   }
 
@@ -107,7 +117,8 @@ export class GroupScoreService extends BaseScoreService {
         .single();
         
       if (error) {
-        this.handleError(error, 'updating group score');
+        console.error('Error updating group score:', error);
+        throw new Error(`Error updating group score: ${error.message}`);
       }
       
       if (!data) {
@@ -125,7 +136,8 @@ export class GroupScoreService extends BaseScoreService {
         tournamentId: data.tournament_id
       };
     } catch (error) {
-      this.handleError(error, 'updating group score');
+      console.error('Error in updateGroupScore:', error);
+      throw error;
     }
   }
 }

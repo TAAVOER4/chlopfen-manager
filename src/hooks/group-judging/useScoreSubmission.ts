@@ -44,8 +44,15 @@ export const useScoreSubmission = (
       
       setIsSaving(false);
     },
-    onError: (error) => {
-      handleError(error, 'Fehler beim Speichern der Bewertung');
+    onError: (error: any) => {
+      console.error('Error saving score:', error);
+      
+      toast({
+        title: "Fehler beim Speichern",
+        description: error.message || "Die Bewertung konnte nicht gespeichert werden.",
+        variant: "destructive"
+      });
+      
       setIsSaving(false);
     }
   });
@@ -54,70 +61,74 @@ export const useScoreSubmission = (
     if (isSaving) return;
     setIsSaving(true);
     
-    if (!groups.length) {
-      handleError(new Error("Keine Gruppen gefunden"), "Bewertung Validierung");
-      setIsSaving(false);
-      return;
-    }
-    
-    const currentGroup = groups[currentGroupIndex];
-    if (!currentGroup || !currentUser?.id) {
-      handleError(new Error("Fehlende Gruppen- oder Benutzerinformationen"), "Bewertung Validierung");
-      setIsSaving(false);
-      return;
-    }
-    
-    const currentScore = scores[currentGroup.id];
-    if (!currentScore) {
-      handleError(new Error("Keine Bewertungsdaten für diese Gruppe gefunden"), "Bewertung Validierung");
-      setIsSaving(false);
-      return;
-    }
-    
-    // Check if required fields are filled in
-    const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
-    const missingFields = requiredFields.filter(field => 
-      canEditCriterion(field) && (currentScore[field] === undefined || currentScore[field] === null)
-    );
-    
-    if (missingFields.length > 0) {
+    try {
+      if (!groups.length) {
+        throw new Error("Keine Gruppen gefunden");
+      }
+      
+      const currentGroup = groups[currentGroupIndex];
+      if (!currentGroup || !currentUser?.id) {
+        throw new Error("Fehlende Gruppen- oder Benutzerinformationen");
+      }
+      
+      const currentScore = scores[currentGroup.id];
+      if (!currentScore) {
+        throw new Error("Keine Bewertungsdaten für diese Gruppe gefunden");
+      }
+      
+      // Check if required fields are filled in
+      const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
+      const missingFields = requiredFields.filter(field => 
+        canEditCriterion(field) && (currentScore[field] === undefined || currentScore[field] === null)
+      );
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Fehlende Bewertungen",
+          description: "Bitte geben Sie Bewertungen für alle Ihnen zugewiesenen Kriterien ein.",
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Prepare score data for saving
+      const tournamentId = selectedTournament?.id || currentGroup.tournamentId;
+      if (!tournamentId) {
+        throw new Error("Kein Turnier ausgewählt");
+      }
+
+      // Ensure judgeId is always a string for UUID compatibility
+      const judgeId = currentUser.id.toString();
+      
+      console.log('Judge ID being used:', judgeId, 'Type:', typeof judgeId);
+
+      // Prepare score data for saving
+      const scoreData: Omit<GroupScore, 'id'> = {
+        groupId: currentGroup.id,
+        judgeId: judgeId,
+        whipStrikes: currentScore.whipStrikes !== undefined ? currentScore.whipStrikes : null,
+        rhythm: currentScore.rhythm !== undefined ? currentScore.rhythm : null,
+        tempo: currentScore.tempo !== undefined ? currentScore.tempo : null,
+        time: currentScore.time !== undefined ? currentScore.time : true,
+        tournamentId: tournamentId
+      };
+      
+      console.log('Saving score data:', scoreData);
+      
+      // Save score to database
+      saveScoreMutation.mutate(scoreData);
+    } catch (error) {
+      console.error('Error preparing score submission:', error);
+      
       toast({
-        title: "Fehlende Bewertungen",
-        description: "Bitte geben Sie Bewertungen für alle Ihnen zugewiesenen Kriterien ein.",
+        title: "Fehler bei der Bewertung",
+        description: error instanceof Error ? error.message : "Ein unerwarteter Fehler ist aufgetreten",
         variant: "destructive"
       });
+      
       setIsSaving(false);
-      return;
     }
-    
-    // Prepare score data for saving
-    const tournamentId = selectedTournament?.id || currentGroup.tournamentId;
-    if (!tournamentId) {
-      handleError(new Error("Kein Turnier ausgewählt"), "Bewertung Validierung");
-      setIsSaving(false);
-      return;
-    }
-
-    // Ensure judgeId is always a string for UUID compatibility
-    const judgeId = currentUser.id.toString();
-    
-    console.log('Judge ID being used:', judgeId, 'Type:', typeof judgeId);
-
-    // Prepare score data for saving
-    const scoreData: Omit<GroupScore, 'id'> = {
-      groupId: currentGroup.id,
-      judgeId: judgeId,
-      whipStrikes: currentScore.whipStrikes !== undefined ? currentScore.whipStrikes : null,
-      rhythm: currentScore.rhythm !== undefined ? currentScore.rhythm : null,
-      tempo: currentScore.tempo !== undefined ? currentScore.tempo : null,
-      time: currentScore.time !== undefined ? currentScore.time : true,
-      tournamentId: tournamentId
-    };
-    
-    console.log('Saving score data:', scoreData);
-    
-    // Save score to database
-    saveScoreMutation.mutate(scoreData);
   };
 
   return {

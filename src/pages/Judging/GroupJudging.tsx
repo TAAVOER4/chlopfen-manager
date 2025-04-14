@@ -13,6 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { Spinner } from '@/components/ui/spinner';
+import ErrorState from '@/components/Judging/ErrorState';
 
 const GroupJudging: React.FC = () => {
   const { size } = useParams<{ size: string }>();
@@ -31,10 +32,13 @@ const GroupJudging: React.FC = () => {
     canEditCriterion,
     handleScoreChange,
     handleSaveScore,
+    setCurrentGroupIndex,
     isLoading,
     errors,
     hasErrors,
     clearError,
+    clearAllErrors,
+    refetchGroups,
     isSaving,
     isChecking
   } = useGroupJudging(size, categoryParam);
@@ -53,9 +57,10 @@ const GroupJudging: React.FC = () => {
       isLoading, 
       isUserLoading,
       isChecking,
-      currentIndex: currentGroupIndex
+      currentIndex: currentGroupIndex,
+      hasErrors
     });
-  }, [groups, isLoading, isUserLoading, isChecking, currentGroupIndex]);
+  }, [groups, isLoading, isUserLoading, isChecking, currentGroupIndex, hasErrors]);
 
   // Display loading state - show while either user data or groups are loading
   if (isUserLoading || isLoading || isChecking) {
