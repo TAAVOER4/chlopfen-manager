@@ -12,9 +12,9 @@ const ParticipantsHeader: React.FC<ParticipantsHeaderProps> = ({ activeTournamen
   const navigate = useNavigate();
   
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex flex-col md:flex-row justify-between items-center mb-6">
       <h1 className="text-3xl font-bold text-swiss-blue">Teilnehmer</h1>
-      <div className="flex space-x-3">
+      <div className="flex space-x-3 mt-4 md:mt-0">
         <Button 
           onClick={() => navigate('/participants/register')}
           disabled={!activeTournament}

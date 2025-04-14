@@ -1,11 +1,10 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DatabaseService } from '@/services/database';
+import { supabase } from '@/lib/supabase';
 import { useTournament } from '@/contexts/TournamentContext';
 import { Participant, Group } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
 
 export const useParticipantsData = () => {
   const { activeTournament } = useTournament();
@@ -15,21 +14,120 @@ export const useParticipantsData = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   
-  // First check if Supabase connection is established
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const { data } = await supabase.from('participants').select('count');
-        console.log('Supabase connection test:', data ? 'successful' : 'no data');
-      } catch (error) {
-        console.error('Supabase connection test failed:', error);
-      }
-    };
+  // Direct Supabase queries to bypass the service layer for debugging
+  const fetchParticipantsDirectly = async () => {
+    console.log("Direct fetching of participants...");
     
-    checkConnection();
-  }, []);
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .order('display_order', { ascending: true, nullsFirst: false });
+        
+      if (error) {
+        console.error('Error directly loading participants:', error);
+        throw error;
+      }
+      
+      console.log("Directly fetched participants:", data?.length || 0);
+      
+      // Map the database column names to the frontend property names
+      const transformedData = data?.map(participant => ({
+        id: participant.id,
+        firstName: participant.first_name,
+        lastName: participant.last_name,
+        location: participant.location,
+        birthYear: participant.birth_year,
+        category: participant.category,
+        isGroupOnly: participant.is_group_only || false,
+        tournamentId: participant.tournament_id,
+        displayOrder: participant.display_order,
+        groupIds: []
+      })) || [];
+      
+      // Fetch group associations for all participants
+      const { data: groupParticipants, error: groupError } = await supabase
+        .from('group_participants')
+        .select('*');
+        
+      if (groupError) {
+        console.error('Error directly loading group participants:', groupError);
+      }
+      
+      if (groupParticipants) {
+        // Populate groupIds for each participant
+        transformedData.forEach(participant => {
+          participant.groupIds = groupParticipants
+            .filter(gp => gp.participant_id === participant.id)
+            .map(gp => gp.group_id);
+        });
+      }
+      
+      return transformedData as Participant[];
+    } catch (error) {
+      console.error('Error in direct participant fetch:', error);
+      throw error;
+    }
+  };
   
-  // Fetch participants from the database
+  const fetchGroupsDirectly = async () => {
+    console.log("Direct fetching of groups...");
+    
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .order('display_order', { ascending: true, nullsFirst: false });
+        
+      if (error) {
+        console.error('Error directly loading groups:', error);
+        throw error;
+      }
+      
+      console.log("Directly fetched groups:", data?.length || 0);
+      
+      // Create a list of all group IDs to fetch participant relationships
+      const groupIds = data?.map(group => group.id) || [];
+      
+      // Map the database column names to the frontend property names
+      const transformedData = data?.map(group => ({
+        id: group.id,
+        name: group.name,
+        category: group.category,
+        size: group.size,
+        tournamentId: group.tournament_id,
+        displayOrder: group.display_order,
+        participantIds: []
+      })) || [];
+      
+      // If there are no groups, return empty array
+      if (groupIds.length === 0) return transformedData;
+      
+      // Fetch all group-participant relationships for the groups
+      const { data: groupParticipants, error: relError } = await supabase
+        .from('group_participants')
+        .select('*')
+        .in('group_id', groupIds);
+        
+      if (relError) {
+        console.error('Error directly loading group-participant relationships:', relError);
+      } else if (groupParticipants) {
+        // Populate participantIds for each group
+        transformedData.forEach(group => {
+          group.participantIds = groupParticipants
+            .filter(gp => gp.group_id === group.id)
+            .map(gp => gp.participant_id);
+        });
+      }
+      
+      return transformedData as Group[];
+    } catch (error) {
+      console.error('Error in direct group fetch:', error);
+      throw error;
+    }
+  };
+  
+  // Fetch participants directly from Supabase
   const { 
     data: participants = [], 
     isLoading: isLoadingParticipants,
@@ -37,37 +135,13 @@ export const useParticipantsData = () => {
     refetch: refetchParticipants
   } = useQuery({
     queryKey: ['participants', activeTournament?.id],
-    queryFn: async () => {
-      console.log("Fetching participants...");
-      try {
-        const result = await DatabaseService.getAllParticipants();
-        console.log("Participants fetched:", result.length);
-        return result;
-      } catch (error) {
-        console.error("Error in queryFn for participants:", error);
-        throw error;
-      }
-    },
-    staleTime: 0, // Always fetch fresh data
+    queryFn: fetchParticipantsDirectly,
+    staleTime: 0,
     gcTime: 0,
-    retry: 2,
-    retryDelay: 1000,
-    meta: {
-      onSuccess: (data) => {
-        console.log("Successfully fetched participants:", data.length);
-      },
-      onError: (error) => {
-        console.error("Error fetching participants:", error);
-        toast({
-          title: "Fehler",
-          description: "Teilnehmer konnten nicht geladen werden",
-          variant: "destructive"
-        });
-      }
-    }
+    retry: 2
   });
   
-  // Fetch groups from the database
+  // Fetch groups directly from Supabase
   const { 
     data: groups = [], 
     isLoading: isLoadingGroups,
@@ -75,34 +149,10 @@ export const useParticipantsData = () => {
     refetch: refetchGroups
   } = useQuery({
     queryKey: ['groups', activeTournament?.id],
-    queryFn: async () => {
-      console.log("Fetching groups...");
-      try {
-        const result = await DatabaseService.getAllGroups();
-        console.log("Groups fetched:", result.length);
-        return result;
-      } catch (error) {
-        console.error("Error in queryFn for groups:", error);
-        throw error;
-      }
-    },
-    staleTime: 0, // Always fetch fresh data
+    queryFn: fetchGroupsDirectly,
+    staleTime: 0,
     gcTime: 0,
-    retry: 2,
-    retryDelay: 1000,
-    meta: {
-      onSuccess: (data) => {
-        console.log("Successfully fetched groups:", data.length);
-      },
-      onError: (error) => {
-        console.error("Error fetching groups:", error);
-        toast({
-          title: "Fehler",
-          description: "Gruppen konnten nicht geladen werden",
-          variant: "destructive"
-        });
-      }
-    }
+    retry: 2
   });
   
   // Filter participants by tournament
@@ -131,28 +181,12 @@ export const useParticipantsData = () => {
     });
   }, [tournamentParticipants, searchTerm, selectedCategory]);
   
-  // Force immediate data refresh when the component mounts
-  useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        console.log("Initial data fetch triggered");
-        await refetchParticipants();
-        await refetchGroups();
-      } catch (error) {
-        console.error("Error during initial data fetch:", error);
-      }
-    };
-    
-    fetchAllData();
-  }, [refetchParticipants, refetchGroups]);
-  
   const handleDeleteClick = useCallback((participant: Participant) => {
     setSelectedParticipant(participant);
     setDeleteDialogOpen(true);
   }, []);
   
   const handleParticipantDeleted = useCallback(() => {
-    // Force immediate data refresh
     queryClient.invalidateQueries({ queryKey: ['participants'] });
     queryClient.invalidateQueries({ queryKey: ['groups'] });
     toast({

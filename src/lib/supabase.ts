@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const checkSupabaseConnection = async () => {
   try {
     console.log("Checking Supabase connection...");
-    const { data, error } = await supabase.from('tournaments').select('count');
+    const { data, error } = await supabase.from('participants').select('count');
     if (error) {
       console.error('Error connecting to Supabase:', error);
       return false;

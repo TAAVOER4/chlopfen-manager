@@ -42,10 +42,13 @@ const ParticipantsPage = () => {
     console.log("ParticipantsPage mounted, invalidating queries...");
     queryClient.invalidateQueries({ queryKey: ['participants'] });
     queryClient.invalidateQueries({ queryKey: ['groups'] });
-  }, [queryClient]);
+    refetchAll();
+  }, [queryClient, refetchAll]);
   
   const handleRefresh = () => {
     console.log("Manual refresh requested");
+    queryClient.invalidateQueries({ queryKey: ['participants'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
     refetchAll();
     toast({
       title: "Aktualisierung",
@@ -84,9 +87,10 @@ const ParticipantsPage = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex justify-between items-center mb-4">
-        <ParticipantsHeader activeTournament={activeTournament} />
-        <Button variant="outline" onClick={handleRefresh} className="ml-auto">
+      <ParticipantsHeader activeTournament={activeTournament} />
+      
+      <div className="flex justify-end mb-4">
+        <Button variant="outline" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Aktualisieren
         </Button>

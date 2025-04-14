@@ -7,8 +7,13 @@ export class ParticipantQueryService extends BaseParticipantService {
     try {
       console.log("Getting all participants from database...");
       
-      // Use the checkSupabaseClient method from the base class
-      const supabase = this.checkSupabaseClient();
+      // Use the supabase client directly from BaseService
+      const supabase = this.supabase;
+      
+      if (!supabase) {
+        console.error('Supabase client is not initialized in ParticipantQueryService');
+        return [];
+      }
       
       const { data, error } = await supabase
         .from('participants')
