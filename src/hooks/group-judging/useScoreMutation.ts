@@ -28,7 +28,12 @@ export const useScoreMutation = () => {
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to database:', score);
-      return await GroupScoreService.createOrUpdateGroupScore(score);
+      try {
+        return await GroupScoreService.createOrUpdateGroupScore(score);
+      } catch (error) {
+        console.error('Error in score mutation:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       refetchScores();

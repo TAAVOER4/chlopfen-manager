@@ -51,17 +51,30 @@ export class BaseScoreService extends BaseService {
       record_type: 'C'
     };
     
-    const { data: newEntry, error: insertError } = await supabase
-      .from(tableName)
-      .insert([insertData])
-      .select()
-      .single();
+    try {
+      // 4. Neuen Eintrag einfügen
+      const { data: newEntry, error: insertError } = await supabase
+        .from(tableName)
+        .insert([insertData])
+        .select()
+        .single();
+        
+      if (insertError) {
+        console.error(`Error creating new ${tableName} entry:`, insertError);
+        
+        // In case of error, try to roll back the history operation
+        await supabase
+          .from(tableName)
+          .update({ record_type: 'C' })
+          .eq('id', id);
+          
+        throw new Error(`Error creating new ${tableName} entry: ${insertError.message}`);
+      }
       
-    if (insertError) {
-      console.error(`Error creating new ${tableName} entry:`, insertError);
-      throw new Error(`Error creating new ${tableName} entry: ${insertError.message}`);
+      return newEntry;
+    } catch (error) {
+      console.error(`Error in historizeAndCreate for ${tableName}:`, error);
+      throw error;
     }
-    
-    return newEntry;
   }
 }

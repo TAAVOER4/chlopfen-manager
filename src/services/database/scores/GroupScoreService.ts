@@ -1,4 +1,3 @@
-
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
@@ -64,13 +63,10 @@ export class GroupScoreService extends BaseScoreService {
         console.log(`Found existing score with ID ${existingScore.id}, historizing and creating new entry`);
         
         // If it's an admin updating a score, use a valid judge ID from the database
-        let updatedJudgeId = judgeId;
+        const updatedJudgeId = isAdminId(judgeId) ? existingScore.judge_id : judgeId;
+        console.log(`Admin is updating, keeping original judge_id: ${updatedJudgeId}`);
         
-        if (isAdminId(judgeId)) {
-          updatedJudgeId = existingScore.judge_id;
-          console.log(`Admin is updating, keeping original judge_id: ${updatedJudgeId}`);
-        }
-        
+        // First historize the existing record, then create a new one
         const updatedData = await GroupScoreDbService.updateScore(existingScore.id, {
           whipStrikes,
           rhythm,
@@ -142,7 +138,6 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
-  // Method alias for backward compatibility
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     return this.createOrUpdateGroupScore(score);
   }

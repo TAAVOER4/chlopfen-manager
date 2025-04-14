@@ -1,4 +1,3 @@
-
 import { BaseScoreService } from './BaseScoreService';
 import { GroupScore } from '@/types';
 import { isAdminId } from './utils/ValidationUtils';
@@ -26,15 +25,13 @@ export class GroupScoreDbService extends BaseScoreService {
     try {
       console.log('Historizing and creating new score entry with:', score);
       
-      // Anstatt zu aktualisieren, historisieren wir den alten Eintrag und erstellen einen neuen
-      const updatedData = await this.historizeAndCreate('group_scores', scoreId, {
+      // Historisiere den alten Eintrag und erstelle einen neuen
+      return await this.historizeAndCreate('group_scores', scoreId, {
         whip_strikes: score.whipStrikes,
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
       });
-      
-      return updatedData;
     } catch (error) {
       console.error('Error updating group score:', error);
       throw new Error(`Error updating group score: ${error instanceof Error ? error.message : String(error)}`);
