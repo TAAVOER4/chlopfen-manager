@@ -94,7 +94,7 @@ export const useScoreSubmission = (
         throw new Error("Keine Bewertungsdaten für diese Gruppe gefunden");
       }
       
-      // Check if required fields are filled in
+      // Check if required fields are filled in for current judge's criteria
       const requiredFields = ['whipStrikes', 'rhythm', 'tempo'] as const;
       const missingFields = requiredFields.filter(field => 
         canEditCriterion(field) && (currentScore[field] === undefined || currentScore[field] === null)
@@ -125,9 +125,9 @@ export const useScoreSubmission = (
       const scoreData: Omit<GroupScore, 'id'> = {
         groupId: currentGroup.id,
         judgeId: judgeId,
-        whipStrikes: currentScore.whipStrikes !== undefined ? currentScore.whipStrikes : null,
-        rhythm: currentScore.rhythm !== undefined ? currentScore.rhythm : null,
-        tempo: currentScore.tempo !== undefined ? currentScore.tempo : null,
+        whipStrikes: canEditCriterion('whipStrikes') ? currentScore.whipStrikes : null,
+        rhythm: canEditCriterion('rhythm') ? currentScore.rhythm : null,
+        tempo: canEditCriterion('tempo') ? currentScore.tempo : null,
         time: currentScore.time !== undefined ? currentScore.time : true,
         tournamentId: tournamentId
       };

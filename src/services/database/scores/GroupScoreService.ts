@@ -12,7 +12,8 @@ export class GroupScoreService extends BaseScoreService {
         .select('*');
         
       if (error) {
-        return this.handleError(error, 'fetching group scores');
+        console.error('Error fetching group scores:', error);
+        throw new Error(`Error fetching group scores: ${error.message}`);
       }
       
       if (!data) return [];
@@ -29,7 +30,7 @@ export class GroupScoreService extends BaseScoreService {
       }));
     } catch (error) {
       console.error('Error in getGroupScores:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -73,7 +74,7 @@ export class GroupScoreService extends BaseScoreService {
         
       if (error) {
         console.error('Error creating group score:', error);
-        return this.handleError(error, 'creating group score');
+        throw new Error(`Error creating group score: ${error.message}`);
       }
       
       if (!data) {
@@ -128,7 +129,7 @@ export class GroupScoreService extends BaseScoreService {
         
       if (error) {
         console.error('Error updating group score:', error);
-        return this.handleError(error, 'updating group score');
+        throw new Error(`Error updating group score: ${error.message}`);
       }
       
       if (!data) {
