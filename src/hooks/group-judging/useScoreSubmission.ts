@@ -116,17 +116,17 @@ export const useScoreSubmission = (
         throw new Error("Kein Turnier ausgewählt");
       }
 
-      // Ensure judgeId is a string (UUID format required by database)
-      const judgeId = typeof currentUser.id === 'number' 
-        ? String(currentUser.id) // Convert number to string safely
-        : currentUser.id; // Already a string
+      // Convert ID to string format (required by database)
+      const judgeId = typeof currentUser.id === 'string'
+        ? currentUser.id // Already a string
+        : String(currentUser.id); // Convert number to string
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
 
       // Prepare score data for saving
       const scoreData: Omit<GroupScore, 'id'> = {
         groupId: currentGroup.id,
-        judgeId: judgeId,
+        judgeId,
         whipStrikes: canEditCriterion('whipStrikes') ? currentScore.whipStrikes : null,
         rhythm: canEditCriterion('rhythm') ? currentScore.rhythm : null,
         tempo: canEditCriterion('tempo') ? currentScore.tempo : null,

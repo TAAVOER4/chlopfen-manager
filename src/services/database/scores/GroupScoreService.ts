@@ -47,27 +47,25 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID is required');
       }
       
+      // Check that judgeId is actually a string
+      if (typeof score.judgeId !== 'string') {
+        throw new Error('Judge ID must be a string in UUID format');
+      }
+      
       const tournamentId = typeof score.tournamentId === 'string' 
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
       const supabase = this.checkSupabaseClient();
       
-      // Ensure judgeId is a string (UUID format required by database)
-      const judgeId = score.judgeId; // Should already be a string from the calling code
-      
       // Log the judgeId for debugging
-      console.log('Judge ID before saving:', judgeId, 'Type:', typeof judgeId);
-      
-      if (typeof judgeId !== 'string') {
-        throw new Error('Judge ID must be a string in UUID format');
-      }
+      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId);
       
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: score.judgeId,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
@@ -108,14 +106,12 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Ensure judgeId is a string (UUID format required by database)
-      const judgeId = score.judgeId; // Should already be a string from the calling code
-      
-      if (typeof judgeId !== 'string') {
+      // Check that judgeId is actually a string
+      if (typeof score.judgeId !== 'string') {
         throw new Error('Judge ID must be a string in UUID format');
       }
       
-      if (!judgeId) {
+      if (!score.judgeId) {
         throw new Error('Judge ID is required');
       }
       
@@ -125,7 +121,7 @@ export class GroupScoreService extends BaseScoreService {
         .from('group_scores')
         .update({
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: score.judgeId,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
