@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Participant } from '@/types';
 import { determineCategory } from '@/utils/categoryUtils';
-import { DatabaseService } from '@/services/DatabaseService';
+import { supabase } from '@/lib/supabase';
 import { useTournament } from '@/contexts/TournamentContext';
 
 export const useParticipantEditing = () => {
@@ -29,12 +29,17 @@ export const useParticipantEditing = () => {
       
       try {
         setIsLoading(true);
-        // Fetch all participants and find the one with the matching id
-        const allParticipants = await DatabaseService.getAllParticipants();
         const participantId = parseInt(id);
-        const existingParticipant = allParticipants.find(p => p.id === participantId);
         
-        if (!existingParticipant) {
+        // Direct query to Supabase
+        const { data, error } = await supabase
+          .from('participants')
+          .select('*')
+          .eq('id', participantId)
+          .single();
+        
+        if (error) {
+          console.error('Error loading participant:', error);
           toast({
             title: "Teilnehmer nicht gefunden",
             description: "Der gesuchte Teilnehmer wurde nicht gefunden.",
@@ -42,6 +47,39 @@ export const useParticipantEditing = () => {
           });
           navigate('/participants');
           return;
+        }
+        
+        if (!data) {
+          toast({
+            title: "Teilnehmer nicht gefunden",
+            description: "Der gesuchte Teilnehmer wurde nicht gefunden.",
+            variant: "destructive"
+          });
+          navigate('/participants');
+          return;
+        }
+        
+        // Transform database object to frontend model
+        const existingParticipant: Participant = {
+          id: data.id,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          location: data.location,
+          birthYear: data.birth_year,
+          category: data.category,
+          isGroupOnly: data.is_group_only || false,
+          tournamentId: data.tournament_id,
+          groupIds: []
+        };
+        
+        // Fetch group associations
+        const { data: groupData, error: groupError } = await supabase
+          .from('group_participants')
+          .select('group_id')
+          .eq('participant_id', participantId);
+          
+        if (!groupError && groupData) {
+          existingParticipant.groupIds = groupData.map(item => item.group_id);
         }
         
         setParticipant(existingParticipant);
@@ -93,20 +131,22 @@ export const useParticipantEditing = () => {
     try {
       setIsSaving(true);
       
-      // Update participant in database
-      const updatedParticipant: Participant = {
-        id: parseInt(id!),
-        firstName: participant.firstName as string,
-        lastName: participant.lastName as string,
-        location: participant.location as string,
-        birthYear: participant.birthYear as number,
-        category: category,
-        isGroupOnly: participant.isGroupOnly || false,
-        tournamentId: participant.tournamentId,
-        groupIds: participant.groupIds || []
-      };
-      
-      await DatabaseService.updateParticipant(updatedParticipant);
+      // Update participant in database directly with Supabase
+      const { error } = await supabase
+        .from('participants')
+        .update({
+          first_name: participant.firstName,
+          last_name: participant.lastName,
+          location: participant.location,
+          birth_year: participant.birthYear,
+          category: category,
+          is_group_only: participant.isGroupOnly || false
+        })
+        .eq('id', parseInt(id!));
+        
+      if (error) {
+        throw error;
+      }
       
       toast({
         title: "Teilnehmer aktualisiert",

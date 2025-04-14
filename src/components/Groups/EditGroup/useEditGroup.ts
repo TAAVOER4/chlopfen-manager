@@ -5,11 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { GroupFormValues, groupSchema } from '@/components/Groups/GroupInfoForm';
-import { Group, GroupCategory, GroupSize } from '@/types';
+import { Group, GroupCategory, GroupSize, Participant } from '@/types';
 import { useGroupForm } from '@/hooks/useGroupForm';
-import { DatabaseService } from '@/services/DatabaseService';
+import { supabase } from '@/lib/supabase';
 import { useTournament } from '@/contexts/TournamentContext';
-import { useQuery } from '@tanstack/react-query';
 
 export const useEditGroup = () => {
   const navigate = useNavigate();
@@ -18,6 +17,9 @@ export const useEditGroup = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [group, setGroup] = useState<Group | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(true);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const { activeTournament } = useTournament();
   
   const form = useForm<GroupFormValues>({
@@ -28,40 +30,132 @@ export const useEditGroup = () => {
       size: "three",
     },
   });
-  
-  // Fetch all groups
-  const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
-    queryKey: ['groups'],
-    queryFn: DatabaseService.getAllGroups,
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  // Fetch participants for the current group
-  const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
-    queryKey: ['participants'],
-    queryFn: DatabaseService.getAllParticipants,
-    staleTime: 5 * 60 * 1000,
-  });
 
-  // Find the group from the fetched data
+  // Load group data
   useEffect(() => {
-    if (!id || isLoadingGroups || groups.length === 0) return;
+    const loadGroup = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoadingGroups(true);
+        const groupId = parseInt(id);
+        
+        // Fetch group data directly from Supabase
+        const { data, error } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('id', groupId)
+          .single();
+          
+        if (error) {
+          console.error("Error loading group:", error);
+          return;
+        }
+        
+        if (!data) {
+          console.error("Group not found with ID:", groupId);
+          return;
+        }
+        
+        // Fetch participant relationships
+        const { data: groupParticipants, error: relError } = await supabase
+          .from('group_participants')
+          .select('participant_id')
+          .eq('group_id', groupId);
+          
+        if (relError) {
+          console.error("Error loading group participants:", relError);
+        }
+        
+        const participantIds = (groupParticipants || []).map(gp => gp.participant_id);
+        
+        // Create group object
+        const foundGroup: Group = {
+          id: data.id,
+          name: data.name,
+          category: data.category,
+          size: data.size,
+          participantIds: participantIds,
+          tournamentId: data.tournament_id,
+          displayOrder: data.display_order
+        };
+        
+        console.log("Found group:", foundGroup);
+        setGroup(foundGroup);
+        
+        form.setValue('name', foundGroup.name);
+        form.setValue('category', foundGroup.category);
+        form.setValue('size', foundGroup.size);
+      } catch (error) {
+        console.error("Error in loadGroup:", error);
+      } finally {
+        setIsLoadingGroups(false);
+      }
+    };
     
-    const groupId = parseInt(id);
-    const foundGroup = groups.find(g => g.id === groupId);
+    loadGroup();
+  }, [id, form]);
+  
+  // Load participants data
+  useEffect(() => {
+    const loadParticipants = async () => {
+      try {
+        setIsLoadingParticipants(true);
+        
+        // Fetch participants directly from Supabase
+        const { data, error } = await supabase
+          .from('participants')
+          .select('*')
+          .order('display_order', { ascending: true, nullsFirst: false });
+          
+        if (error) {
+          console.error("Error loading participants:", error);
+          return;
+        }
+        
+        // Transform data to frontend model
+        const transformedData = data.map(participant => ({
+          id: participant.id,
+          firstName: participant.first_name,
+          lastName: participant.last_name,
+          location: participant.location,
+          birthYear: participant.birth_year,
+          category: participant.category,
+          isGroupOnly: participant.is_group_only || false,
+          tournamentId: participant.tournament_id,
+          displayOrder: participant.display_order,
+          groupIds: []
+        }));
+        
+        setParticipants(transformedData);
+        
+        // Now fetch all group-participant relationships to populate groupIds
+        const { data: groupParticipants, error: relError } = await supabase
+          .from('group_participants')
+          .select('*');
+          
+        if (relError) {
+          console.error("Error loading group-participant relationships:", relError);
+          return;
+        }
+        
+        // Populate groupIds for each participant
+        transformedData.forEach(participant => {
+          participant.groupIds = (groupParticipants || [])
+            .filter(gp => gp.participant_id === participant.id)
+            .map(gp => gp.group_id);
+        });
+        
+        setParticipants([...transformedData]);
+      } catch (error) {
+        console.error("Error in loadParticipants:", error);
+      } finally {
+        setIsLoadingParticipants(false);
+      }
+    };
     
-    if (!foundGroup) {
-      console.error("Group not found with ID:", groupId);
-      return;
-    }
-    
-    console.log("Found group:", foundGroup);
-    setGroup(foundGroup);
-    
-    form.setValue('name', foundGroup.name);
-    form.setValue('category', foundGroup.category);
-    form.setValue('size', foundGroup.size);
-  }, [id, form, groups, isLoadingGroups]);
+    loadParticipants();
+  }, []);
 
   // Initialize selected participants based on group participantIds
   const initialParticipants = useMemo(() => {
@@ -98,7 +192,27 @@ export const useEditGroup = () => {
     if (!group) return;
     
     try {
-      await DatabaseService.deleteGroup(group.id);
+      // First delete group-participant relationships
+      const { error: relError } = await supabase
+        .from('group_participants')
+        .delete()
+        .eq('group_id', group.id);
+        
+      if (relError) {
+        console.error("Error deleting group-participant relationships:", relError);
+        throw relError;
+      }
+      
+      // Then delete the group
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', group.id);
+        
+      if (error) {
+        console.error("Error deleting group:", error);
+        throw error;
+      }
       
       toast({
         title: "Gruppe gelöscht",
@@ -141,18 +255,47 @@ export const useEditGroup = () => {
     try {
       setIsSubmitting(true);
       
-      const updatedGroup: Group = {
-        id: group.id,
-        name: data.name,
-        category: data.category as GroupCategory,
-        size: data.size as GroupSize,
-        participantIds: selectedParticipants.map(p => p.id),
-        tournamentId: activeTournament.id,
-        displayOrder: group.displayOrder
-      };
+      // Update group in database
+      const { error } = await supabase
+        .from('groups')
+        .update({
+          name: data.name,
+          category: data.category,
+          size: data.size,
+          tournament_id: activeTournament.id
+        })
+        .eq('id', group.id);
+        
+      if (error) {
+        console.error("Error updating group:", error);
+        throw error;
+      }
       
-      console.log("Updating group:", updatedGroup);
-      await DatabaseService.updateGroup(updatedGroup);
+      // Remove existing participant associations
+      const { error: deleteError } = await supabase
+        .from('group_participants')
+        .delete()
+        .eq('group_id', group.id);
+        
+      if (deleteError) {
+        console.error("Error deleting group-participant relationships:", deleteError);
+        throw deleteError;
+      }
+      
+      // Add new participant associations
+      const groupParticipants = selectedParticipants.map(p => ({
+        group_id: group.id,
+        participant_id: p.id
+      }));
+      
+      const { error: insertError } = await supabase
+        .from('group_participants')
+        .insert(groupParticipants);
+        
+      if (insertError) {
+        console.error("Error creating group-participant relationships:", insertError);
+        throw insertError;
+      }
       
       toast({
         title: "Gruppe aktualisiert",

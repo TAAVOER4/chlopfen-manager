@@ -1,6 +1,7 @@
 
 import { BaseService } from '../BaseService';
+import { supabase } from '@/lib/supabase';
 
 export class BaseGroupService extends BaseService {
-  // Inherits everything from BaseService
+  protected static supabase = supabase;
 }
