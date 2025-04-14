@@ -47,9 +47,14 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID is required');
       }
       
-      // Check that judgeId is actually a string
+      // Validate UUID format
       if (typeof score.judgeId !== 'string') {
-        throw new Error('Judge ID must be a string in UUID format');
+        throw new Error('Judge ID must be a string');
+      }
+      
+      // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
+      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
+        throw new Error('Judge ID must be in valid UUID format');
       }
       
       const tournamentId = typeof score.tournamentId === 'string' 
@@ -59,7 +64,7 @@ export class GroupScoreService extends BaseScoreService {
       const supabase = this.checkSupabaseClient();
       
       // Log the judgeId for debugging
-      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId);
+      console.log('Judge ID before saving:', score.judgeId, 'Type:', typeof score.judgeId, 'Length:', score.judgeId.length);
       
       const { data, error } = await supabase
         .from('group_scores')
@@ -106,9 +111,14 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Check that judgeId is actually a string
+      // Validate UUID format
       if (typeof score.judgeId !== 'string') {
-        throw new Error('Judge ID must be a string in UUID format');
+        throw new Error('Judge ID must be a string');
+      }
+      
+      // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
+      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
+        throw new Error('Judge ID must be in valid UUID format');
       }
       
       if (!score.judgeId) {

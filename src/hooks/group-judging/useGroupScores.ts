@@ -17,10 +17,19 @@ export const useGroupScores = (groups: Group[]) => {
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
     groups.forEach(group => {
-      // Convert number ID to string if needed (UUID format required by database)
-      const judgeId = typeof currentUser.id === 'string' 
-        ? currentUser.id // Already a string
-        : String(currentUser.id); // Convert number to string
+      // For user ID, we need to ensure it's in a valid UUID format for the database
+      // If it's a mock user with numeric ID, we'll generate a UUID-like string
+      let judgeId: string;
+      
+      if (typeof currentUser.id === 'string' && currentUser.id.includes('-')) {
+        // Already a UUID format
+        judgeId = currentUser.id;
+      } else {
+        // Generate a simple UUID-like string (not a true UUID but valid format)
+        // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx where x is any hex digit and y is 8, 9, A, or B
+        const userId = String(currentUser.id);
+        judgeId = `00000000-0000-4000-a000-${userId.padStart(12, '0')}`;
+      }
       
       initialScores[group.id] = {
         groupId: group.id,

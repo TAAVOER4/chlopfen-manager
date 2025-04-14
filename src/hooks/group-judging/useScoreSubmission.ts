@@ -116,10 +116,17 @@ export const useScoreSubmission = (
         throw new Error("Kein Turnier ausgewählt");
       }
 
-      // Convert ID to string format (required by database)
-      const judgeId = typeof currentUser.id === 'string'
-        ? currentUser.id // Already a string
-        : String(currentUser.id); // Convert number to string
+      // For user ID, ensure it's in a valid UUID format
+      let judgeId: string;
+      
+      if (typeof currentUser.id === 'string' && currentUser.id.includes('-')) {
+        // Already a UUID format
+        judgeId = currentUser.id;
+      } else {
+        // Generate a simple UUID-like string (not a true UUID but valid format)
+        const userId = String(currentUser.id);
+        judgeId = `00000000-0000-4000-a000-${userId.padStart(12, '0')}`;
+      }
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
 

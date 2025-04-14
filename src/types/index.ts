@@ -33,7 +33,7 @@ export interface Group {
 export interface IndividualScore {
   id?: number;
   participantId: number;
-  judgeId: string; // Changed from number to string to match UUID in database
+  judgeId: string; // UUID format required by database
   round: 1 | 2;
   whipStrikes: number; // Now allows decimal values like 9.1
   rhythm: number;
@@ -46,7 +46,7 @@ export interface IndividualScore {
 export interface GroupScore {
   id?: number;
   groupId: number;
-  judgeId: string; // Changed from number to string to match UUID in database
+  judgeId: string; // UUID format required by database
   whipStrikes: number;
   rhythm: number;
   tempo: number;
