@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { GroupFormValues } from '@/components/Groups/GroupInfoForm';
@@ -113,8 +114,7 @@ export const useGroupForm = ({
     
     console.log("- tournamentParticipants:", tournamentParticipants.length);
     
-    // Make all participants available
-    // The category filtering will be handled in the AvailableParticipants component
+    // Make all participants available without category filtering
     setAvailableParticipants(tournamentParticipants);
     
     // If we have participants already selected, don't clear them when category changes

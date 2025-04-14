@@ -9,6 +9,7 @@ import { Group, GroupCategory, GroupSize, Participant } from '@/types';
 import { useGroupForm } from '@/hooks/useGroupForm';
 import { supabase } from '@/lib/supabase';
 import { useTournament } from '@/contexts/TournamentContext';
+import { isDuplicateGroup } from '@/utils/groupUtils';
 
 export const useEditGroup = () => {
   const navigate = useNavigate();
@@ -254,6 +255,20 @@ export const useEditGroup = () => {
     
     try {
       setIsSubmitting(true);
+      
+      const participantIds = selectedParticipants.map(p => p.id);
+      
+      // Check if a duplicate group already exists (excluding the current group)
+      const isDuplicate = await isDuplicateGroup(participantIds, data.size, group.id);
+      if (isDuplicate) {
+        toast({
+          title: "Doppelte Gruppe",
+          description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
       
       // Update group in database
       const { error } = await supabase

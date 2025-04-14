@@ -5,7 +5,6 @@ import { Plus } from 'lucide-react';
 import { Participant, GroupCategory } from '../../types';
 import { getCategoryDisplay } from '../../utils/categoryUtils';
 import { useQuery } from '@tanstack/react-query';
-import { ParticipantQueryService } from '@/services/database/participant';
 import { Spinner } from '@/components/ui/spinner';
 import { useTournament } from '@/contexts/TournamentContext';
 import { supabase } from '@/lib/supabase';
@@ -128,19 +127,12 @@ const AvailableParticipants: React.FC<AvailableParticipantsProps> = ({
     
     // Always use directParticipants as the base, don't depend on availableParticipants prop
     return directParticipants
+      // Filter out already selected participants
       .filter(p => !selectedParticipants.some(sp => sp.id === p.id))
-      .filter(p => !p.tournamentId || p.tournamentId === activeTournament?.id)
-      .filter(p => {
-        // Apply category filtering
-        if (!selectedCategory || selectedCategory === 'all') return true;
-        
-        if (selectedCategory === 'kids_juniors') {
-          return p.category === 'kids' || p.category === 'juniors';
-        }
-        
-        return p.category === selectedCategory;
-      });
-  }, [directParticipants, selectedParticipants, activeTournament, selectedCategory]);
+      // Only show participants associated with the current tournament
+      .filter(p => !p.tournamentId || p.tournamentId === activeTournament?.id);
+      // Remove category filtering to show all participants
+  }, [directParticipants, selectedParticipants, activeTournament]);
 
   console.log(`Final filtered participants: ${filteredParticipants.length}`);
 

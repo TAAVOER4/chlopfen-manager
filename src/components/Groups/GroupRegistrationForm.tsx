@@ -15,7 +15,8 @@ import { UseFormReturn } from "react-hook-form";
 import { Participant } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useTournament } from '@/contexts/TournamentContext';
-import { DatabaseService } from '@/services/DatabaseService';
+import { isDuplicateGroup } from '@/utils/groupUtils';
+import { GroupMutationService } from '@/services/database/group';
 import GroupInfoForm, { GroupFormValues } from '@/components/Groups/GroupInfoForm';
 
 interface GroupRegistrationFormProps {
@@ -72,18 +73,32 @@ const GroupRegistrationForm: React.FC<GroupRegistrationFormProps> = ({
     try {
       setIsSubmitting(true);
       
+      const participantIds = selectedParticipants.map(p => p.id);
+      
+      // Check if a duplicate group already exists
+      const isDuplicate = await isDuplicateGroup(participantIds, data.size);
+      if (isDuplicate) {
+        toast({
+          title: "Doppelte Gruppe",
+          description: "Es existiert bereits eine Gruppe mit genau diesen Teilnehmern.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Create new group
       const newGroup = {
         name: data.name,
         category: data.category,
         size: data.size,
-        participantIds: selectedParticipants.map(p => p.id),
+        participantIds: participantIds,
         tournamentId: activeTournament.id
       };
       
       // Save the group to the database
       console.log("Saving group:", newGroup);
-      const savedGroup = await DatabaseService.createGroup(newGroup);
+      const savedGroup = await GroupMutationService.createGroup(newGroup);
       console.log("Group saved successfully:", savedGroup);
       
       toast({
