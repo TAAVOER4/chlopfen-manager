@@ -19,7 +19,7 @@ export class IndividualScoreService extends BaseScoreService {
         id: score.id,
         participantId: score.participant_id,
         judgeId: score.judge_id,
-        round: score.round,
+        round: score.round === 2 ? 2 : 1, // Ensure round is strictly 1 or 2
         whipStrikes: score.whip_strikes,
         rhythm: score.rhythm,
         stance: score.stance,
@@ -39,7 +39,7 @@ export class IndividualScoreService extends BaseScoreService {
         .insert([{
           participant_id: score.participantId,
           judge_id: score.judgeId,
-          round: score.round,
+          round: score.round, // This is already 1 or 2 from the input type
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           stance: score.stance,
@@ -62,7 +62,7 @@ export class IndividualScoreService extends BaseScoreService {
         id: data.id,
         participantId: data.participant_id,
         judgeId: data.judge_id,
-        round: data.round,
+        round: data.round === 2 ? 2 : 1, // Ensure round is strictly 1 or 2
         whipStrikes: data.whip_strikes,
         rhythm: data.rhythm,
         stance: data.stance,
@@ -82,7 +82,7 @@ export class IndividualScoreService extends BaseScoreService {
         .update({
           participant_id: score.participantId,
           judge_id: score.judgeId,
-          round: score.round,
+          round: score.round, // This is already 1 or 2 from the input type
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           stance: score.stance,
@@ -106,7 +106,7 @@ export class IndividualScoreService extends BaseScoreService {
         id: data.id,
         participantId: data.participant_id,
         judgeId: data.judge_id,
-        round: data.round,
+        round: data.round === 2 ? 2 : 1, // Ensure round is strictly 1 or 2
         whipStrikes: data.whip_strikes,
         rhythm: data.rhythm,
         stance: data.stance,
