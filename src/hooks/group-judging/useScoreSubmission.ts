@@ -112,7 +112,7 @@ export const useScoreSubmission = (
         if (canEditCriterion(field)) {
           // Check if value is undefined, null, or empty string
           const value = currentScore[field];
-          if (value === undefined || value === null || value === '') {
+          if (value === undefined || value === null || value === '') { // This line causes the TypeScript error because value could be number
             missingFields.push(field);
           }
         }
