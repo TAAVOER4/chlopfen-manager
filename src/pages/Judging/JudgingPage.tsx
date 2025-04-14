@@ -64,10 +64,11 @@ const JudgingPage: React.FC = () => {
           if (!acc[participant.category]) {
             acc[participant.category] = [];
           }
-          acc[participant.category].push(participant);
+          // Ensure we're using the correct type by using a type assertion
+          acc[participant.category].push(participant as Participant);
           return acc;
         },
-        {} as Record<string, typeof participants>
+        {} as Record<string, Participant[]>
       );
       
       // Sort participants by displayOrder if available

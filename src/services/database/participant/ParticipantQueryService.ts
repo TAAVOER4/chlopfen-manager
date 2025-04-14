@@ -41,7 +41,7 @@ export class ParticipantQueryService extends BaseParticipantService {
         tournamentId: participant.tournament_id,
         displayOrder: participant.display_order,
         groupIds: [] // Will be populated below
-      }));
+      })) as Participant[];
       
       // If there are no participants, return empty array
       if (participantIds.length === 0) return transformedData;
@@ -64,7 +64,7 @@ export class ParticipantQueryService extends BaseParticipantService {
       }
       
       console.log("Processed participants with groups:", transformedData.length);
-      return transformedData as Participant[];
+      return transformedData;
     } catch (error) {
       console.error('Error in getAllParticipants method:', error);
       return [];
