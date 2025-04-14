@@ -16,7 +16,8 @@ export const useScoreValidation = (
     const missingFields = requiredFields.filter(field => {
       if (canEditCriterion(field)) {
         const value = score[field];
-        return value === undefined || value === null || value === '';
+        // Fix the type issue by properly checking for undefined, null, or 0
+        return value === undefined || value === null || value === 0;
       }
       return false;
     });
