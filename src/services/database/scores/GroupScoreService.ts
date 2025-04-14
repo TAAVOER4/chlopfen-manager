@@ -53,9 +53,9 @@ export class GroupScoreService extends BaseScoreService {
     return !isNaN(Number(id)) && /^\d+$/.test(id);
   }
 
-  static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
+  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
-      console.log('Creating group score:', score);
+      console.log('Creating or updating group score:', score);
       
       // Validate inputs
       if (!score.groupId) {
@@ -96,8 +96,79 @@ export class GroupScoreService extends BaseScoreService {
       // Check if the user ID is an admin ID (numeric)
       const isAdmin = this.isAdminId(judgeId);
       
+      // First, check if a score already exists for this group
+      console.log(`Checking if a score already exists for group ${score.groupId} in tournament ${tournamentId}`);
+      
+      const { data: existingScores, error: queryError } = await supabase
+        .from('group_scores')
+        .select('id, judge_id')
+        .eq('group_id', score.groupId)
+        .eq('tournament_id', tournamentId);
+      
+      if (queryError) {
+        console.error('Error checking for existing scores:', queryError);
+        throw new Error(`Error checking for existing scores: ${queryError.message}`);
+      }
+      
+      console.log('Existing scores:', existingScores);
+      
+      // If an existing score is found, update it instead of creating a new one
+      if (existingScores && existingScores.length > 0) {
+        const existingScore = existingScores[0];
+        console.log(`Found existing score with ID ${existingScore.id}, updating instead of creating`);
+        
+        // If it's an admin updating a score, use a valid judge ID from the database
+        let updatedJudgeId = judgeId;
+        
+        if (isAdmin) {
+          // If admin, keep the original judge_id to avoid messing up existing scores
+          // This ensures the admin's changes don't change who the score appears to be from
+          updatedJudgeId = existingScore.judge_id;
+          console.log(`Admin is updating, keeping original judge_id: ${updatedJudgeId}`);
+        }
+        
+        // Update the existing score
+        const { data: updatedData, error: updateError } = await supabase
+          .from('group_scores')
+          .update({
+            whip_strikes: whipStrikes,
+            rhythm: rhythm,
+            tempo: tempo,
+            time: score.time,
+            // Don't update these:
+            // group_id: score.groupId,
+            // judge_id: updatedJudgeId,
+            // tournament_id: tournamentId
+          })
+          .eq('id', existingScore.id)
+          .select()
+          .single();
+        
+        if (updateError) {
+          console.error('Error updating group score:', updateError);
+          throw new Error(`Error updating group score: ${updateError.message}`);
+        }
+        
+        if (!updatedData) {
+          throw new Error('No data returned from score update');
+        }
+        
+        return {
+          id: updatedData.id,
+          groupId: updatedData.group_id,
+          judgeId: judgeId, // Return the original judgeId for UI consistency
+          whipStrikes: updatedData.whip_strikes,
+          rhythm: updatedData.rhythm,
+          tempo: updatedData.tempo,
+          time: updatedData.time,
+          tournamentId: updatedData.tournament_id
+        };
+      } 
+      
+      // If no existing score is found, create a new one
+      console.log('No existing score found, creating a new one');
+      
       // If it's an admin with numeric ID, we need to use a UUID from an existing judge
-      // because our database requires a valid UUID for the judge_id column
       if (isAdmin) {
         console.log('Admin user detected with ID:', judgeId);
         
@@ -202,9 +273,14 @@ export class GroupScoreService extends BaseScoreService {
         };
       }
     } catch (error) {
-      console.error('Error in createGroupScore:', error);
+      console.error('Error in createOrUpdateGroupScore:', error);
       throw error;
     }
+  }
+
+  // Method alias for backward compatibility
+  static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
+    return this.createOrUpdateGroupScore(score);
   }
 
   static async updateGroupScore(score: GroupScore): Promise<GroupScore> {

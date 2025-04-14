@@ -63,7 +63,7 @@ export const useScoreSubmission = (
       }
       
       console.log('Submitting score to database:', score);
-      return await GroupScoreService.createGroupScore(score);
+      return await GroupScoreService.createOrUpdateGroupScore(score);
     },
     onSuccess: (data) => {
       console.log('Score saved successfully:', data);
