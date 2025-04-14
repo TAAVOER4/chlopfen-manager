@@ -15,22 +15,7 @@ export class BaseScoreService extends BaseService {
   protected static async historizeAndCreate(tableName: string, id: number, newData: any) {
     const supabase = this.checkSupabaseClient();
     
-    // 1. Bestehenden Eintrag auf 'H' setzen
-    const { error: historyError } = await supabase
-      .from(tableName)
-      .update({ 
-        record_type: 'H',
-        modified_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .eq('record_type', 'C');
-      
-    if (historyError) {
-      console.error(`Error historizing ${tableName} entry:`, historyError);
-      throw new Error(`Error historizing ${tableName} entry: ${historyError.message}`);
-    }
-    
-    // 2. Bestehenden Eintrag auslesen um alle Felder zu erhalten
+    // 1. Bestehenden Eintrag auslesen um alle Felder zu erhalten
     const { data: oldData, error: readError } = await supabase
       .from(tableName)
       .select('*')
@@ -40,6 +25,20 @@ export class BaseScoreService extends BaseService {
     if (readError || !oldData) {
       console.error(`Error reading ${tableName} entry:`, readError);
       throw new Error(`Error reading ${tableName} entry: ${readError?.message || 'Entry not found'}`);
+    }
+    
+    // 2. Bestehenden Eintrag auf 'H' setzen
+    const { error: historyError } = await supabase
+      .from(tableName)
+      .update({ 
+        record_type: 'H',
+        modified_at: new Date().toISOString() 
+      })
+      .eq('id', id);
+      
+    if (historyError) {
+      console.error(`Error historizing ${tableName} entry:`, historyError);
+      throw new Error(`Error historizing ${tableName} entry: ${historyError.message}`);
     }
     
     // 3. Neuen Eintrag mit 'C' erstellen, dabei ID weglassen damit eine neue generiert wird
