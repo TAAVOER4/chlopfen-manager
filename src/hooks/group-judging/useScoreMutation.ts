@@ -40,7 +40,7 @@ export const useScoreMutation = () => {
       refetchScores();
       toast({
         title: "Erfolgreich gespeichert",
-        description: "Die Bewertung wurde erfolgreich gespeichert.",
+        description: "Die Bewertung wurde erfolgreich gespeichert und historisiert.",
       });
     },
     onError: (error) => {

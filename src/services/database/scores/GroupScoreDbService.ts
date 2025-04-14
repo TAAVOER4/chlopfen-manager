@@ -14,7 +14,7 @@ export class GroupScoreDbService extends BaseScoreService {
       // First, check if an active record already exists
       const { data: existingScore } = await supabase
         .from('group_scores')
-        .select('id')
+        .select('*')
         .eq('group_id', score.groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
@@ -22,29 +22,54 @@ export class GroupScoreDbService extends BaseScoreService {
         .maybeSingle();
       
       if (existingScore) {
-        // Update the existing record instead of creating a new one
-        const { data, error } = await supabase
+        // Historisiere den bestehenden Datensatz (setze record_type auf 'H')
+        const { error: historyError } = await supabase
           .from('group_scores')
           .update({
+            record_type: 'H',
+            modified_at: new Date().toISOString(),
+            modified_by: normalizedModifiedBy
+          })
+          .eq('id', existingScore.id);
+        
+        if (historyError) {
+          console.error('Error historizing group score:', historyError);
+          throw new Error(`Fehler beim Historisieren der Gruppenbewertung: ${historyError.message}`);
+        }
+        
+        // Erstelle einen neuen aktuellen Datensatz mit 'C'
+        const { data: newScore, error: insertError } = await supabase
+          .from('group_scores')
+          .insert([{
+            group_id: score.groupId,
+            judge_id: normalizedJudgeId,
             whip_strikes: score.whipStrikes,
             rhythm: score.rhythm,
             tempo: score.tempo,
             time: score.time,
-            modified_at: new Date().toISOString(),
-            modified_by: normalizedModifiedBy
-          })
-          .eq('id', existingScore.id)
+            tournament_id: score.tournamentId,
+            record_type: 'C',
+            modified_by: normalizedModifiedBy,
+            modified_at: new Date().toISOString()
+          }])
           .select()
           .single();
         
-        if (error) {
-          console.error('Error updating group score:', error);
-          throw new Error(`Fehler beim Aktualisieren der Gruppenbewertung: ${error.message}`);
+        if (insertError) {
+          console.error('Error creating new group score after historizing:', insertError);
+          
+          // Versuche den alten Datensatz wiederherzustellen bei Fehler
+          await supabase
+            .from('group_scores')
+            .update({ record_type: 'C' })
+            .eq('id', existingScore.id);
+            
+          throw new Error(`Fehler beim Erstellen der neuen Gruppenbewertung: ${insertError.message}`);
         }
         
-        return data;
+        return newScore;
       } else {
-        // No existing record, insert a new one
+        // Kein bestehender Datensatz, erstelle einen neuen
         const { data, error } = await supabase
           .from('group_scores')
           .insert([{
@@ -56,7 +81,8 @@ export class GroupScoreDbService extends BaseScoreService {
             time: score.time,
             tournament_id: score.tournamentId,
             record_type: 'C',
-            modified_by: normalizedModifiedBy
+            modified_by: normalizedModifiedBy,
+            modified_at: new Date().toISOString()
           }])
           .select()
           .single();
