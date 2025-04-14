@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { User } from '@/types';
-import { UserService } from '@/services/UserService';
+import { UserService } from '@/services/user/UserService';
 import { useToast } from '@/hooks/use-toast';
 
 export const useUserMutations = () => {
@@ -54,9 +54,8 @@ export const useUserMutations = () => {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string): Promise<boolean> => {
-      await UserService.deleteUser(userId);
-      return true; // Return boolean instead of void
+    mutationFn: async (username: string): Promise<void> => {
+      await UserService.deleteUser(username);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -75,8 +74,8 @@ export const useUserMutations = () => {
   });
 
   const updatePasswordMutation = useMutation({
-    mutationFn: async ({ userId, password }: { userId: string, password: string }): Promise<boolean> => {
-      return await UserService.changePassword(userId, password);
+    mutationFn: async ({ username, password }: { username: string, password: string }): Promise<boolean> => {
+      return await UserService.changePassword(username, password);
     },
     onSuccess: () => {
       toast({

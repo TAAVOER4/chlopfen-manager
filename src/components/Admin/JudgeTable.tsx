@@ -56,7 +56,6 @@ const JudgeTable: React.FC<JudgeTableProps> = ({
             key={judge.id}
             judge={judge}
             onEdit={onEdit}
-            onSave={onSave}
             onImpersonate={onImpersonate}
             onDeleteClick={onDeleteClick}
             criteriaMap={criteriaMap}

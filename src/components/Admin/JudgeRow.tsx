@@ -17,8 +17,8 @@ import { Badge } from '@/components/ui/badge';
 interface JudgeRowProps {
   judge: Judge;
   onEdit: (judge: Judge) => void;
-  onDelete: (judge: Judge) => void;
-  onImpersonate: (userId: string) => void; // Changed from number to string
+  onDeleteClick: (judge: Judge) => void; // Renamed from onDelete to onDeleteClick to match usage
+  onImpersonate: (userId: string) => void;
   criteriaMap: {
     individual: Record<string, string>;
     group: Record<string, string>;
@@ -28,7 +28,7 @@ interface JudgeRowProps {
 const JudgeRow: React.FC<JudgeRowProps> = ({ 
   judge, 
   onEdit, 
-  onDelete, 
+  onDeleteClick, // Renamed to match interface
   onImpersonate,
   criteriaMap
 }) => {
@@ -88,7 +88,7 @@ const JudgeRow: React.FC<JudgeRowProps> = ({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
-              onClick={() => onDelete(judge)}
+              onClick={() => onDeleteClick(judge)}
               className="text-destructive"
             >
               <Trash className="h-4 w-4 mr-2" />

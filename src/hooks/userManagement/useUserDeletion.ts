@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { UserService } from '@/services/UserService';
+import { UserService } from '@/services/user/UserService';
 
 export const useUserDeletion = () => {
   const { toast } = useToast();
@@ -36,7 +36,13 @@ export const useUserDeletion = () => {
     
     setIsDeleting(true);
     try {
-      await UserService.deleteUser(userId);
+      // Make sure to use the username, not the ID - this is to match the existing UserService interface
+      const userToBeDeleted = userToDelete;
+      if (!userToBeDeleted) {
+        throw new Error('No user selected for deletion');
+      }
+      
+      await UserService.deleteUser(userToBeDeleted.username);
       
       toast({
         title: "Benutzer gelöscht",

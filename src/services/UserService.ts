@@ -128,7 +128,7 @@ export class UserService extends BaseSupabaseService {
       
       // Return the user with the assigned tournaments
       return {
-        id: parseInt(newUser.id.toString(), 10), // Convert string ID to number
+        id: newUser.id, // Use string ID directly
         name: newUser.name,
         username: newUser.username,
         role: newUser.role as UserRole,
@@ -222,7 +222,7 @@ export class UserService extends BaseSupabaseService {
       
       // Return the updated user with the new tournament assignments
       return {
-        id: parseInt(updatedUser.id.toString(), 10), // Convert string ID to number
+        id: updatedUser.id, // Use string ID directly
         name: updatedUser.name,
         username: updatedUser.username,
         role: updatedUser.role as UserRole,

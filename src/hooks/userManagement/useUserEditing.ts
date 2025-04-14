@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { UserService } from '@/services/UserService';
+import { UserService } from '@/services/user/UserService';
 
 export const useUserEditing = () => {
   const { toast } = useToast();
@@ -30,8 +30,12 @@ export const useUserEditing = () => {
   const handlePasswordChange = async (userId: string, newPassword: string): Promise<boolean> => {
     setIsChangingPassword(true);
     try {
-      // Remove the getUserById call as it doesn't exist
-      const result = await UserService.changePassword(userId, newPassword);
+      // Find the user by ID
+      if (!editingUser || userId !== editingUser.id) {
+        throw new Error('User not found');
+      }
+      
+      const result = await UserService.changePassword(editingUser.username, newPassword);
       
       if (result) {
         toast({
