@@ -3,7 +3,7 @@ import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
 import { GroupScoreDbService } from './GroupScoreDbService';
-import { isAdminId } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
 
 export class GroupScoreService extends BaseScoreService {
   static async getGroupScores(): Promise<GroupScore[]> {
@@ -45,8 +45,14 @@ export class GroupScoreService extends BaseScoreService {
       // Validate inputs
       ScoreValidationService.validateScoreData(score);
       
-      // Make sure judgeId is a string
-      const judgeId = String(score.judgeId);
+      // Normalize judgeId to ensure it's in the correct format for database operations
+      const originalJudgeId = String(score.judgeId);
+      const normalizedJudgeId = normalizeUuid(originalJudgeId);
+      
+      console.log('Judge ID conversion:', {
+        original: originalJudgeId,
+        normalized: normalizedJudgeId
+      });
       
       // Ensure numeric fields have values or defaults
       const whipStrikes = score.whipStrikes === null ? 0 : score.whipStrikes;
@@ -61,7 +67,7 @@ export class GroupScoreService extends BaseScoreService {
       if (isRetry) {
         try {
           await new Promise(resolve => setTimeout(resolve, 500));
-          await GroupScoreDbService.forceArchiveExistingScores(score.groupId, judgeId, tournamentId);
+          await GroupScoreDbService.forceArchiveExistingScores(score.groupId, normalizedJudgeId, tournamentId);
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (archiveError) {
           console.error('Error with aggressive archiving on retry:', archiveError);
@@ -76,8 +82,8 @@ export class GroupScoreService extends BaseScoreService {
       }
       
       // If it's an admin creating a score, use a valid judge ID
-      if (isAdminId(judgeId)) {
-        console.log('Admin user detected with ID:', judgeId);
+      if (isAdminId(originalJudgeId)) {
+        console.log('Admin user detected with ID:', originalJudgeId);
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
         console.log('Using judge ID for admin submission:', validJudgeId);
         
@@ -86,15 +92,15 @@ export class GroupScoreService extends BaseScoreService {
           whipStrikes,
           rhythm,
           tempo
-        }, validJudgeId, judgeId);
+        }, validJudgeId, originalJudgeId);
       } else {
-        // Regular judge case - just insert using their UUID
+        // Regular judge case - use the normalized UUID
         return await this.createNewScore({
           ...score,
           whipStrikes,
           rhythm,
           tempo
-        }, judgeId);
+        }, normalizedJudgeId, originalJudgeId);
       }
     } catch (error) {
       console.error('Error in createOrUpdateGroupScore:', error);

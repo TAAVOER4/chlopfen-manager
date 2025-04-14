@@ -1,7 +1,7 @@
 
 import { BaseScoreService } from './BaseScoreService';
 import { GroupScore } from '@/types';
-import { isAdminId } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
 
 export class GroupScoreDbService extends BaseScoreService {
   static async getExistingScore(groupId: number, tournamentId: number) {
@@ -26,14 +26,17 @@ export class GroupScoreDbService extends BaseScoreService {
     try {
       console.log('Historizing and creating new score entry with:', score);
       
+      // If userId is provided, ensure it's in the correct format
+      const normalizedUserId = userId ? normalizeUuid(userId) : null;
+      
       // Historize the old entry and create a new one with modified_by set if available
       const historyData = {
         whip_strikes: score.whipStrikes,
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
-        judge_id: score.judgeId,
-        modified_by: userId || null
+        judge_id: score.judgeId ? normalizeUuid(String(score.judgeId)) : undefined,
+        modified_by: normalizedUserId
       };
       
       return await this.historizeAndCreate('group_scores', scoreId, historyData);
@@ -47,16 +50,25 @@ export class GroupScoreDbService extends BaseScoreService {
     const supabase = this.checkSupabaseClient();
     
     try {
+      // Ensure judgeId and userId are in the correct format
+      const normalizedJudgeId = normalizeUuid(judgeId);
+      const normalizedUserId = userId ? normalizeUuid(userId) : null;
+      
+      console.log('Creating score with normalized IDs:', {
+        judgeId: normalizedJudgeId,
+        userId: normalizedUserId
+      });
+      
       // First do a direct cleanup of any existing records to prevent constraint violations
       const { error: cleanupError } = await supabase
         .from('group_scores')
         .update({ 
           record_type: 'H',
-          modified_by: userId || null,
+          modified_by: normalizedUserId,
           modified_at: new Date().toISOString()
         })
         .eq('group_id', score.groupId)
-        .eq('judge_id', judgeId)
+        .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
         .eq('record_type', 'C');
         
@@ -73,14 +85,14 @@ export class GroupScoreDbService extends BaseScoreService {
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: judgeId,
+          judge_id: normalizedJudgeId,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
           time: score.time,
           tournament_id: score.tournamentId,
           record_type: 'C',
-          modified_by: userId || null
+          modified_by: normalizedUserId
         }])
         .select()
         .single();
@@ -99,7 +111,7 @@ export class GroupScoreDbService extends BaseScoreService {
             .from('group_scores')
             .select('id')
             .eq('group_id', score.groupId)
-            .eq('judge_id', judgeId)
+            .eq('judge_id', normalizedJudgeId)
             .eq('tournament_id', score.tournamentId)
             .eq('record_type', 'C')
             .single();
@@ -116,13 +128,13 @@ export class GroupScoreDbService extends BaseScoreService {
           // Now properly historize and create a new record
           const historyResult = await this.historizeAndCreate('group_scores', existingRecord.id, {
             group_id: score.groupId,
-            judge_id: judgeId,
+            judge_id: normalizedJudgeId,
             whip_strikes: score.whipStrikes,
             rhythm: score.rhythm,
             tempo: score.tempo,
             time: score.time,
             tournament_id: score.tournamentId,
-            modified_by: userId || null
+            modified_by: normalizedUserId
           });
           
           return historyResult;
@@ -187,14 +199,17 @@ export class GroupScoreDbService extends BaseScoreService {
     const supabase = this.checkSupabaseClient();
     
     try {
-      console.log(`Force archiving specific scores for group ${groupId}, judge ${judgeId}, tournament ${tournamentId}`);
+      // Ensure judgeId is in the correct format
+      const normalizedJudgeId = normalizeUuid(judgeId);
+      
+      console.log(`Force archiving specific scores for group ${groupId}, judge ${normalizedJudgeId}, tournament ${tournamentId}`);
       
       // First - directly delete any records in error state that might be causing issues
       await supabase
         .from('group_scores')
         .delete()
         .eq('group_id', groupId)
-        .eq('judge_id', judgeId)
+        .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'E');
       
@@ -203,7 +218,7 @@ export class GroupScoreDbService extends BaseScoreService {
         .from('group_scores')
         .update({ record_type: 'H' })
         .eq('group_id', groupId)
-        .eq('judge_id', judgeId)
+        .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
