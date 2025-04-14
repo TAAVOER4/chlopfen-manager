@@ -110,9 +110,10 @@ export const useScoreSubmission = (
       // For each criterion that the user can edit, check if a value was provided
       requiredFields.forEach(field => {
         if (canEditCriterion(field)) {
-          // Check if value is undefined, null, or empty string
+          // Check if value is undefined, null, or empty
           const value = currentScore[field];
-          if (value === undefined || value === null || value === '') { // This line causes the TypeScript error because value could be number
+          // Fix: properly check for empty values based on type
+          if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
             missingFields.push(field);
           }
         }
