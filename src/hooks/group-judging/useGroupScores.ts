@@ -36,27 +36,41 @@ export const useGroupScores = (groups: Group[]) => {
     console.log('Initializing scores for groups:', groups.length, 'User:', currentUser.id);
     console.log('Existing scores:', existingScores?.length || 0);
     
-    // Initialize scores for each group with empty values
+    // Initialize scores for each group with empty values or existing scores
     const initialScores: Record<number, Partial<GroupScore>> = {};
     
     groups.forEach(group => {
-      // Convert to string for comparison
-      const judgeId = String(currentUser.id);
+      // Look for an existing score for this group
+      const existingScore = existingScores?.find(score => score.groupId === group.id);
       
-      // Look for an existing score for this group by this judge
-      const existingScore = existingScores?.find(score => {
-        return score.groupId === group.id && 
-               String(score.judgeId) === judgeId;
-      });
+      console.log('Checking scores for group:', group.id);
+      console.log('Found existing score:', existingScore);
       
-      console.log('Checking for existing score for group:', group.id, 'Judge:', judgeId);
       if (existingScore) {
-        console.log('Found existing score:', existingScore);
-        initialScores[group.id] = existingScore;
+        // Only include criteria that this judge/admin can edit
+        const filteredScore: Partial<GroupScore> = {
+          groupId: group.id,
+          judgeId: String(currentUser.id),
+          time: true,
+          tournamentId: selectedTournament?.id || group.tournamentId
+        };
+        
+        // Only include values for criteria that this judge can edit
+        if (isAdmin || currentUser.assignedCriteria?.group === 'whipStrikes') {
+          filteredScore.whipStrikes = existingScore.whipStrikes;
+        }
+        if (isAdmin || currentUser.assignedCriteria?.group === 'rhythm') {
+          filteredScore.rhythm = existingScore.rhythm;
+        }
+        if (isAdmin || currentUser.assignedCriteria?.group === 'tempo') {
+          filteredScore.tempo = existingScore.tempo;
+        }
+        
+        initialScores[group.id] = filteredScore;
       } else {
         initialScores[group.id] = {
           groupId: group.id,
-          judgeId,
+          judgeId: String(currentUser.id),
           whipStrikes: undefined,
           rhythm: undefined,
           tempo: undefined,
