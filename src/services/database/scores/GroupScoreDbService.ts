@@ -1,3 +1,4 @@
+
 import { BaseScoreService } from './BaseScoreService';
 import { GroupScore } from '@/types';
 import { isAdminId } from './utils/ValidationUtils';
@@ -31,6 +32,7 @@ export class GroupScoreDbService extends BaseScoreService {
         rhythm: score.rhythm,
         tempo: score.tempo,
         time: score.time,
+        judge_id: score.judgeId // Include the judge_id in the update
       });
     } catch (error) {
       console.error('Error updating group score:', error);
@@ -41,6 +43,16 @@ export class GroupScoreDbService extends BaseScoreService {
   static async createScore(score: Omit<GroupScore, 'id'>, judgeId: string) {
     const supabase = this.checkSupabaseClient();
     
+    // First, ensure any existing scores with the same combination are archived
+    await supabase
+      .from('group_scores')
+      .update({ record_type: 'H' })
+      .eq('group_id', score.groupId)
+      .eq('tournament_id', score.tournamentId)
+      .eq('judge_id', judgeId)
+      .eq('record_type', 'C');
+
+    // Now create the new score
     const { data, error } = await supabase
       .from('group_scores')
       .insert([{
@@ -62,7 +74,7 @@ export class GroupScoreDbService extends BaseScoreService {
       if (error.code === '23503') {
         throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
       } else if (error.code === '23505') {
-        throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter.');
+        throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter. Bitte zuerst die bestehende Bewertung archivieren.');
       } else {
         throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
       }

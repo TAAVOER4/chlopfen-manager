@@ -29,9 +29,20 @@ export const useScoreMutation = () => {
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to database:', score);
       try {
+        // Attempt to create or update the score
         return await GroupScoreService.createOrUpdateGroupScore(score);
       } catch (error) {
         console.error('Error in score mutation:', error);
+        
+        // If there's a unique constraint error, we should handle it specially
+        if (error instanceof Error && error.message.includes('unique constraint')) {
+          console.log('Handling unique constraint error in mutation');
+          // Force a refetch to get the latest state
+          await refetchScores();
+          // Rethrow with a more user-friendly message
+          throw new Error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder laden Sie die Seite neu.');
+        }
+        
         throw error;
       }
     },

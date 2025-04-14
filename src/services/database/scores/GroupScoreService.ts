@@ -1,3 +1,4 @@
+
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
@@ -56,7 +57,7 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Check if a score already exists
+      // Check if a score already exists - find any active (record_type='C') score for this combination
       const existingScore = await GroupScoreDbService.getExistingScore(score.groupId, tournamentId);
       
       if (existingScore) {
@@ -66,24 +67,52 @@ export class GroupScoreService extends BaseScoreService {
         const updatedJudgeId = isAdminId(judgeId) ? existingScore.judge_id : judgeId;
         console.log(`Admin is updating, keeping original judge_id: ${updatedJudgeId}`);
         
-        // First historize the existing record, then create a new one
-        const updatedData = await GroupScoreDbService.updateScore(existingScore.id, {
-          whipStrikes,
-          rhythm,
-          tempo,
-          time: score.time
-        });
-        
-        return {
-          id: updatedData.id,
-          groupId: updatedData.group_id,
-          judgeId: judgeId, // Return the original judgeId for UI consistency
-          whipStrikes: updatedData.whip_strikes,
-          rhythm: updatedData.rhythm,
-          tempo: updatedData.tempo,
-          time: updatedData.time,
-          tournamentId: updatedData.tournament_id
-        };
+        try {
+          // First historize the existing record, then create a new one
+          const updatedData = await GroupScoreDbService.updateScore(existingScore.id, {
+            whipStrikes,
+            rhythm,
+            tempo,
+            time: score.time,
+            judgeId: updatedJudgeId // Make sure to use the correct judge ID
+          });
+          
+          return {
+            id: updatedData.id,
+            groupId: updatedData.group_id,
+            judgeId: judgeId, // Return the original judgeId for UI consistency
+            whipStrikes: updatedData.whip_strikes,
+            rhythm: updatedData.rhythm,
+            tempo: updatedData.tempo,
+            time: updatedData.time,
+            tournamentId: updatedData.tournament_id
+          };
+        } catch (error) {
+          console.error('Error during score update:', error);
+          
+          // If there's a constraint error, try to archive all existing scores first
+          if (error instanceof Error && error.message.includes('unique constraint')) {
+            console.log('Handling unique constraint error by archiving all existing scores');
+            
+            const supabase = this.checkSupabaseClient();
+            await supabase
+              .from('group_scores')
+              .update({ record_type: 'H' })
+              .eq('group_id', score.groupId)
+              .eq('tournament_id', tournamentId)
+              .eq('record_type', 'C');
+              
+            // Then create a completely new score
+            return await this.createNewScore({
+              ...score,
+              whipStrikes,
+              rhythm,
+              tempo
+            }, isAdminId(judgeId) ? await GroupScoreDbService.getValidJudgeId() : judgeId);
+          }
+          
+          throw error;
+        }
       }
       
       // If no existing score is found, create a new one
@@ -95,45 +124,59 @@ export class GroupScoreService extends BaseScoreService {
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
         console.log('Using judge ID for admin submission:', validJudgeId);
         
-        const data = await GroupScoreDbService.createScore({
+        return await this.createNewScore({
           ...score,
           whipStrikes,
           rhythm,
           tempo
-        }, validJudgeId);
-        
-        return {
-          id: data.id,
-          groupId: data.group_id,
-          judgeId: judgeId, // Return the admin ID, not the judge ID used for DB storage
-          whipStrikes: data.whip_strikes,
-          rhythm: data.rhythm,
-          tempo: data.tempo,
-          time: data.time,
-          tournamentId: data.tournament_id
-        };
+        }, validJudgeId, judgeId);
       } else {
         // Regular judge case - just insert using their UUID
-        const data = await GroupScoreDbService.createScore({
+        return await this.createNewScore({
           ...score,
           whipStrikes,
           rhythm,
           tempo
         }, judgeId);
-        
-        return {
-          id: data.id,
-          groupId: data.group_id,
-          judgeId: data.judge_id,
-          whipStrikes: data.whip_strikes,
-          rhythm: data.rhythm,
-          tempo: data.tempo,
-          time: data.time,
-          tournamentId: data.tournament_id
-        };
       }
     } catch (error) {
       console.error('Error in createOrUpdateGroupScore:', error);
+      throw error;
+    }
+  }
+  
+  // Helper method to create a new score and handle the response formatting
+  private static async createNewScore(
+    score: Omit<GroupScore, 'id'>, 
+    dbJudgeId: string, 
+    originalJudgeId?: string
+  ): Promise<GroupScore> {
+    try {
+      // First, archive any existing records for this combination
+      const supabase = this.checkSupabaseClient();
+      await supabase
+        .from('group_scores')
+        .update({ record_type: 'H' })
+        .eq('group_id', score.groupId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('judge_id', dbJudgeId)
+        .eq('record_type', 'C');
+        
+      // Now create the new score
+      const data = await GroupScoreDbService.createScore(score, dbJudgeId);
+      
+      return {
+        id: data.id,
+        groupId: data.group_id,
+        judgeId: originalJudgeId || data.judge_id, // Use original ID for UI if provided
+        whipStrikes: data.whip_strikes,
+        rhythm: data.rhythm,
+        tempo: data.tempo,
+        time: data.time,
+        tournamentId: data.tournament_id
+      };
+    } catch (error) {
+      console.error('Error creating new score:', error);
       throw error;
     }
   }

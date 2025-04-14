@@ -41,26 +41,64 @@ export class BaseScoreService extends BaseService {
       throw new Error(`Error historizing ${tableName} entry: ${historyError.message}`);
     }
     
-    // 3. Neuen Eintrag mit 'C' erstellen, dabei ID weglassen damit eine neue generiert wird
-    const { id: oldId, ...dataWithoutId } = oldData;
-    
-    // Kombiniere alte Daten mit neuen Daten und setze record_type auf 'C'
-    const insertData = {
-      ...dataWithoutId,
-      ...newData,
-      record_type: 'C'
-    };
-    
     try {
+      // 3. Kombiniere alte Daten mit neuen Daten und setze record_type auf 'C'
+      // Wichtig: Wir entfernen hier die ID, um eine neue zu generieren 
+      // und wir entfernen eventuell vorhandene unique constraints (group_id, judge_id, tournament_id)
+      const { id: oldId, ...dataWithoutId } = oldData;
+      
+      // Kombiniere alte Daten mit neuen Daten und setze record_type auf 'C'
+      const insertData = {
+        ...dataWithoutId,
+        ...newData,
+        record_type: 'C'
+      };
+      
       // 4. Neuen Eintrag einfügen
       const { data: newEntry, error: insertError } = await supabase
         .from(tableName)
         .insert([insertData])
         .select()
         .single();
-        
+      
       if (insertError) {
         console.error(`Error creating new ${tableName} entry:`, insertError);
+        
+        // Wenn der Fehler auf eine Unique Constraint zurückzuführen ist, versuchen wir
+        // den alten Eintrag auf 'C' zurückzusetzen
+        if (insertError.message.includes('violates unique constraint')) {
+          console.log('Unique constraint violation detected, updating instead of inserting');
+          
+          // Alle Aktualisierungen (C - Records) für diese Kombination auf 'H' setzen
+          if (tableName === 'group_scores' && 'group_id' in oldData && 'tournament_id' in oldData && 'judge_id' in oldData) {
+            await supabase
+              .from(tableName)
+              .update({ record_type: 'H' })
+              .eq('group_id', oldData.group_id)
+              .eq('judge_id', oldData.judge_id)
+              .eq('tournament_id', oldData.tournament_id)
+              .eq('record_type', 'C');
+            
+            // Dann den neuen Eintrag erneut versuchen
+            const { data: retryEntry, error: retryError } = await supabase
+              .from(tableName)
+              .insert([insertData])
+              .select()
+              .single();
+              
+            if (retryError) {
+              // Wenn immer noch ein Fehler auftritt, den ursprünglichen Eintrag wiederherstellen
+              await supabase
+                .from(tableName)
+                .update({ record_type: 'C' })
+                .eq('id', id);
+                
+              throw new Error(`Error creating new ${tableName} entry after retry: ${retryError.message}`);
+            }
+            
+            return retryEntry;
+          }
+        }
         
         // In case of error, try to roll back the history operation
         await supabase
@@ -74,6 +112,13 @@ export class BaseScoreService extends BaseService {
       return newEntry;
     } catch (error) {
       console.error(`Error in historizeAndCreate for ${tableName}:`, error);
+      
+      // Versuch, den alten Eintrag wiederherzustellen
+      await supabase
+        .from(tableName)
+        .update({ record_type: 'C' })
+        .eq('id', id);
+        
       throw error;
     }
   }
