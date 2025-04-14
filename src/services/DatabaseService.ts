@@ -19,8 +19,8 @@ export class DatabaseService {
     return ParticipantMutationService.createParticipant(participantData);
   }
 
-  static async updateParticipant(id: number, updates: any) {
-    return ParticipantMutationService.updateParticipant(id, updates);
+  static async updateParticipant(participant: any) {
+    return ParticipantMutationService.updateParticipant(participant);
   }
 
   static async deleteParticipant(id: number) {
@@ -45,8 +45,8 @@ export class DatabaseService {
     return GroupMutationService.createGroup(groupData);
   }
 
-  static async updateGroup(id: number, updates: any) {
-    return GroupMutationService.updateGroup(id, updates);
+  static async updateGroup(group: any) {
+    return GroupMutationService.updateGroup(group);
   }
 
   static async deleteGroup(id: number) {
