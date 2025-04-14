@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Edit, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Group, Participant } from '@/types';
+import { Group, Participant, GroupCategory, GroupSize } from '@/types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import GroupsFilter from './GroupsFilter';
 
 interface GroupsListProps {
   groups: Group[];
@@ -20,67 +22,107 @@ const GroupsList: React.FC<GroupsListProps> = ({
   participants
 }) => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<GroupCategory | 'all'>('all');
+  const [selectedSize, setSelectedSize] = useState<GroupSize | 'all'>('all');
+
   const tournamentGroups = groups.filter(g => g.tournamentId === activeTournamentId);
+  
+  const filteredGroups = tournamentGroups.filter(group => {
+    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || group.category === selectedCategory;
+    const matchesSize = selectedSize === 'all' || group.size === selectedSize;
+    return matchesSearch && matchesCategory && matchesSize;
+  });
+
+  const getParticipantNames = (participantIds: number[]) => {
+    return participantIds
+      .map(id => {
+        const participant = participants.find(p => p.id === id);
+        return participant ? `${participant.firstName} ${participant.lastName}` : '';
+      })
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  if (tournamentGroups.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border p-8 min-h-[300px] flex flex-col items-center justify-center">
+        <p className="text-muted-foreground mb-4">
+          Keine Gruppen für {activeTournamentName} gefunden.
+        </p>
+        <Button onClick={() => navigate('/participants/register-group')}>
+          <Plus className="h-4 w-4 mr-2" />
+          Gruppe erstellen
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-lg border p-8 min-h-[300px] flex flex-col items-center justify-center">
-      <h3 className="text-xl font-semibold mb-4">Gruppenübersicht</h3>
-      {tournamentGroups.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-          {tournamentGroups.map(group => (
-            <div 
-              key={group.id} 
-              className="border rounded-md p-4 hover:border-primary transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium text-lg">{group.name}</h4>
-                  <Badge variant="outline" className="mt-1">
-                    {group.category === 'kids_juniors' ? 'Kinder/Junioren' : 'Aktive'}
-                  </Badge>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => navigate(`/participants/edit-group/${group.id}`)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-3">
-                <p className="text-sm text-muted-foreground mb-2">
-                  {group.participantIds.length} Teilnehmer
-                </p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {group.participantIds.slice(0, 3).map(participantId => {
-                    const participant = participants.find(p => p.id === participantId);
-                    return participant ? (
-                      <Badge key={participantId} variant="secondary" className="text-xs">
-                        {participant.firstName} {participant.lastName}
-                      </Badge>
-                    ) : null;
-                  })}
-                  {group.participantIds.length > 3 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{group.participantIds.length - 3} weitere
+    <div className="space-y-4">
+      <GroupsFilter
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedSize={selectedSize}
+        setSelectedSize={setSelectedSize}
+      />
+
+      <div className="bg-white rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Kategorie</TableHead>
+              <TableHead>Größe</TableHead>
+              <TableHead>Teilnehmer</TableHead>
+              <TableHead className="text-right">Aktionen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredGroups.length > 0 ? (
+              filteredGroups.map(group => (
+                <TableRow key={group.id}>
+                  <TableCell className="font-medium">{group.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {group.category === 'kids_juniors' ? 'Kids/Junioren' : 'Aktive'}
                     </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">
-            Keine Gruppen für {activeTournamentName} gefunden.
-          </p>
-          <Button onClick={() => navigate('/participants/register-group')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Gruppe erstellen
-          </Button>
-        </div>
-      )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {group.size === 'three' ? '3er' : '4er'} Gruppe
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{getParticipantNames(group.participantIds)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/participants/edit-group/${group.id}`)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Bearbeiten
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Keine Gruppen gefunden, die Ihren Suchkriterien entsprechen.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      <div className="text-center text-sm text-muted-foreground">
+        {tournamentGroups.length} Gruppen insgesamt für {activeTournamentName}
+      </div>
     </div>
   );
 };
