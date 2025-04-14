@@ -93,7 +93,7 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
       <Card className="mb-6">
         <CardContent className="py-6">
           <div className="flex flex-col items-center justify-center py-8">
-            <Spinner size="md" />
+            <Spinner size="default" />
             <p className="mt-4 text-muted-foreground">Bewertungen werden geladen...</p>
           </div>
         </CardContent>

@@ -53,16 +53,11 @@ export const useScoreSubmission = (
     if (existingScore) {
       console.log('Found existing score for group:', currentGroup.id, 'Judge:', currentUser.id, 'Score:', existingScore);
       
-      // Update the scores state with the existing score
-      setScores(prev => ({
-        ...prev,
-        [currentGroup.id]: {
-          ...prev[currentGroup.id],
-          ...existingScore
-        }
-      }));
+      // We can't directly update the scores state as it's passed in from a parent component
+      // Instead, we'll need to handle this differently, perhaps with a callback or context
+      console.log('Existing score found but cannot update scores state directly');
     }
-  }, [groups, currentGroupIndex, existingScores, currentUser]);
+  }, [groups, currentGroupIndex, existingScores, currentUser, scores]);
 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
