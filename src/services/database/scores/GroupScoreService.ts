@@ -57,14 +57,9 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID is required');
       }
       
-      // Validate UUID format
+      // Validate judgeId format
       if (typeof score.judgeId !== 'string') {
         throw new Error('Judge ID must be a string');
-      }
-      
-      // Check if the judge ID is a valid UUID format
-      if (!this.isValidUUID(score.judgeId)) {
-        throw new Error('Judge ID must be in valid UUID format');
       }
       
       const tournamentId = typeof score.tournamentId === 'string' 
@@ -76,13 +71,18 @@ export class GroupScoreService extends BaseScoreService {
       // First check if the user actually exists in the users table
       const { data: userExists, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, role')
         .eq('id', score.judgeId)
         .single();
         
       if (userError || !userExists) {
         console.error('Error checking user existence:', userError);
         throw new Error(`User with ID ${score.judgeId} does not exist in users table. Please make sure the user exists before submitting a score.`);
+      }
+      
+      // No need to validate UUID format for admin users
+      if (userExists.role !== 'admin' && !this.isValidUUID(score.judgeId)) {
+        throw new Error('Judge ID must be in valid UUID format for judges');
       }
       
       // Log the judgeId for debugging
@@ -138,16 +138,27 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID must be a string');
       }
       
-      // Check if the judge ID is a valid UUID format
-      if (!this.isValidUUID(score.judgeId)) {
-        throw new Error('Judge ID must be in valid UUID format');
-      }
-      
       if (!score.judgeId) {
         throw new Error('Judge ID is required');
       }
       
       const supabase = this.checkSupabaseClient();
+      
+      // Check if the user is an admin before enforcing UUID format
+      const { data: userExists, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', score.judgeId)
+        .single();
+        
+      if (userError || !userExists) {
+        throw new Error(`User with ID ${score.judgeId} does not exist`);
+      }
+      
+      // Only validate UUID format for non-admin users
+      if (userExists.role !== 'admin' && !this.isValidUUID(score.judgeId)) {
+        throw new Error('Judge ID must be in valid UUID format for judges');
+      }
       
       const { data, error } = await supabase
         .from('group_scores')

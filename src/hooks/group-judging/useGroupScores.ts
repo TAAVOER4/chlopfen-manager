@@ -17,8 +17,7 @@ export const useGroupScores = (groups: Group[]) => {
     // Initialize scores for each group with empty values
     const initialScores: Record<number, Partial<GroupScore>> = {};
     groups.forEach(group => {
-      // For user ID, we need a valid UUID from currentUser.id
-      // Ensure it's a string and it's a UUID format (contains hyphens)
+      // Use the currentUser.id directly - we'll handle validation elsewhere
       const judgeId = currentUser.id;
       
       initialScores[group.id] = {

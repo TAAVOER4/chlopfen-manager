@@ -93,9 +93,9 @@ export const useScoreSubmission = (
         throw new Error("Fehlende Benutzerinformationen");
       }
       
-      // Ensure we're using a proper UUID for the judge ID
-      // Check if the user ID is actually a UUID
-      if (typeof currentUser.id !== 'string' || !currentUser.id.includes('-')) {
+      // Only validate the UUID format for judges, not for admins
+      // Admins might have different ID formats and should still be allowed to submit scores
+      if (isJudge && (typeof currentUser.id !== 'string' || !currentUser.id.includes('-'))) {
         throw new Error("Ungültige Richter-ID. Bitte kontaktieren Sie den Administrator.");
       }
       
@@ -126,7 +126,7 @@ export const useScoreSubmission = (
         throw new Error("Kein Turnier ausgewählt");
       }
 
-      // Use the currentUser.id directly as the judgeId (it should be a string UUID)
+      // Use the currentUser.id directly as the judgeId
       const judgeId = currentUser.id;
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
