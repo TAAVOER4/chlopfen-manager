@@ -43,44 +43,54 @@ export class GroupScoreDbService extends BaseScoreService {
   static async createScore(score: Omit<GroupScore, 'id'>, judgeId: string) {
     const supabase = this.checkSupabaseClient();
     
-    // First, ensure any existing scores with the same combination are archived
-    await supabase
-      .from('group_scores')
-      .update({ record_type: 'H' })
-      .eq('group_id', score.groupId)
-      .eq('tournament_id', score.tournamentId)
-      .eq('judge_id', judgeId)
-      .eq('record_type', 'C');
-
-    // Now create the new score
-    const { data, error } = await supabase
-      .from('group_scores')
-      .insert([{
-        group_id: score.groupId,
-        judge_id: judgeId,
-        whip_strikes: score.whipStrikes,
-        rhythm: score.rhythm,
-        tempo: score.tempo,
-        time: score.time,
-        tournament_id: score.tournamentId,
-        record_type: 'C'
-      }])
-      .select()
-      .single();
+    try {
+      // First, archive ALL existing scores with the same combination
+      const { error: archiveError } = await supabase
+        .from('group_scores')
+        .update({ record_type: 'H' })
+        .eq('group_id', score.groupId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('judge_id', judgeId)
+        .eq('record_type', 'C');
       
-    if (error) {
-      console.error('Error creating group score:', error);
-      
-      if (error.code === '23503') {
-        throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
-      } else if (error.code === '23505') {
-        throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter. Bitte zuerst die bestehende Bewertung archivieren.');
-      } else {
-        throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+      if (archiveError) {
+        console.error('Error archiving existing scores:', archiveError);
+        throw new Error(`Error archiving existing scores: ${archiveError.message}`);
       }
+      
+      // Now create the new score
+      const { data, error } = await supabase
+        .from('group_scores')
+        .insert([{
+          group_id: score.groupId,
+          judge_id: judgeId,
+          whip_strikes: score.whipStrikes,
+          rhythm: score.rhythm,
+          tempo: score.tempo,
+          time: score.time,
+          tournament_id: score.tournamentId,
+          record_type: 'C'
+        }])
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error creating group score:', error);
+        
+        if (error.code === '23503') {
+          throw new Error('Fehler: Ein referenzierter Datensatz (Gruppe oder Turnier) existiert nicht.');
+        } else if (error.code === '23505') {
+          throw new Error('Fehler: Es existiert bereits eine Bewertung für diese Gruppe von diesem Richter. Bitte versuchen Sie es erneut.');
+        } else {
+          throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${error.message}`);
+        }
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in createScore:', error);
+      throw error;
     }
-    
-    return data;
   }
 
   static async getValidJudgeId() {
@@ -100,5 +110,30 @@ export class GroupScoreDbService extends BaseScoreService {
     }
     
     return validJudge.id;
+  }
+  
+  // New method to ensure all existing records are archived
+  static async archiveAllExistingScores(groupId: number, tournamentId: number) {
+    const supabase = this.checkSupabaseClient();
+    
+    try {
+      const { error } = await supabase
+        .from('group_scores')
+        .update({ record_type: 'H' })
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (error) {
+        console.error('Error archiving all existing scores:', error);
+        throw new Error(`Error archiving all existing scores: ${error.message}`);
+      }
+      
+      console.log(`Successfully archived all existing scores for group ${groupId} in tournament ${tournamentId}`);
+      return true;
+    } catch (error) {
+      console.error('Error in archiveAllExistingScores:', error);
+      throw error;
+    }
   }
 }

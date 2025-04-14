@@ -57,68 +57,11 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
-      // Check if a score already exists - find any active (record_type='C') score for this combination
-      const existingScore = await GroupScoreDbService.getExistingScore(score.groupId, tournamentId);
+      // Very important: First archive ALL existing scores for this group/tournament
+      // This ensures we don't hit unique constraints
+      await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
       
-      if (existingScore) {
-        console.log(`Found existing score with ID ${existingScore.id}, historizing and creating new entry`);
-        
-        // If it's an admin updating a score, use a valid judge ID from the database
-        const updatedJudgeId = isAdminId(judgeId) ? existingScore.judge_id : judgeId;
-        console.log(`Admin is updating, keeping original judge_id: ${updatedJudgeId}`);
-        
-        try {
-          // First historize the existing record, then create a new one
-          const updatedData = await GroupScoreDbService.updateScore(existingScore.id, {
-            whipStrikes,
-            rhythm,
-            tempo,
-            time: score.time,
-            judgeId: updatedJudgeId // Make sure to use the correct judge ID
-          });
-          
-          return {
-            id: updatedData.id,
-            groupId: updatedData.group_id,
-            judgeId: judgeId, // Return the original judgeId for UI consistency
-            whipStrikes: updatedData.whip_strikes,
-            rhythm: updatedData.rhythm,
-            tempo: updatedData.tempo,
-            time: updatedData.time,
-            tournamentId: updatedData.tournament_id
-          };
-        } catch (error) {
-          console.error('Error during score update:', error);
-          
-          // If there's a constraint error, try to archive all existing scores first
-          if (error instanceof Error && error.message.includes('unique constraint')) {
-            console.log('Handling unique constraint error by archiving all existing scores');
-            
-            const supabase = this.checkSupabaseClient();
-            await supabase
-              .from('group_scores')
-              .update({ record_type: 'H' })
-              .eq('group_id', score.groupId)
-              .eq('tournament_id', tournamentId)
-              .eq('record_type', 'C');
-              
-            // Then create a completely new score
-            return await this.createNewScore({
-              ...score,
-              whipStrikes,
-              rhythm,
-              tempo
-            }, isAdminId(judgeId) ? await GroupScoreDbService.getValidJudgeId() : judgeId);
-          }
-          
-          throw error;
-        }
-      }
-      
-      // If no existing score is found, create a new one
-      console.log('No existing score found, creating a new one');
-      
-      // If it's an admin with numeric ID, we need to use a UUID from an existing judge
+      // If it's an admin creating a score, use a valid judge ID
       if (isAdminId(judgeId)) {
         console.log('Admin user detected with ID:', judgeId);
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
@@ -152,17 +95,7 @@ export class GroupScoreService extends BaseScoreService {
     originalJudgeId?: string
   ): Promise<GroupScore> {
     try {
-      // First, archive any existing records for this combination
-      const supabase = this.checkSupabaseClient();
-      await supabase
-        .from('group_scores')
-        .update({ record_type: 'H' })
-        .eq('group_id', score.groupId)
-        .eq('tournament_id', score.tournamentId)
-        .eq('judge_id', dbJudgeId)
-        .eq('record_type', 'C');
-        
-      // Now create the new score
+      // Create the new score (archiving is now done centrally before calling this)
       const data = await GroupScoreDbService.createScore(score, dbJudgeId);
       
       return {
