@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Group, GroupScore, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-import { ScoreService } from '@/services/database/ScoreService';
+import { DatabaseService } from '@/services/database';
 import { useMutation } from '@tanstack/react-query';
 
 export const useScoreSubmission = (
@@ -23,7 +23,7 @@ export const useScoreSubmission = (
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to database:', score);
-      return await ScoreService.createGroupScore(score);
+      return await DatabaseService.createGroupScore(score);
     },
     onSuccess: (data) => {
       console.log('Score saved successfully:', data);
