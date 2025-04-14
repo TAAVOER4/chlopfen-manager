@@ -58,8 +58,12 @@ export class GroupScoreService extends BaseScoreService {
         : score.tournamentId;
       
       // Very important: First archive ALL existing scores for this group/tournament
-      // This ensures we don't hit unique constraints
-      await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
+      try {
+        await GroupScoreDbService.archiveAllExistingScores(score.groupId, tournamentId);
+      } catch (archiveError) {
+        console.error('Error archiving existing scores:', archiveError);
+        // Continue with create attempt even if archive fails
+      }
       
       // If it's an admin creating a score, use a valid judge ID
       if (isAdminId(judgeId)) {

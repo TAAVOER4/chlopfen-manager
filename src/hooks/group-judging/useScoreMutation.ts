@@ -9,7 +9,7 @@ export const useScoreMutation = () => {
   const { toast } = useToast();
   const { currentUser } = useUser();
 
-  // Query for existing scores
+  // Query for existing scores with better error handling
   const { data: existingScores, refetch: refetchScores } = useQuery({
     queryKey: ['groupScores', currentUser?.id],
     queryFn: async () => {
@@ -24,31 +24,40 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Mutation for saving scores
+  // Mutation for saving scores with improved handling of constraint errors
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       console.log('Submitting score to database:', score);
       
-      // Force a refetch first to get the latest state
+      // Always force a refetch first to get the latest state before mutation
       await refetchScores();
       
       try {
         // Attempt to create or update the score
-        return await GroupScoreService.createOrUpdateGroupScore(score);
+        const result = await GroupScoreService.createOrUpdateGroupScore(score);
+        return result;
       } catch (error) {
         console.error('Error in score mutation:', error);
         
-        // If there's a unique constraint error or an archiving error, we handle it specially
+        // Handle constraint errors specially
         if (error instanceof Error && 
             (error.message.includes('unique constraint') || 
              error.message.includes('bereits eine Bewertung'))) {
           console.log('Handling constraint error in mutation');
           
-          // Force another refetch to get the latest state
+          // Force another refetch to update UI with latest state
           await refetchScores();
           
-          // Rethrow with a more user-friendly message
-          throw new Error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder laden Sie die Seite neu.');
+          // Add a slight delay before retrying to ensure DB operations complete
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Try one more time with a fresh state
+          try {
+            return await GroupScoreService.createOrUpdateGroupScore(score);
+          } catch (retryError) {
+            console.error('Error after retry:', retryError);
+            throw new Error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder laden Sie die Seite neu.');
+          }
         }
         
         throw error;
