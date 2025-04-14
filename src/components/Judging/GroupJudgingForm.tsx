@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/card';
 import { Group, GroupCriterionKey, GroupScore } from '../../types';
 import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface GroupJudgingFormProps {
   currentGroup: Group;
@@ -20,6 +22,7 @@ interface GroupJudgingFormProps {
   currentGroupIndex: number;
   totalGroups: number;
   isSaving?: boolean;
+  canSubmitScores?: boolean;
 }
 
 const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
@@ -30,7 +33,8 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
   canEditCriterion,
   currentGroupIndex,
   totalGroups,
-  isSaving = false
+  isSaving = false,
+  canSubmitScores = false
 }) => {
   // All possible criteria
   const allCriteria = [
@@ -56,6 +60,23 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
     scores[currentGroup.id]?.[criterion.key] !== undefined && 
     scores[currentGroup.id]?.[criterion.key] !== null
   );
+
+  // Access denied message if user can't submit scores
+  if (!canSubmitScores) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Zugriff verweigert</AlertTitle>
+            <AlertDescription>
+              Sie sind nicht berechtigt, Bewertungen zu speichern. Nur Administratoren und Richter können Bewertungen vornehmen.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
@@ -84,7 +105,7 @@ const GroupJudgingForm: React.FC<GroupJudgingFormProps> = ({
                     criterion.key, 
                     e.target.value === '' ? 0 : Number(e.target.value)
                   )}
-                  disabled={isSaving}
+                  disabled={isSaving || !canEditCriterion(criterion.key)}
                 />
               </div>
             </div>

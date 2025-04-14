@@ -20,7 +20,7 @@ const GroupJudging: React.FC = () => {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
   const navigate = useNavigate();
-  const { isLoading: isUserLoading } = useUser();
+  const { isLoading: isUserLoading, isAdmin, isJudge } = useUser();
   
   console.log("Rendering GroupJudging component", { size, categoryParam });
   
@@ -40,7 +40,8 @@ const GroupJudging: React.FC = () => {
     clearAllErrors,
     refetchGroups,
     isSaving,
-    isChecking
+    isChecking,
+    canEditScores
   } = useGroupJudging(size, categoryParam);
 
   // Navigate back to judging page with group tab selected
@@ -58,9 +59,12 @@ const GroupJudging: React.FC = () => {
       isUserLoading,
       isChecking,
       currentIndex: currentGroupIndex,
-      hasErrors
+      hasErrors,
+      isAdmin,
+      isJudge,
+      canEditScores
     });
-  }, [groups, isLoading, isUserLoading, isChecking, currentGroupIndex, hasErrors]);
+  }, [groups, isLoading, isUserLoading, isChecking, currentGroupIndex, hasErrors, isAdmin, isJudge, canEditScores]);
 
   // Display loading state - show while either user data or groups are loading
   if (isUserLoading || isLoading || isChecking) {
@@ -145,6 +149,7 @@ const GroupJudging: React.FC = () => {
             currentGroupIndex={currentGroupIndex}
             totalGroups={groups.length}
             isSaving={isSaving}
+            canSubmitScores={isAdmin || isJudge}
           />
         </div>
         

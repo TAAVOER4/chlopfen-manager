@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Group, GroupScore, GroupCriterionKey } from '../../types';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-import { DatabaseService } from '@/services/database';
+import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useMutation } from '@tanstack/react-query';
 
 export const useScoreSubmission = (
@@ -15,15 +15,22 @@ export const useScoreSubmission = (
 ) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentUser, selectedTournament } = useUser();
+  const { currentUser, selectedTournament, isAdmin, isJudge } = useUser();
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Check if user is authorized to submit scores
+  const canSubmitScores = isAdmin || isJudge;
 
   // Create mutation for saving scores
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
+      if (!canSubmitScores) {
+        throw new Error('Sie sind nicht berechtigt, Bewertungen zu speichern');
+      }
+      
       console.log('Submitting score to database:', score);
-      return await DatabaseService.createGroupScore(score);
+      return await GroupScoreService.createGroupScore(score);
     },
     onSuccess: (data) => {
       console.log('Score saved successfully:', data);
@@ -59,6 +66,17 @@ export const useScoreSubmission = (
 
   const handleSaveScore = async () => {
     if (isSaving) return;
+    
+    // Check if user has permission to save scores
+    if (!canSubmitScores) {
+      toast({
+        title: "Zugriff verweigert",
+        description: "Sie sind nicht berechtigt, Bewertungen zu speichern.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSaving(true);
     
     try {
@@ -135,6 +153,7 @@ export const useScoreSubmission = (
     currentGroupIndex,
     setCurrentGroupIndex,
     handleSaveScore,
-    isSaving
+    isSaving,
+    canSubmitScores
   };
 };

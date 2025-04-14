@@ -5,7 +5,9 @@ import { BaseScoreService } from './BaseScoreService';
 export class GroupScoreService extends BaseScoreService {
   static async getGroupScores(): Promise<GroupScore[]> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = this.checkSupabaseClient();
+      
+      const { data, error } = await supabase
         .from('group_scores')
         .select('*');
         
@@ -48,9 +50,14 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
+      const supabase = this.checkSupabaseClient();
+      
+      // Convert judgeId to string for UUID compatibility
       const judgeId = score.judgeId.toString();
       
-      const { data, error } = await this.supabase
+      console.log('Saving score with judge ID:', judgeId, 'Type:', typeof judgeId);
+      
+      const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
@@ -66,7 +73,7 @@ export class GroupScoreService extends BaseScoreService {
         
       if (error) {
         console.error('Error creating group score:', error);
-        throw new Error(`Error creating group score: ${error.message}`);
+        return this.handleError(error, 'creating group score');
       }
       
       if (!data) {
@@ -95,13 +102,16 @@ export class GroupScoreService extends BaseScoreService {
         ? parseInt(score.tournamentId, 10) 
         : score.tournamentId;
       
+      // Convert judgeId to string for UUID compatibility
       const judgeId = score.judgeId.toString();
       
       if (!judgeId) {
         throw new Error('Judge ID is required');
       }
       
-      const { data, error } = await this.supabase
+      const supabase = this.checkSupabaseClient();
+      
+      const { data, error } = await supabase
         .from('group_scores')
         .update({
           group_id: score.groupId,
@@ -118,7 +128,7 @@ export class GroupScoreService extends BaseScoreService {
         
       if (error) {
         console.error('Error updating group score:', error);
-        throw new Error(`Error updating group score: ${error.message}`);
+        return this.handleError(error, 'updating group score');
       }
       
       if (!data) {

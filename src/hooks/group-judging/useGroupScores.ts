@@ -4,8 +4,11 @@ import { Group, GroupScore, GroupCriterionKey } from '../../types';
 import { useUser } from '@/contexts/UserContext';
 
 export const useGroupScores = (groups: Group[]) => {
-  const { currentUser, selectedTournament } = useUser();
+  const { currentUser, selectedTournament, isAdmin, isJudge } = useUser();
   const [scores, setScores] = useState<Record<number, Partial<GroupScore>>>({});
+  
+  // Check if user is authorized to submit scores
+  const canEditScores = isAdmin || isJudge;
 
   // Initialize scores for each group
   useEffect(() => {
@@ -34,14 +37,23 @@ export const useGroupScores = (groups: Group[]) => {
 
   // Determine if current user can edit a specific criterion
   const canEditCriterion = (criterion: GroupCriterionKey): boolean => {
+    // If the user is not allowed to edit scores at all, return false
+    if (!canEditScores) return false;
+    
     // Admins can edit all criteria
-    if (currentUser?.role === 'admin') return true;
+    if (isAdmin) return true;
     
     // Judges can only edit their assigned criterion
     return currentUser?.assignedCriteria?.group === criterion;
   };
 
   const handleScoreChange = (groupId: number, criterion: keyof Omit<GroupScore, 'groupId' | 'judgeId' | 'time'>, value: number) => {
+    // If the user is not allowed to edit scores, don't allow changes
+    if (!canEditScores) return;
+    
+    // If the user is not authorized to edit this specific criterion, don't allow changes
+    if (!canEditCriterion(criterion as GroupCriterionKey)) return;
+    
     // Clamp value between 1 and 10
     const clampedValue = Math.max(1, Math.min(10, value));
     
@@ -57,6 +69,7 @@ export const useGroupScores = (groups: Group[]) => {
   return {
     scores,
     canEditCriterion,
-    handleScoreChange
+    handleScoreChange,
+    canEditScores
   };
 };

@@ -20,14 +20,15 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
   );
   
   // Setup scoring logic - only initialize if we have groups
-  const { scores, canEditCriterion, handleScoreChange } = useGroupScores(groups);
+  const { scores, canEditCriterion, handleScoreChange, canEditScores } = useGroupScores(groups);
   
   // Setup submission logic
   const { 
     currentGroupIndex, 
     setCurrentGroupIndex, 
     handleSaveScore,
-    isSaving
+    isSaving,
+    canSubmitScores
   } = useScoreSubmission(groups, scores, canEditCriterion, handleError);
 
   return {
@@ -45,6 +46,8 @@ export const useGroupJudging = (size: string | undefined, categoryParam: string 
     clearAllErrors,
     refetchGroups,
     isSaving,
-    isChecking
+    isChecking,
+    canEditScores,
+    canSubmitScores
   };
 };
