@@ -9,11 +9,12 @@ import {
 } from '@/components/ui/tabs';
 import IndividualJudgingTab from './IndividualJudgingTab';
 import GroupJudgingTab from './GroupJudgingTab';
+import { Category } from '@/types';
 
 interface JudgingTabsProps {
   activeTab: string;
   setActiveTab: (value: string) => void;
-  categories: string[];
+  categories: Category[];
   participantsByCategory: Record<string, any>;
   isAdmin: boolean;
   openReorderDialog: (category: any) => void;
