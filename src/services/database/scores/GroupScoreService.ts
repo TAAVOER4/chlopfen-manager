@@ -34,6 +34,16 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
+  /**
+   * Validates if a string is a valid UUID format
+   * @param id string to check
+   * @returns boolean indicating if the string is a valid UUID
+   */
+  private static isValidUUID(id: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  }
+
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Creating group score:', score);
@@ -52,8 +62,8 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID must be a string');
       }
       
-      // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
-      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
+      // Check if the judge ID is a valid UUID format
+      if (!this.isValidUUID(score.judgeId)) {
         throw new Error('Judge ID must be in valid UUID format');
       }
       
@@ -128,8 +138,8 @@ export class GroupScoreService extends BaseScoreService {
         throw new Error('Judge ID must be a string');
       }
       
-      // Check if the judge ID looks like a UUID (contains hyphens and is the right length)
-      if (!score.judgeId.includes('-') || score.judgeId.length !== 36) {
+      // Check if the judge ID is a valid UUID format
+      if (!this.isValidUUID(score.judgeId)) {
         throw new Error('Judge ID must be in valid UUID format');
       }
       

@@ -85,8 +85,18 @@ export const useScoreSubmission = (
       }
       
       const currentGroup = groups[currentGroupIndex];
-      if (!currentGroup || !currentUser?.id) {
-        throw new Error("Fehlende Gruppen- oder Benutzerinformationen");
+      if (!currentGroup) {
+        throw new Error("Fehlende Gruppeninformationen");
+      }
+      
+      if (!currentUser?.id) {
+        throw new Error("Fehlende Benutzerinformationen");
+      }
+      
+      // Ensure we're using a proper UUID for the judge ID
+      // Check if the user ID is actually a UUID
+      if (typeof currentUser.id !== 'string' || !currentUser.id.includes('-')) {
+        throw new Error("Ungültige Richter-ID. Bitte kontaktieren Sie den Administrator.");
       }
       
       const currentScore = scores[currentGroup.id];
@@ -116,8 +126,8 @@ export const useScoreSubmission = (
         throw new Error("Kein Turnier ausgewählt");
       }
 
-      // Use the currentUser.id directly as the judgeId (it's already a string)
-      const judgeId = String(currentUser.id);
+      // Use the currentUser.id directly as the judgeId (it should be a string UUID)
+      const judgeId = currentUser.id;
       
       console.log('User ID being used:', judgeId, 'Type:', typeof judgeId);
 
