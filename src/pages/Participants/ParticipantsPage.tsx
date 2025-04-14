@@ -2,8 +2,6 @@
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Spinner } from '@/components/ui/spinner';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
 import NoActiveTournamentAlert from '@/components/Participants/NoActiveTournamentAlert';
 import DeleteParticipantDialog from '@/components/Participants/DeleteParticipantDialog';
 import ParticipantsHeader from '@/components/Participants/ParticipantsHeader';
@@ -12,7 +10,6 @@ import ParticipantsList from '@/components/Participants/ParticipantsList';
 import GroupsList from '@/components/Participants/GroupsList';
 import { useParticipantsData } from '@/hooks/useParticipantsData';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from '@/hooks/use-toast';
 
 const ParticipantsPage = () => {
   const queryClient = useQueryClient();
@@ -37,24 +34,18 @@ const ParticipantsPage = () => {
     refetchAll
   } = useParticipantsData();
   
-  // Force refresh data when component mounts
+  // Automatically refetch data every 30 seconds
   useEffect(() => {
-    console.log("ParticipantsPage mounted, invalidating queries...");
-    queryClient.invalidateQueries({ queryKey: ['participants'] });
-    queryClient.invalidateQueries({ queryKey: ['groups'] });
-    refetchAll();
+    const intervalId = setInterval(() => {
+      console.log("Automatically refreshing participants data");
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      refetchAll();
+    }, 30000); // 30 seconds
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
   }, [queryClient, refetchAll]);
-  
-  const handleRefresh = () => {
-    console.log("Manual refresh requested");
-    queryClient.invalidateQueries({ queryKey: ['participants'] });
-    queryClient.invalidateQueries({ queryKey: ['groups'] });
-    refetchAll();
-    toast({
-      title: "Aktualisierung",
-      description: "Daten werden neu geladen...",
-    });
-  };
   
   // Loading state
   if (isLoading) {
@@ -76,10 +67,6 @@ const ParticipantsPage = () => {
           <p className="text-muted-foreground">
             Bitte versuchen Sie die Seite neu zu laden oder kontaktieren Sie den Administrator.
           </p>
-          <Button className="mt-4" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Daten neu laden
-          </Button>
         </div>
       </div>
     );
@@ -88,13 +75,6 @@ const ParticipantsPage = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fade-in">
       <ParticipantsHeader activeTournament={activeTournament} />
-      
-      <div className="flex justify-end mb-4">
-        <Button variant="outline" onClick={handleRefresh}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Aktualisieren
-        </Button>
-      </div>
       
       {!activeTournament && (
         <NoActiveTournamentAlert />
