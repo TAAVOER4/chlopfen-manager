@@ -21,13 +21,15 @@ export const useGroupScores = (groups: Group[]) => {
       // If it's a mock user with numeric ID, we'll generate a UUID-like string
       let judgeId: string;
       
-      if (typeof currentUser.id === 'string' && currentUser.id.indexOf('-') >= 0) {
+      const userId = String(currentUser.id); // Ensure we have a string
+      
+      // Check if it contains hyphens (likely a UUID already)
+      if (userId && userId.indexOf('-') >= 0) {
         // Already a UUID format
-        judgeId = currentUser.id;
+        judgeId = userId;
       } else {
         // Generate a simple UUID-like string (not a true UUID but valid format)
         // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx where x is any hex digit and y is 8, 9, A, or B
-        const userId = String(currentUser.id);
         judgeId = `00000000-0000-4000-a000-${userId.padStart(12, '0')}`;
       }
       

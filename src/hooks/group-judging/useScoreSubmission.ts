@@ -119,12 +119,13 @@ export const useScoreSubmission = (
       // For user ID, ensure it's in a valid UUID format
       let judgeId: string;
       
-      if (typeof currentUser.id === 'string' && currentUser.id.indexOf('-') >= 0) {
+      const userId = String(currentUser.id); // Convert to string explicitly
+      
+      if (userId && userId.indexOf('-') >= 0) {
         // Already a UUID format
-        judgeId = currentUser.id;
+        judgeId = userId;
       } else {
         // Generate a simple UUID-like string (not a true UUID but valid format)
-        const userId = String(currentUser.id);
         judgeId = `00000000-0000-4000-a000-${userId.padStart(12, '0')}`;
       }
       
