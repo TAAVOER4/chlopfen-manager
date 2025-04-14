@@ -19,7 +19,10 @@ export const useScoresInitialization = (
     const initialScores: Record<number, Partial<GroupScore>> = {};
     
     groups.forEach(group => {
-      const existingScore = existingScores?.find(score => score.groupId === group.id);
+      // Find score for this group, filtering by active ('C') records
+      const existingScore = existingScores?.find(
+        score => score.groupId === group.id && score.tournamentId === (selectedTournament?.id || group.tournamentId)
+      );
       
       console.log('Checking scores for group:', group.id);
       console.log('Found existing score:', existingScore);
