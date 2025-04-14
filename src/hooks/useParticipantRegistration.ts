@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Participant } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { determineCategory } from '@/utils/categoryUtils';
 import { DatabaseService } from '@/services/DatabaseService';
 import { useTournament } from '@/contexts/TournamentContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 export const useParticipantRegistration = () => {
   const navigate = useNavigate();
@@ -43,15 +45,23 @@ export const useParticipantRegistration = () => {
     
     try {
       console.log("Checking if participant exists...");
-      const allParticipants = await DatabaseService.getAllParticipants();
-      console.log("Received all participants:", allParticipants.length);
       
-      return allParticipants.some(
-        p => p.firstName.toLowerCase() === participant.firstName?.toLowerCase() && 
-             p.lastName.toLowerCase() === participant.lastName?.toLowerCase() &&
-             p.birthYear === participant.birthYear &&
-             p.tournamentId === activeTournament?.id
-      );
+      // Direct Supabase query to check if participant exists
+      const { data, error } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('first_name', participant.firstName)
+        .eq('last_name', participant.lastName)
+        .eq('birth_year', participant.birthYear)
+        .eq('tournament_id', activeTournament?.id);
+      
+      if (error) {
+        console.error('Error checking if participant exists:', error);
+        return false;
+      }
+      
+      console.log("Participant exists check result:", data);
+      return data && data.length > 0;
     } catch (error) {
       console.error('Error checking if participant exists:', error);
       return false;
@@ -111,17 +121,41 @@ export const useParticipantRegistration = () => {
       
       console.log("Creating new participant:", newParticipant);
       
-      // Save to database
-      await DatabaseService.createParticipant(newParticipant);
-      console.log("Participant created successfully");
+      // Direct Supabase insert
+      const { data, error } = await supabase
+        .from('participants')
+        .insert([{
+          first_name: newParticipant.firstName,
+          last_name: newParticipant.lastName,
+          location: newParticipant.location,
+          birth_year: newParticipant.birthYear,
+          category: newParticipant.category,
+          is_group_only: newParticipant.isGroupOnly || false,
+          tournament_id: newParticipant.tournamentId
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from participant creation');
+      }
+      
+      console.log("Participant created successfully:", data);
       
       // Immediately invalidate the participants query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ['participants'] });
       
+      // Show both toast types for better visibility
       toast({
         title: "Teilnehmer registriert",
         description: `${participant.firstName} ${participant.lastName} wurde erfolgreich für ${activeTournament.name} registriert.`
       });
+      
+      sonnerToast.success(`${participant.firstName} ${participant.lastName} wurde erfolgreich registriert.`);
       
       navigate('/participants');
     } catch (error) {
@@ -131,6 +165,8 @@ export const useParticipantRegistration = () => {
         description: "Beim Speichern der Teilnehmerdaten ist ein Fehler aufgetreten.",
         variant: "destructive"
       });
+      
+      sonnerToast.error("Fehler beim Speichern der Teilnehmerdaten");
     } finally {
       setIsSubmitting(false);
     }
