@@ -53,18 +53,7 @@ export const useScoreMutation = () => {
 
       console.log('Starting score save process...');
       
-      // First archive existing scores
-      const archiveResult = await GroupScoreService.forceArchiveScores(
-        score.groupId,
-        String(currentUser.id),
-        score.tournamentId
-      );
-      
-      if (!archiveResult) {
-        console.log('Archive process reported failure, but continuing with score creation');
-      }
-
-      // Create the new score - this also tries to archive existing scores again as a safety measure
+      // Create the new score - this also tries to archive existing scores
       return await GroupScoreService.createGroupScore(scoreWithUser);
     },
     onSuccess: () => {

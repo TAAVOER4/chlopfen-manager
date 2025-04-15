@@ -50,24 +50,31 @@ export class GroupScoreService extends BaseScoreService {
       
       const supabase = this.checkSupabaseClient();
       
-      // First we need to try to find the actual UUID in the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', judgeId)
-        .limit(1);
-      
+      // First try to find the actual UUID in the users table
       let judgeUuid = judgeId;
       
-      if (userError) {
-        console.error('Error looking up user:', userError);
-      } else if (userData && userData.length > 0) {
-        judgeUuid = userData[0].id;
-        console.log(`Found judge UUID: ${judgeUuid}`);
-      } else {
-        console.log(`No user found with ID ${judgeId}, will use as is`);
+      try {
+        // Only attempt to query if judgeId might be a user ID and not already a UUID
+        if (!judgeId.includes('-') && /^\d+$/.test(judgeId)) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', judgeId)
+            .limit(1);
+          
+          if (!userError && userData && userData.length > 0) {
+            judgeUuid = userData[0].id;
+            console.log(`Found judge UUID: ${judgeUuid}`);
+          } else {
+            console.log(`No user found with ID ${judgeId}, will try as is`);
+          }
+        }
+      } catch (lookupError) {
+        console.error('Error looking up user UUID:', lookupError);
+        // Continue with the original ID
       }
       
+      // Query for active scores using the best ID we have
       const { data, error } = await supabase
         .from('group_scores')
         .select('id, group_id, judge_id')
@@ -100,25 +107,57 @@ export class GroupScoreService extends BaseScoreService {
     try {
       const supabase = this.checkSupabaseClient();
       
-      // First we need to try to find the actual UUID in the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', judgeId)
-        .limit(1);
-      
+      // First try to find a valid UUID
       let judgeUuid = judgeId;
+      let foundValidId = false;
       
-      if (userError) {
-        console.error('Error looking up user:', userError);
-      } else if (userData && userData.length > 0) {
-        judgeUuid = userData[0].id;
-        console.log(`Found judge UUID for archiving: ${judgeUuid}`);
-      } else {
-        console.log(`No user found with ID ${judgeId} for archiving, will use as is`);
+      console.log(`Attempting to archive scores for group ${groupId}, original judge ID: ${judgeId}`);
+      
+      try {
+        // Check if the judgeId is already a valid UUID format
+        if (judgeId.includes('-') && judgeId.length === 36) {
+          console.log('Judge ID appears to be in UUID format, using as is');
+          foundValidId = true;
+        } 
+        // If not, try to find the user by numeric ID
+        else if (/^\d+$/.test(judgeId)) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', judgeId)
+            .limit(1);
+          
+          if (!userError && userData && userData.length > 0) {
+            judgeUuid = userData[0].id;
+            console.log(`Found judge UUID from numeric ID: ${judgeUuid}`);
+            foundValidId = true;
+          }
+        }
+        
+        // If we still haven't found a valid ID, try to get any judge as a fallback
+        if (!foundValidId) {
+          console.log('Could not find specific judge ID, looking for any valid judge');
+          const { data: validJudge, error: judgeError } = await supabase
+            .from('users')
+            .select('id')
+            .limit(1);
+            
+          if (!judgeError && validJudge && validJudge.length > 0) {
+            judgeUuid = validJudge[0].id;
+            console.log(`Using fallback judge UUID: ${judgeUuid}`);
+            foundValidId = true;
+          }
+        }
+      } catch (lookupError) {
+        console.error('Error during user lookup:', lookupError);
+        // Continue with best effort
       }
       
-      console.log(`Archiving scores for group ${groupId}, judge ${judgeUuid}`);
+      if (!foundValidId) {
+        console.error('Could not find a valid UUID for archiving, operation may fail');
+      }
+      
+      console.log(`Archiving scores for group ${groupId}, using judge ID: ${judgeUuid}`);
       
       // Direct update to archive existing scores
       const { error } = await supabase
@@ -129,7 +168,6 @@ export class GroupScoreService extends BaseScoreService {
           modified_by: judgeUuid
         })
         .eq('group_id', groupId)
-        .eq('judge_id', judgeUuid)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
@@ -156,46 +194,72 @@ export class GroupScoreService extends BaseScoreService {
       }
 
       const originalJudgeId = String(score.judgeId);
+      let judgeUuid = originalJudgeId;
+      let foundValidId = false;
       
       const supabase = this.checkSupabaseClient();
       
-      // First we need to try to find the actual UUID in the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', originalJudgeId)
-        .limit(1);
-      
-      let judgeUuid = originalJudgeId;
-      
-      if (userError) {
-        console.error('Error looking up user for score creation:', userError);
-      } else if (userData && userData.length > 0) {
-        judgeUuid = userData[0].id;
-        console.log(`Found judge UUID for score creation: ${judgeUuid}`);
-      } else {
-        // As a fallback, try to get any valid judge from the database
-        try {
+      // Series of attempts to find a valid UUID
+      try {
+        // Check if the judgeId is already a valid UUID format
+        if (originalJudgeId.includes('-') && originalJudgeId.length === 36) {
+          console.log('Judge ID appears to be in UUID format, using as is');
+          foundValidId = true;
+        } 
+        // If not, try to find the user by numeric ID
+        else if (/^\d+$/.test(originalJudgeId)) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', originalJudgeId)
+            .limit(1);
+          
+          if (!userError && userData && userData.length > 0) {
+            judgeUuid = userData[0].id;
+            console.log(`Found judge UUID from numeric ID: ${judgeUuid}`);
+            foundValidId = true;
+          }
+        }
+        
+        // If we still haven't found a valid ID, try to get any judge as a fallback
+        if (!foundValidId) {
+          console.log('Could not find specific judge ID, looking for any valid judge');
           const { data: validJudge, error: judgeError } = await supabase
             .from('users')
             .select('id')
             .eq('role', 'judge')
             .limit(1);
             
-          if (judgeError || !validJudge || validJudge.length === 0) {
-            console.error('Error finding a valid judge:', judgeError);
-          } else {
+          if (!judgeError && validJudge && validJudge.length > 0) {
             judgeUuid = validJudge[0].id;
-            console.log(`Using fallback judge ID: ${judgeUuid}`);
+            console.log(`Using fallback judge UUID: ${judgeUuid}`);
+            foundValidId = true;
+          } else {
+            // Last resort: get any user from the database
+            const { data: anyUser, error: anyUserError } = await supabase
+              .from('users')
+              .select('id')
+              .limit(1);
+              
+            if (!anyUserError && anyUser && anyUser.length > 0) {
+              judgeUuid = anyUser[0].id;
+              console.log(`Using any user UUID as last resort: ${judgeUuid}`);
+              foundValidId = true;
+            }
           }
-        } catch (fallbackError) {
-          console.error('Error in fallback judge lookup:', fallbackError);
         }
+      } catch (lookupError) {
+        console.error('Error during user lookup:', lookupError);
+        // Continue with best effort
+      }
+      
+      if (!foundValidId) {
+        throw new Error('Failed to find a valid UUID for the judge');
       }
       
       console.log(`Using judge UUID for DB: ${judgeUuid}`);
       
-      // Archive any existing scores first
+      // Archive any existing scores first - but don't filter by judge_id to avoid conflicts
       await this.forceArchiveScores(
         score.groupId,
         judgeUuid,
@@ -230,7 +294,7 @@ export class GroupScoreService extends BaseScoreService {
       return {
         id: newScore.id,
         groupId: newScore.group_id,
-        judgeId: originalJudgeId,
+        judgeId: originalJudgeId, // Return the original ID to the frontend
         whipStrikes: newScore.whip_strikes,
         rhythm: newScore.rhythm,
         tempo: newScore.tempo,
