@@ -65,11 +65,13 @@ export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
           
           // Execute the direct update - the conditions will be applied using .eq() for each key-value pair
           const updateQuery = supabase.from(tableName.replace(/^public\./, ''));
+          
+          // Apply each condition - fix the TypeScript error by using proper type casting
           let queryWithConditions = updateQuery;
           
-          // Apply each condition
           Object.entries(conditions).forEach(([key, value]) => {
-            queryWithConditions = queryWithConditions.eq(key, value);
+            // Cast the query builder to any to avoid TypeScript errors with method chaining
+            queryWithConditions = (queryWithConditions as any).eq(key, value);
           });
           
           // Execute the update
@@ -131,8 +133,12 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
       
       // Last resort - direct update with the Supabase client
       console.log('Attempting direct Supabase client update');
-      const { error: updateError } = await supabase
-        .from('group_scores')
+      
+      // Fix the TypeScript error by properly typing the query builder and chaining
+      const query = supabase.from('group_scores');
+      
+      // Use type assertion to allow chaining eq() methods
+      const { error: updateError } = await (query as any)
         .update({ 
           record_type: 'H', 
           modified_at: new Date().toISOString(),
@@ -149,12 +155,12 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     }
     
     // Verify the operation was successful
-    const { data: checkData, error: checkError } = await supabase
+    const { data: checkData, error: checkError } = await (supabase
       .from('group_scores')
       .select('id')
       .eq('group_id', groupId)
       .eq('tournament_id', tournamentId)
-      .eq('record_type', 'C');
+      .eq('record_type', 'C') as any);
       
     if (checkError) {
       console.error('Error verifying archive operation:', checkError);
