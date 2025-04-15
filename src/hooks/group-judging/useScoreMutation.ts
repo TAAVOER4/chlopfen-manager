@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { archiveGroupScores } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -41,20 +40,44 @@ export const useScoreMutation = () => {
         // First, archive all existing records for this group and tournament
         console.log('Archiving existing records...');
         
-        const archiveSuccess = await archiveGroupScores(
-          score.groupId, 
-          score.tournamentId,
-          userId // Pass the userId for modified_by
-        );
-        
-        if (!archiveSuccess) {
-          console.error('Failed to archive existing records, but will continue with creating the new record');
+        // Check first if there are any records to archive
+        const { data: existingRecords, error: fetchError } = await supabase
+          .from('group_scores')
+          .select('id')
+          .eq('group_id', score.groupId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+          
+        if (fetchError) {
+          console.error('Error checking for existing records:', fetchError);
+        } else if (existingRecords && existingRecords.length > 0) {
+          console.log(`Found ${existingRecords.length} existing records to archive`);
+          
+          // Archive each record individually to avoid UUID validation issues
+          for (const record of existingRecords) {
+            console.log(`Archiving record ID: ${record.id}`);
+            
+            const { error: archiveError } = await supabase
+              .from('group_scores')
+              .update({
+                record_type: 'H',
+                modified_at: new Date().toISOString()
+                // Do not include modified_by as it causes UUID validation issues
+              })
+              .eq('id', record.id);
+              
+            if (archiveError) {
+              console.error(`Error archiving record ${record.id}:`, archiveError);
+            } else {
+              console.log(`Successfully archived record ${record.id}`);
+            }
+          }
         } else {
-          console.log('Successfully archived existing records');
+          console.log('No existing records to archive');
         }
         
         // Add a small delay to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Create the new score with record_type 'C'
         console.log('Creating new score');
@@ -70,8 +93,8 @@ export const useScoreMutation = () => {
             time: score.time,
             tournament_id: score.tournamentId,
             record_type: 'C',
-            modified_at: new Date().toISOString(),
-            modified_by: userId
+            modified_at: new Date().toISOString()
+            // Do not include modified_by as it causes UUID validation issues
           }])
           .select()
           .single();
