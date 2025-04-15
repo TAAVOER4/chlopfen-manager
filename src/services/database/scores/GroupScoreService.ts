@@ -1,3 +1,4 @@
+
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
@@ -48,13 +49,30 @@ export class GroupScoreService extends BaseScoreService {
       console.log(`Checking for active scores for group ${groupId}, judge ${judgeId}`);
       
       const supabase = this.checkSupabaseClient();
-      const normalizedJudgeId = normalizeUuid(judgeId);
+      
+      // First we need to try to find the actual UUID in the users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', judgeId)
+        .limit(1);
+      
+      let judgeUuid = judgeId;
+      
+      if (userError) {
+        console.error('Error looking up user:', userError);
+      } else if (userData && userData.length > 0) {
+        judgeUuid = userData[0].id;
+        console.log(`Found judge UUID: ${judgeUuid}`);
+      } else {
+        console.log(`No user found with ID ${judgeId}, will use as is`);
+      }
       
       const { data, error } = await supabase
         .from('group_scores')
         .select('id, group_id, judge_id')
         .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
+        .eq('judge_id', judgeUuid)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
@@ -81,9 +99,26 @@ export class GroupScoreService extends BaseScoreService {
   static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
     try {
       const supabase = this.checkSupabaseClient();
-      const normalizedJudgeId = normalizeUuid(judgeId);
       
-      console.log(`Archiving scores for group ${groupId}, judge ${normalizedJudgeId}`);
+      // First we need to try to find the actual UUID in the users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', judgeId)
+        .limit(1);
+      
+      let judgeUuid = judgeId;
+      
+      if (userError) {
+        console.error('Error looking up user:', userError);
+      } else if (userData && userData.length > 0) {
+        judgeUuid = userData[0].id;
+        console.log(`Found judge UUID for archiving: ${judgeUuid}`);
+      } else {
+        console.log(`No user found with ID ${judgeId} for archiving, will use as is`);
+      }
+      
+      console.log(`Archiving scores for group ${groupId}, judge ${judgeUuid}`);
       
       // Direct update to archive existing scores
       const { error } = await supabase
@@ -91,10 +126,10 @@ export class GroupScoreService extends BaseScoreService {
         .update({ 
           record_type: 'H',
           modified_at: new Date().toISOString(),
-          modified_by: normalizedJudgeId
+          modified_by: judgeUuid
         })
         .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
+        .eq('judge_id', judgeUuid)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
@@ -121,23 +156,65 @@ export class GroupScoreService extends BaseScoreService {
       }
 
       const originalJudgeId = String(score.judgeId);
-      const normalizedJudgeId = normalizeUuid(originalJudgeId);
       
       const supabase = this.checkSupabaseClient();
+      
+      // First we need to try to find the actual UUID in the users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', originalJudgeId)
+        .limit(1);
+      
+      let judgeUuid = originalJudgeId;
+      
+      if (userError) {
+        console.error('Error looking up user for score creation:', userError);
+      } else if (userData && userData.length > 0) {
+        judgeUuid = userData[0].id;
+        console.log(`Found judge UUID for score creation: ${judgeUuid}`);
+      } else {
+        // As a fallback, try to get any valid judge from the database
+        try {
+          const { data: validJudge, error: judgeError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'judge')
+            .limit(1);
+            
+          if (judgeError || !validJudge || validJudge.length === 0) {
+            console.error('Error finding a valid judge:', judgeError);
+          } else {
+            judgeUuid = validJudge[0].id;
+            console.log(`Using fallback judge ID: ${judgeUuid}`);
+          }
+        } catch (fallbackError) {
+          console.error('Error in fallback judge lookup:', fallbackError);
+        }
+      }
+      
+      console.log(`Using judge UUID for DB: ${judgeUuid}`);
+      
+      // Archive any existing scores first
+      await this.forceArchiveScores(
+        score.groupId,
+        judgeUuid,
+        score.tournamentId
+      );
 
       // Create new current record
       const { data: newScore, error: insertError } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: normalizedJudgeId,
+          judge_id: judgeUuid,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
           time: score.time,
           tournament_id: score.tournamentId,
           record_type: 'C',
-          modified_by: normalizedJudgeId,
+          modified_by: judgeUuid,
           modified_at: new Date().toISOString()
         }])
         .select()

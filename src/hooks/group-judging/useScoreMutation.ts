@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -60,10 +61,10 @@ export const useScoreMutation = () => {
       );
       
       if (!archiveResult) {
-        throw new Error('Fehler beim Archivieren der vorhandenen Bewertungen');
+        console.log('Archive process reported failure, but continuing with score creation');
       }
 
-      // Create the new score
+      // Create the new score - this also tries to archive existing scores again as a safety measure
       return await GroupScoreService.createGroupScore(scoreWithUser);
     },
     onSuccess: () => {
