@@ -39,6 +39,91 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
+  static async getActiveScoresForGroupAndJudge(
+    groupId: number, 
+    judgeId: string, 
+    tournamentId: number
+  ): Promise<{id: number, groupId: number, judgeId: string}[]> {
+    try {
+      console.log(`Checking for active scores for group ${groupId}, judge ${judgeId}`);
+      
+      const supabase = this.checkSupabaseClient();
+      const normalizedJudgeId = normalizeUuid(judgeId);
+      
+      const { data, error } = await supabase
+        .from('group_scores')
+        .select('id, group_id, judge_id')
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (error) {
+        console.error('Error checking for active scores:', error);
+        throw new Error(`Error checking active scores: ${error.message}`);
+      }
+      
+      console.log(`Found ${data?.length || 0} active scores`);
+      
+      if (!data) return [];
+      
+      return data.map(score => ({
+        id: score.id,
+        groupId: score.group_id,
+        judgeId: score.judge_id
+      }));
+    } catch (error) {
+      console.error('Error in getActiveScoresForGroupAndJudge:', error);
+      throw error;
+    }
+  }
+  
+  static async archiveSingleScore(scoreId: number): Promise<boolean> {
+    try {
+      console.log(`Archiving single score with ID: ${scoreId}`);
+      
+      const supabase = this.checkSupabaseClient();
+      
+      // Archive a single score by ID - direct database approach
+      const { error } = await supabase
+        .from('group_scores')
+        .update({
+          record_type: 'H',
+          modified_at: new Date().toISOString()
+        })
+        .eq('id', scoreId)
+        .eq('record_type', 'C');
+        
+      if (error) {
+        console.error(`Error archiving score ${scoreId}:`, error);
+        throw new Error(`Fehler beim Historisieren der Bewertung ID=${scoreId}: ${error.message}`);
+      }
+      
+      // Verify the score was properly archived
+      const { data, error: verifyError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('id', scoreId)
+        .eq('record_type', 'C');
+        
+      if (verifyError) {
+        console.error(`Error verifying score ${scoreId} archive:`, verifyError);
+        return false;
+      }
+      
+      if (data && data.length > 0) {
+        console.error(`Failed to archive score ${scoreId}.`);
+        return false;
+      }
+      
+      console.log(`Successfully archived score ${scoreId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error in archiveSingleScore for ID ${scoreId}:`, error);
+      throw error;
+    }
+  }
+
   static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Creating or updating group score:', score);
@@ -120,70 +205,7 @@ export class GroupScoreService extends BaseScoreService {
   static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
     try {
       console.log(`Force archiving scores for group ${groupId}, judge ${judgeId}, tournament ${tournamentId}`);
-      
-      // Direct database approach to archive scores
-      const normalizedJudgeId = normalizeUuid(judgeId);
-      
-      // 1. First check if there are any active scores that need archiving
-      const { data: activeScores, error: checkError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (checkError) {
-        console.error('Error checking for active scores:', checkError);
-        throw new Error(`Error checking active scores: ${checkError.message}`);
-      }
-      
-      if (!activeScores || activeScores.length === 0) {
-        console.log('No active scores found to archive.');
-        return true; // Nothing to archive, so we succeeded
-      }
-      
-      console.log(`Found ${activeScores.length} active scores to archive.`);
-      
-      // 2. Archive all active scores using UPDATE
-      const { error: archiveError } = await supabase
-        .from('group_scores')
-        .update({
-          record_type: 'H',
-          modified_at: new Date().toISOString(),
-          modified_by: normalizedJudgeId
-        })
-        .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (archiveError) {
-        console.error('Error archiving scores:', archiveError);
-        throw new Error(`Fehler beim Historisieren: ${archiveError.message}`);
-      }
-      
-      // 3. Verify that all records were archived
-      const { data: remainingActiveScores, error: verifyError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (verifyError) {
-        console.error('Error verifying archive operation:', verifyError);
-        throw new Error(`Error verifying archive: ${verifyError.message}`);
-      }
-      
-      if (remainingActiveScores && remainingActiveScores.length > 0) {
-        console.error(`Failed to archive all scores. ${remainingActiveScores.length} still active.`);
-        throw new Error('Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden.');
-      }
-      
-      console.log('Successfully archived all scores');
-      return true;
+      return await GroupScoreDbService.forceArchiveExistingScores(groupId, judgeId, tournamentId);
     } catch (error) {
       console.error('Error in forceArchiveScores:', error);
       throw error;

@@ -31,7 +31,45 @@ export class GroupScoreDbService extends BaseScoreService {
       
       if (checkActive && checkActive.length > 0) {
         console.error('Found existing active scores that were not archived:', checkActive.length);
-        throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es erneut.');
+        
+        // Try one last time to archive all active records
+        console.log('Making one last attempt to archive these records');
+        for (const activeRecord of checkActive) {
+          console.log(`Attempting to archive record ${activeRecord.id}`);
+          
+          const { error: archiveError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString(),
+              modified_by: normalizedJudgeId
+            })
+            .eq('id', activeRecord.id);
+            
+          if (archiveError) {
+            console.error(`Failed to archive record ${activeRecord.id}:`, archiveError);
+          }
+        }
+        
+        // Check again
+        const { data: recheckActive, error: recheckError } = await supabase
+          .from('group_scores')
+          .select('id')
+          .eq('group_id', score.groupId)
+          .eq('judge_id', normalizedJudgeId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+        
+        if (recheckError) {
+          console.error('Error re-checking active records:', recheckError);
+        }
+        
+        if (recheckActive && recheckActive.length > 0) {
+          console.error('Still found active records after final archiving attempt:', recheckActive.length);
+          throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
+        }
+        
+        console.log('Successfully archived all remaining records in final attempt');
       }
       
       console.log('No active records found, proceeding with score creation');
@@ -96,23 +134,32 @@ export class GroupScoreDbService extends BaseScoreService {
       
       console.log(`Found ${activeRecords.length} active records to archive`);
       
-      // Archive all current records for this specific combination
-      const { error } = await supabase
-        .from('group_scores')
-        .update({ 
-          record_type: 'H',
-          modified_at: new Date().toISOString(),
-          modified_by: normalizedJudgeId
-        })
-        .eq('group_id', groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
+      // New approach: archive records individually instead of in bulk
+      let successCount = 0;
+      
+      for (const record of activeRecords) {
+        console.log(`Archiving record ID: ${record.id}`);
         
-      if (error) {
-        console.error('Error in force archiving scores:', error);
-        throw new Error(`Error force archiving scores: ${error.message}`);
+        const { error } = await supabase
+          .from('group_scores')
+          .update({ 
+            record_type: 'H',
+            modified_at: new Date().toISOString(),
+            modified_by: normalizedJudgeId
+          })
+          .eq('id', record.id);
+          
+        if (error) {
+          console.error(`Error archiving record ${record.id}:`, error);
+        } else {
+          successCount++;
+          
+          // Add a small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
+      
+      console.log(`Successfully archived ${successCount} of ${activeRecords.length} records`);
       
       // Verify all records were archived
       const { data: remainingActive, error: verifyError } = await supabase
