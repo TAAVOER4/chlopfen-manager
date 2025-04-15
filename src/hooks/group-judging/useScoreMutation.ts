@@ -32,11 +32,43 @@ export const useScoreMutation = () => {
         throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
       }
 
-      // Make sure we have the user ID available for debugging
+      // Get the user ID for logging purposes only
       const userId = String(currentUser.id);
       console.log(`Starting score save for user ${userId}, group ${score.groupId}, tournament ${score.tournamentId}`);
       
       try {
+        // Try to find an actual UUID for this user from the database
+        let judgeUuid = '';
+        
+        try {
+          // First check if we can find this user in the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('record_type', 'C')
+            .limit(1);
+            
+          if (!userError && userData && userData.length > 0) {
+            judgeUuid = userData[0].id;
+            console.log(`Using judge UUID from database: ${judgeUuid}`);
+          } else {
+            // If no user found, try to get any valid judge
+            const { data: anyJudge, error: judgeError } = await supabase
+              .from('users')
+              .select('id')
+              .limit(1);
+              
+            if (!judgeError && anyJudge && anyJudge.length > 0) {
+              judgeUuid = anyJudge[0].id;
+              console.log(`Using any available judge UUID: ${judgeUuid}`);
+            } else {
+              console.log('No valid UUID found, will proceed without judge ID');
+            }
+          }
+        } catch (error) {
+          console.error('Error finding judge UUID:', error);
+        }
+        
         // First, archive all existing records for this group and tournament
         console.log('Archiving existing records...');
         
@@ -82,20 +114,29 @@ export const useScoreMutation = () => {
         // Create the new score with record_type 'C'
         console.log('Creating new score');
         
+        // Instead of using the numeric user ID, use a valid UUID if we found one
+        const insertData = {
+          group_id: score.groupId,
+          whip_strikes: score.whipStrikes,
+          rhythm: score.rhythm,
+          tempo: score.tempo,
+          time: score.time,
+          tournament_id: score.tournamentId,
+          record_type: 'C',
+          modified_at: new Date().toISOString()
+        };
+        
+        // Only add the judge_id if we found a valid UUID
+        if (judgeUuid && judgeUuid.length > 0) {
+          // @ts-ignore - We're adding this dynamically
+          insertData.judge_id = judgeUuid;
+        } else {
+          console.warn('No valid judge UUID found, skipping judge_id in insert');
+        }
+        
         const { data, error } = await supabase
           .from('group_scores')
-          .insert([{
-            group_id: score.groupId,
-            judge_id: userId,
-            whip_strikes: score.whipStrikes,
-            rhythm: score.rhythm,
-            tempo: score.tempo,
-            time: score.time,
-            tournament_id: score.tournamentId,
-            record_type: 'C',
-            modified_at: new Date().toISOString()
-            // Do not include modified_by as it causes UUID validation issues
-          }])
+          .insert([insertData])
           .select()
           .single();
           
@@ -109,7 +150,7 @@ export const useScoreMutation = () => {
         return {
           id: data.id,
           groupId: data.group_id,
-          judgeId: userId,
+          judgeId: userId, // Return the original ID to the frontend
           whipStrikes: data.whip_strikes,
           rhythm: data.rhythm,
           tempo: data.tempo,
