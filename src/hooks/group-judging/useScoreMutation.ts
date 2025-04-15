@@ -37,66 +37,70 @@ export const useScoreMutation = () => {
       const userId = String(currentUser.id);
       console.log(`Starting score save for user ${userId}, group ${score.groupId}, tournament ${score.tournamentId}`);
       
+      // ---------- SIMPLIFIED DIRECT APPROACH ----------
+      console.log("Using simplified direct approach for archiving records");
+      
       try {
-        // Step 1: Find existing scores for this group and tournament
-        console.log(`Checking for existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
-        const { data: existingScores, error: findError } = await supabase
-          .from('group_scores')
-          .select('id, modified_by')
-          .eq('group_id', score.groupId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
-          
-        if (findError) {
-          console.error('Error finding existing scores:', findError);
-        } else {
-          console.log(`Found ${existingScores?.length || 0} existing scores to archive`);
-          
-          // If we found existing scores, archive them one by one
-          if (existingScores && existingScores.length > 0) {
-            for (const record of existingScores) {
-              console.log(`Archiving record ID: ${record.id}`);
-              
-              const { error: archiveError } = await supabase
-                .from('group_scores')
-                .update({ 
-                  record_type: 'H',
-                  modified_at: new Date().toISOString(),
-                  modified_by: userId
-                })
-                .eq('id', record.id);
-                
-              if (archiveError) {
-                console.error(`Error archiving record ${record.id}:`, archiveError);
-              } else {
-                console.log(`Successfully archived record ${record.id}`);
-              }
-              
-              // Small delay between operations to avoid race conditions
-              await new Promise(resolve => setTimeout(resolve, 200));
-            }
-          }
-        }
-        
-        // Add a delay to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Double-check that all records are archived
-        const { data: checkArchive, error: checkError } = await supabase
+        // STEP 1: First get all existing records for this group and tournament
+        const { data: existingRecords, error: findError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
           
-        if (checkError) {
-          console.error('Error verifying archive operation:', checkError);
-        } else if (checkArchive && checkArchive.length > 0) {
-          console.warn(`After archive operation, ${checkArchive.length} records still active. Will try one final direct update.`);
+        if (findError) {
+          console.error('Error finding existing records:', findError);
+          throw new Error(`Could not find existing records: ${findError.message}`);
+        }
+        
+        console.log(`Found ${existingRecords?.length || 0} existing records to archive`);
+        
+        // STEP 2: Archive all found records individually
+        if (existingRecords && existingRecords.length > 0) {
+          for (const record of existingRecords) {
+            console.log(`Direct update of record ID: ${record.id}`);
+            
+            const { error: updateError } = await supabase
+              .from('group_scores')
+              .update({
+                record_type: 'H',
+                modified_at: new Date().toISOString(),
+                modified_by: userId
+              })
+              .eq('id', record.id);
+              
+            if (updateError) {
+              console.error(`Failed to archive record ${record.id}:`, updateError);
+            } else {
+              console.log(`Successfully archived record ${record.id}`);
+            }
+            
+            // Small delay between operations
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
           
-          const { error: finalArchiveError } = await supabase
+          // Add a small delay to ensure database consistency
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // STEP 3: Verify that all records were archived properly
+        const { data: verifyRecords, error: verifyError } = await supabase
+          .from('group_scores')
+          .select('id')
+          .eq('group_id', score.groupId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+          
+        if (verifyError) {
+          console.error('Error verifying archive operation:', verifyError);
+        } else if (verifyRecords && verifyRecords.length > 0) {
+          console.warn(`After archiving, ${verifyRecords.length} records still active! Trying one final time...`);
+          
+          // STEP 4: One final attempt to archive all at once using UPDATE
+          const { error: finalError } = await supabase
             .from('group_scores')
-            .update({ 
+            .update({
               record_type: 'H',
               modified_at: new Date().toISOString(),
               modified_by: userId
@@ -105,63 +109,35 @@ export const useScoreMutation = () => {
             .eq('tournament_id', score.tournamentId)
             .eq('record_type', 'C');
             
-          if (finalArchiveError) {
-            console.error('Final archive attempt failed:', finalArchiveError);
+          if (finalError) {
+            console.error('Final archive attempt failed:', finalError);
           } else {
-            console.log('Final archive attempt completed');
-            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log('Final archive attempt completed successfully');
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
         } else {
-          console.log('Archive verification successful, no active records found');
+          console.log('All records successfully archived ✅');
         }
       } catch (archiveError) {
-        console.error('Exception during archive operation:', archiveError);
-        // Continue with creating a new score even if archiving fails
+        console.error('Error during archive operation:', archiveError);
+        // Continue with creating new score even if archiving fails
       }
       
-      // Find or generate a valid UUID for the judge
-      let judgeUuid = userId;
+      // STEP 5: Create the new score
+      console.log('Creating new score with user ID:', userId);
       
-      // Check if the user ID might be a numeric ID that needs to be converted to UUID
-      if (!isValidUuid(userId)) {
-        console.log('User ID is not a valid UUID, attempting to look up UUID from users table');
-        
-        try {
-          // Try to find a corresponding UUID in the users table
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('record_type', 'C')
-            .limit(1);
-            
-          if (userError) {
-            console.error('Error looking up user UUID:', userError);
-          } else if (userData && userData.length > 0) {
-            judgeUuid = userData[0].id;
-            console.log(`Found valid UUID to use: ${judgeUuid}`);
-          } else {
-            console.warn('No valid user found, will attempt to continue with original ID');
-          }
-        } catch (lookupError) {
-          console.error('Error during user UUID lookup:', lookupError);
-        }
-      }
-      
-      console.log(`Creating new score with judge UUID: ${judgeUuid}`);
-      
-      // Create a new score with explicit modifiedBy
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{
           group_id: score.groupId,
-          judge_id: judgeUuid,
+          judge_id: userId,
           whip_strikes: score.whipStrikes,
           rhythm: score.rhythm,
           tempo: score.tempo,
           time: score.time,
           tournament_id: score.tournamentId,
           record_type: 'C',
-          modified_by: judgeUuid,
+          modified_by: userId,
           modified_at: new Date().toISOString()
         }])
         .select()
@@ -177,7 +153,7 @@ export const useScoreMutation = () => {
       return {
         id: data.id,
         groupId: data.group_id,
-        judgeId: userId, // Return the original ID to the frontend
+        judgeId: userId,
         whipStrikes: data.whip_strikes,
         rhythm: data.rhythm,
         tempo: data.tempo,
