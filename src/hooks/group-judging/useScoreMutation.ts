@@ -40,11 +40,17 @@ export const useScoreMutation = () => {
       console.log('Starting score save process...');
       
       // First, archive all existing scores for this group and tournament
-      const archiveSuccess = await archiveGroupScores(score.groupId, score.tournamentId);
+      // Pass the current user ID to be used for modified_by
+      const archiveSuccess = await archiveGroupScores(
+        score.groupId, 
+        score.tournamentId,
+        String(currentUser.id)
+      );
       
       if (!archiveSuccess) {
-        console.warn('Could not archive scores using function, trying direct update');
+        console.warn('Could not archive scores using archiveGroupScores, trying direct update');
         
+        // Try a direct update as fallback
         const { error: updateError } = await supabase
           .from('group_scores')
           .update({ 
@@ -65,8 +71,49 @@ export const useScoreMutation = () => {
       // Add delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Then create the new score - pass true to force archiving again as a safety measure
-      return await GroupScoreService.createGroupScore(scoreWithUser, true);
+      // Verify that records were actually archived
+      const { data: activeRecords, error: checkError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', score.groupId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('record_type', 'C');
+        
+      if (checkError) {
+        console.error('Error checking archived records:', checkError);
+      } else if (activeRecords && activeRecords.length > 0) {
+        console.warn(`Archive verification failed: ${activeRecords.length} records still active`);
+        
+        // One last attempt to archive using direct SQL - this should be reliable
+        const sqlCommand = `
+          UPDATE public.group_scores 
+          SET record_type = 'H', 
+              modified_at = NOW(),
+              modified_by = '${String(currentUser.id)}'
+          WHERE group_id = ${score.groupId} 
+          AND tournament_id = ${score.tournamentId}
+          AND record_type = 'C'
+        `;
+        
+        const { data: sqlData, error: sqlError } = await supabase.rpc('execute_sql', { 
+          sql_command: sqlCommand 
+        });
+        
+        if (sqlError) {
+          console.error('Final archive attempt failed:', sqlError);
+        } else {
+          console.log('Final archive attempt completed');
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      // Then create the new score with an explicit modified_by value
+      const newScore = {
+        ...scoreWithUser,
+        modified_by: String(currentUser.id)
+      };
+      
+      return await GroupScoreService.createGroupScore(newScore, true);
     },
     onSuccess: () => {
       refetchScores();

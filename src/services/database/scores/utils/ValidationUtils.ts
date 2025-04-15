@@ -17,16 +17,15 @@ export function normalizeUuid(id: string): string {
     return id;
   }
   
-  // If it's purely numeric, it might be a user ID that needs conversion
-  // In a real application, you would fetch the actual UUID from the user's record
+  // If it's purely numeric, it's likely a user ID that needs to be used as is
   if (id && /^\d+$/.test(id)) {
-    console.log(`Converting numeric ID ${id} to proper UUID format`);
-    return id; // Return as is - the actual conversion happens in the service layer
+    console.log(`Using numeric ID ${id} as is`);
+    return id;
   }
   
-  // Otherwise return placeholder UUID to avoid database errors
-  console.warn(`Received invalid UUID format: ${id}, returning placeholder`);
-  return '00000000-0000-0000-0000-000000000000';
+  // Otherwise return the original ID with a warning
+  console.warn(`Received potentially invalid UUID format: ${id}, but will use as is`);
+  return id;
 }
 
 export function isValidUuid(id: string): boolean {
