@@ -106,7 +106,7 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     // First, try a direct update via the Supabase client - this is the most reliable approach
     console.log("🔍 ARCHIVE - Method 1: Using direct Supabase update");
     
-    const { error: directError } = await supabase
+    const { error: directError, data: directData } = await supabase
       .from('group_scores')
       .update({ 
         record_type: 'H', 
@@ -120,9 +120,9 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     if (directError) {
       console.error('❌ Direct update failed:', directError);
     } else {
-      console.log('✅ Direct update appears successful');
+      console.log('✅ Direct update appears successful, affected records:', directData?.length || 0);
       // Add a delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     // Double-check if any records still have record_type = 'C'
@@ -186,10 +186,14 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
             } else {
               console.log(`✅ Successfully updated record ${record.id}`);
             }
+            
+            // Add a small delay between operations
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
       } else {
         console.log('✅ SQL RPC method successful');
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     } else {
       console.log('✅ All records successfully archived');
