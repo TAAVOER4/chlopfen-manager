@@ -97,12 +97,32 @@ export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
   }
 };
 
-// Archive all scores for a specific group and tournament with simplified approach
+// Archive all scores for a specific group and tournament with improved approach
 export const archiveGroupScores = async (groupId: number, tournamentId: number, modifiedBy: string): Promise<boolean> => {
   try {
     console.log(`🔄 ARCHIVE OPERATION - Starting for group ${groupId}, tournament ${tournamentId}, modified by ${modifiedBy}`);
     
-    // STEP 1: Get all current records for this group and tournament that have record_type = 'C'
+    // STEP 1: First attempt - use RPC function if available
+    try {
+      console.log('Trying to use archive_group_scores RPC function');
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('archive_group_scores', {
+        p_group_id: groupId,
+        p_tournament_id: tournamentId
+      });
+      
+      if (rpcError) {
+        console.error('RPC function failed:', rpcError);
+      } else {
+        console.log('RPC function succeeded');
+      }
+    } catch (rpcException) {
+      console.error('Exception calling RPC function:', rpcException);
+    }
+    
+    // STEP 2: Wait a moment for DB to process
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // STEP 3: Get all current records that need to be archived
     const { data: activeRecords, error: findError } = await supabase
       .from('group_scores')
       .select('id')
@@ -122,33 +142,32 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     
     console.log(`Found ${activeRecords.length} active records to archive`);
     
-    // STEP 2: Archive each record individually by ID for maximum reliability
-    let allArchived = true;
-    
-    for (const record of activeRecords) {
-      console.log(`Archiving record ID: ${record.id}`);
-      
-      const { error: updateError } = await supabase
+    // STEP 4: Second attempt - try a direct update on all records
+    try {
+      console.log('Attempting direct update on all records');
+      const { error: bulkUpdateError } = await supabase
         .from('group_scores')
         .update({
           record_type: 'H', 
-          modified_at: new Date().toISOString(),
-          modified_by: modifiedBy
+          modified_at: new Date().toISOString()
         })
-        .eq('id', record.id);
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
         
-      if (updateError) {
-        console.error(`Failed to archive record ${record.id}:`, updateError);
-        allArchived = false;
+      if (bulkUpdateError) {
+        console.error('Bulk update failed:', bulkUpdateError);
       } else {
-        console.log(`Successfully archived record ${record.id}`);
+        console.log('Bulk update succeeded');
       }
-      
-      // Add a small delay between operations
-      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (bulkError) {
+      console.error('Exception during bulk update:', bulkError);
     }
     
-    // STEP 3: Verify that all records were archived
+    // STEP 5: Wait a moment for DB to process
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // STEP 6: Check if any records are still active
     const { data: remainingActive, error: checkError } = await supabase
       .from('group_scores')
       .select('id')
@@ -158,43 +177,75 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
       
     if (checkError) {
       console.error('Error checking remaining active records:', checkError);
+    } else if (remainingActive && remainingActive.length > 0) {
+      console.log(`Still have ${remainingActive.length} active records, will archive each individually`);
+      
+      // STEP 7: Third attempt - archive each record individually by ID
+      for (const record of remainingActive) {
+        console.log(`Archiving record ID: ${record.id}`);
+        
+        const { error: updateError } = await supabase
+          .from('group_scores')
+          .update({
+            record_type: 'H', 
+            modified_at: new Date().toISOString()
+          })
+          .eq('id', record.id);
+          
+        if (updateError) {
+          console.error(`Failed to archive record ${record.id}:`, updateError);
+        } else {
+          console.log(`Successfully archived record ${record.id}`);
+        }
+        
+        // Add a small delay between operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } else {
+      console.log('Successfully archived all records');
+      return true;
+    }
+    
+    // STEP 8: Final verification
+    const { data: finalCheck, error: finalCheckError } = await supabase
+      .from('group_scores')
+      .select('count')
+      .eq('group_id', groupId)
+      .eq('tournament_id', tournamentId)
+      .eq('record_type', 'C');
+      
+    if (finalCheckError) {
+      console.error('Error during final verification:', finalCheckError);
       return false;
     }
     
-    if (remainingActive && remainingActive.length > 0) {
-      console.warn(`Archive operation partially failed: ${remainingActive.length} records still active`);
+    const count = finalCheck?.[0]?.count || 0;
+    if (count > 0) {
+      console.error(`Archive operation failed: ${count} records still active`);
       
-      // Last attempt - try a direct UPDATE to archive all remaining records
-      console.log('Making final attempt to archive remaining records');
-      
-      const { error: finalError } = await supabase
-        .from('group_scores')
-        .update({
-          record_type: 'H',
-          modified_at: new Date().toISOString(),
-          modified_by: modifiedBy
-        })
-        .eq('group_id', groupId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
+      // STEP 9: Last resort - try SQL execution
+      try {
+        console.log('Attempting raw SQL execution as last resort');
+        const sqlSuccess = await executeRawSql(`
+          UPDATE public.group_scores 
+          SET record_type = 'H', 
+              modified_at = NOW()
+          WHERE group_id = ${groupId} 
+          AND tournament_id = ${tournamentId}
+          AND record_type = 'C'
+        `);
         
-      if (finalError) {
-        console.error('Final archive attempt failed:', finalError);
-        return false;
+        if (sqlSuccess) {
+          console.log('Raw SQL execution succeeded');
+          return true;
+        } else {
+          console.error('Raw SQL execution failed');
+        }
+      } catch (sqlError) {
+        console.error('Exception during SQL execution:', sqlError);
       }
       
-      // Final verification
-      const { data: finalCheck, error: finalCheckError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (finalCheckError || (finalCheck && finalCheck.length > 0)) {
-        console.error(`Archive operation failed: ${finalCheck?.length || 0} records still active`);
-        return false;
-      }
+      return false;
     }
     
     console.log('✅ ARCHIVE OPERATION - Successfully completed');

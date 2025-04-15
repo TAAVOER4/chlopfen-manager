@@ -4,7 +4,7 @@ import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, archiveGroupScores } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -72,44 +72,66 @@ export const useScoreMutation = () => {
         // First, archive all existing records for this group and tournament
         console.log('Archiving existing records...');
         
-        // Check first if there are any records to archive
-        const { data: existingRecords, error: fetchError } = await supabase
+        // Use the dedicated archiveGroupScores function which has multiple fallbacks
+        const archiveSuccess = await archiveGroupScores(score.groupId, score.tournamentId, judgeUuid || 'system');
+        
+        if (!archiveSuccess) {
+          console.error('Could not archive previous records completely');
+          
+          // Add a fallback direct archive operation
+          console.log('Attempting direct archive as fallback...');
+          
+          // Try direct SQL update to handle any remaining active records
+          const { error: directUpdateError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString()
+            })
+            .eq('group_id', score.groupId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C');
+            
+          if (directUpdateError) {
+            console.error('Error with direct archive fallback:', directUpdateError);
+          }
+        }
+        
+        // Add a small delay to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Verify all records were properly archived
+        const { data: stillActive, error: verifyError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
           
-        if (fetchError) {
-          console.error('Error checking for existing records:', fetchError);
-        } else if (existingRecords && existingRecords.length > 0) {
-          console.log(`Found ${existingRecords.length} existing records to archive`);
+        if (verifyError) {
+          console.error('Error verifying archive status:', verifyError);
+        } else if (stillActive && stillActive.length > 0) {
+          console.warn(`${stillActive.length} records still active after archiving, will try one more approach`);
           
-          // Archive each record individually to avoid UUID validation issues
-          for (const record of existingRecords) {
-            console.log(`Archiving record ID: ${record.id}`);
+          // Final attempt: archive each record individually
+          for (const record of stillActive) {
+            console.log(`Archiving individual record ID: ${record.id}`);
             
-            const { error: archiveError } = await supabase
+            const { error: individualError } = await supabase
               .from('group_scores')
-              .update({
+              .update({ 
                 record_type: 'H',
                 modified_at: new Date().toISOString()
-                // Do not include modified_by as it causes UUID validation issues
               })
               .eq('id', record.id);
               
-            if (archiveError) {
-              console.error(`Error archiving record ${record.id}:`, archiveError);
+            if (individualError) {
+              console.error(`Error archiving record ${record.id}:`, individualError);
             } else {
               console.log(`Successfully archived record ${record.id}`);
             }
           }
-        } else {
-          console.log('No existing records to archive');
         }
-        
-        // Add a small delay to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Create the new score with record_type 'C'
         console.log('Creating new score');
