@@ -38,46 +38,69 @@ export const useScoreMutation = () => {
       console.log(`Starting score save for user ${userId}, group ${score.groupId}`);
       
       try {
-        // First, get all existing scores for this group and tournament with record_type = 'C'
-        const { data: existingScores, error: fetchError } = await supabase
+        // First archive all existing scores for this group and tournament
+        console.log(`Archiving existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
+        
+        // Use a simple, direct SQL UPDATE to archive all existing scores for this group and tournament
+        const archiveSql = `
+          UPDATE public.group_scores 
+          SET record_type = 'H', 
+              modified_at = NOW(), 
+              modified_by = '${userId}'
+          WHERE group_id = ${score.groupId} 
+          AND tournament_id = ${score.tournamentId}
+          AND record_type = 'C'
+        `;
+        
+        console.log('Executing archive SQL:', archiveSql);
+        
+        // Execute the direct SQL update
+        const { error: archiveError } = await supabase.rpc('execute_sql', { 
+          sql_command: archiveSql 
+        });
+        
+        if (archiveError) {
+          console.error('Error archiving existing scores:', archiveError);
+          throw new Error(`Error archiving existing scores: ${archiveError.message}`);
+        }
+        
+        // Wait a short time for the database to process the archive operation
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Verify all records were archived by checking if any 'C' records remain
+        const { data: remainingActive, error: checkError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
           
-        if (fetchError) {
-          console.error('Error fetching existing scores:', fetchError);
-          throw fetchError;
-        }
-        
-        console.log(`Found ${existingScores?.length || 0} existing scores to archive`);
-        
-        if (existingScores && existingScores.length > 0) {
-          // Direct SQL update - simplest and most reliable approach to archive scores
-          const sqlCommand = `
-            UPDATE public.group_scores 
-            SET record_type = 'H', 
-                modified_at = NOW(), 
-                modified_by = '${userId}'
-            WHERE group_id = ${score.groupId} 
-            AND tournament_id = ${score.tournamentId}
-            AND record_type = 'C'
-          `;
+        if (checkError) {
+          console.error('Error checking for remaining active records:', checkError);
+        } else if (remainingActive && remainingActive.length > 0) {
+          console.warn(`Archive operation partially succeeded: ${remainingActive.length} records still active`);
+          console.log('IDs of records that failed to archive:', remainingActive.map(r => r.id).join(', '));
           
-          console.log('Archiving existing scores with SQL command:', sqlCommand);
-          
-          // Execute the SQL command
-          const { error: archiveError } = await supabase.rpc('execute_sql', { 
-            sql_command: sqlCommand 
-          });
-          
-          if (archiveError) {
-            console.error('Error archiving scores with SQL:', archiveError);
-            throw archiveError;
+          // Try to archive each remaining record individually
+          for (const record of remainingActive) {
+            const singleArchiveSql = `
+              UPDATE public.group_scores 
+              SET record_type = 'H', 
+                  modified_at = NOW(), 
+                  modified_by = '${userId}'
+              WHERE id = ${record.id}
+            `;
+            
+            const { error: singleError } = await supabase.rpc('execute_sql', { 
+              sql_command: singleArchiveSql 
+            });
+            
+            if (singleError) {
+              console.error(`Error archiving record ${record.id}:`, singleError);
+            }
           }
-          
-          console.log('Successfully archived existing scores');
+        } else {
+          console.log('Successfully archived all existing scores');
         }
       } catch (archiveError) {
         console.error('Exception during archive operation:', archiveError);
