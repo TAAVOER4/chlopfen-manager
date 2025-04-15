@@ -1,3 +1,4 @@
+
 export function isAdminId(id: string): boolean {
   // Check if the ID is for an admin user
   // This is a placeholder implementation - in a real app,
@@ -19,4 +20,10 @@ export function normalizeUuid(id: string): string {
   
   // Otherwise just return as is, the database query will handle validation
   return id;
+}
+
+export function isValidUuid(id: string): boolean {
+  // Basic check for UUID format
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidPattern.test(id);
 }

@@ -1,4 +1,3 @@
-
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
@@ -107,73 +106,60 @@ export class GroupScoreService extends BaseScoreService {
     try {
       const supabase = this.checkSupabaseClient();
       
-      // First try to find a valid UUID
-      let judgeUuid = judgeId;
-      let foundValidId = false;
+      console.log(`Starting enhanced archive operation for group ${groupId}, tournament ${tournamentId}`);
       
-      console.log(`Attempting to archive scores for group ${groupId}, original judge ID: ${judgeId}`);
-      
-      try {
-        // Check if the judgeId is already a valid UUID format
-        if (judgeId.includes('-') && judgeId.length === 36) {
-          console.log('Judge ID appears to be in UUID format, using as is');
-          foundValidId = true;
-        } 
-        // If not, try to find the user by numeric ID
-        else if (/^\d+$/.test(judgeId)) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', judgeId)
-            .limit(1);
-          
-          if (!userError && userData && userData.length > 0) {
-            judgeUuid = userData[0].id;
-            console.log(`Found judge UUID from numeric ID: ${judgeUuid}`);
-            foundValidId = true;
-          }
-        }
-        
-        // If we still haven't found a valid ID, try to get any judge as a fallback
-        if (!foundValidId) {
-          console.log('Could not find specific judge ID, looking for any valid judge');
-          const { data: validJudge, error: judgeError } = await supabase
-            .from('users')
-            .select('id')
-            .limit(1);
-            
-          if (!judgeError && validJudge && validJudge.length > 0) {
-            judgeUuid = validJudge[0].id;
-            console.log(`Using fallback judge UUID: ${judgeUuid}`);
-            foundValidId = true;
-          }
-        }
-      } catch (lookupError) {
-        console.error('Error during user lookup:', lookupError);
-        // Continue with best effort
-      }
-      
-      if (!foundValidId) {
-        console.error('Could not find a valid UUID for archiving, operation may fail');
-      }
-      
-      console.log(`Archiving scores for group ${groupId}, using judge ID: ${judgeUuid}`);
-      
-      // Direct update to archive existing scores
-      const { error } = await supabase
+      // Direct update to archive ALL existing scores for this group in this tournament,
+      // regardless of judge ID to prevent duplicates
+      const { error, count } = await supabase
         .from('group_scores')
         .update({ 
           record_type: 'H',
-          modified_at: new Date().toISOString(),
-          modified_by: judgeUuid
+          modified_at: new Date().toISOString()
         })
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C')
+        .select('count');
+        
+      if (error) {
+        console.error('Error during archive operation:', error);
+        return false;
+      }
+      
+      console.log(`Successfully archived ${count || 'unknown number of'} records`);
+      
+      // Double-check to see if any records remain unarchived
+      const { data: remaining, error: checkError } = await supabase
+        .from('group_scores')
+        .select('id')
         .eq('group_id', groupId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
-      if (error) {
-        console.error('Error archiving scores:', error);
+      if (checkError) {
+        console.error('Error checking for remaining active records:', checkError);
         return false;
+      }
+      
+      if (remaining && remaining.length > 0) {
+        console.warn(`${remaining.length} records still active after archive operation, attempting individual updates`);
+        
+        // Try individual updates as a fallback
+        for (const record of remaining) {
+          console.log(`Archiving individual record ID: ${record.id}`);
+          
+          const { error: individualError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString()
+            })
+            .eq('id', record.id);
+            
+          if (individualError) {
+            console.error('Error archiving individual record:', individualError);
+          }
+        }
       }
       
       return true;
@@ -259,10 +245,11 @@ export class GroupScoreService extends BaseScoreService {
       
       console.log(`Using judge UUID for DB: ${judgeUuid}`);
       
-      // Archive any existing scores first - but don't filter by judge_id to avoid conflicts
+      // Archive any existing scores first - but explicitly not filter by judge_id 
+      // to avoid conflicts with multiple current records
       await this.forceArchiveScores(
         score.groupId,
-        judgeUuid,
+        String(score.judgeId),
         score.tournamentId
       );
 
