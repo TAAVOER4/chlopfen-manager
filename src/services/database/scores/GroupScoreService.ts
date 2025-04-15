@@ -1,8 +1,9 @@
+
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
 import { GroupScoreDbService } from './GroupScoreDbService';
-import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid, logIdType } from './utils/ValidationUtils';
 import { supabase } from '@/lib/supabase';
 
 export class GroupScoreService extends BaseScoreService {
@@ -106,11 +107,11 @@ export class GroupScoreService extends BaseScoreService {
     try {
       const supabase = this.checkSupabaseClient();
       
-      console.log(`Starting enhanced archive operation for group ${groupId}, tournament ${tournamentId}`);
+      console.log(`Starting aggressive archive operation for group ${groupId}, tournament ${tournamentId}`);
+      logIdType(judgeId);
       
-      // Direct update to archive ALL existing scores for this group in this tournament,
-      // regardless of judge ID to prevent duplicates
-      const { error, count } = await supabase
+      // STEP 1: First try the most aggressive approach - archive ALL scores for this group in this tournament
+      const { error: globalArchiveError, count: globalArchiveCount } = await supabase
         .from('group_scores')
         .update({ 
           record_type: 'H',
@@ -118,17 +119,18 @@ export class GroupScoreService extends BaseScoreService {
         })
         .eq('group_id', groupId)
         .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C')
-        .select('count');
+        .eq('record_type', 'C');
         
-      if (error) {
-        console.error('Error during archive operation:', error);
-        return false;
+      if (globalArchiveError) {
+        console.error('Error during global archive operation:', globalArchiveError);
+      } else {
+        console.log(`Successfully archived ${globalArchiveCount || 'unknown number of'} records globally`);
       }
       
-      console.log(`Successfully archived ${count || 'unknown number of'} records`);
+      // STEP 2: Add delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Double-check to see if any records remain unarchived
+      // STEP 3: Double-check to see if any records remain unarchived
       const { data: remaining, error: checkError } = await supabase
         .from('group_scores')
         .select('id')
@@ -144,7 +146,7 @@ export class GroupScoreService extends BaseScoreService {
       if (remaining && remaining.length > 0) {
         console.warn(`${remaining.length} records still active after archive operation, attempting individual updates`);
         
-        // Try individual updates as a fallback
+        // STEP 4: Try individual updates for any remaining records
         for (const record of remaining) {
           console.log(`Archiving individual record ID: ${record.id}`);
           
@@ -159,7 +161,27 @@ export class GroupScoreService extends BaseScoreService {
           if (individualError) {
             console.error('Error archiving individual record:', individualError);
           }
+          
+          // Add a small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
+      }
+      
+      // STEP 5: Final verification
+      const { data: finalCheck, error: finalCheckError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (finalCheckError) {
+        console.error('Error during final verification:', finalCheckError);
+      } else if (finalCheck && finalCheck.length > 0) {
+        console.warn(`Archive operation partially failed: ${finalCheck.length} records still active`);
+        return false;
+      } else {
+        console.log('Successfully archived all records for this group and tournament');
       }
       
       return true;

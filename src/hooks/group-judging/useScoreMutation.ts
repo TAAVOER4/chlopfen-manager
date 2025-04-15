@@ -4,6 +4,7 @@ import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
+import { supabase } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -24,31 +25,35 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Archive scores mutation - separate from the save operation
-  const archiveScoresMutation = useMutation({
-    mutationFn: async ({ groupId, tournamentId }: { groupId: number, tournamentId: number }) => {
-      if (!currentUser?.id) {
-        throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
+  // Direct database operation to archive scores
+  const forceDirectArchiveOperation = async (groupId: number, tournamentId: number) => {
+    if (!currentUser?.id) return false;
+    
+    console.log(`Performing direct archive operation for group ${groupId}, tournament ${tournamentId}`);
+    
+    try {
+      // Use a direct SQL update to ensure all scores are archived
+      const { error } = await supabase
+        .from('group_scores')
+        .update({ 
+          record_type: 'H',
+          modified_at: new Date().toISOString()
+        })
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+      
+      if (error) {
+        console.error('Error during direct archive operation:', error);
+        return false;
       }
       
-      console.log(`Explicitly archiving scores for group ${groupId}, tournament ${tournamentId}`);
-      
-      // First try to use a separate archiving operation
-      const archived = await GroupScoreService.forceArchiveScores(
-        groupId,
-        String(currentUser.id),
-        tournamentId
-      );
-      
-      console.log(`Archive operation result: ${archived ? 'success' : 'failed'}`);
-      
-      return archived;
-    },
-    onError: (error) => {
-      console.error('Error during archive operation:', error);
-      // Don't show toast for archive errors, just log them
+      return true;
+    } catch (error) {
+      console.error('Exception during direct archive operation:', error);
+      return false;
     }
-  });
+  };
 
   // Save score mutation
   const saveScoreMutation = useMutation({
@@ -64,18 +69,14 @@ export const useScoreMutation = () => {
 
       console.log('Starting score save process...');
       
-      // First explicitly archive existing scores
-      try {
-        await archiveScoresMutation.mutateAsync({
-          groupId: score.groupId,
-          tournamentId: score.tournamentId
-        });
-      } catch (archiveError) {
-        console.error('Error during explicit archive step:', archiveError);
-        // Continue with creation anyway
-      }
+      // First perform direct database archive operation
+      const archiveSuccess = await forceDirectArchiveOperation(score.groupId, score.tournamentId);
+      console.log(`Direct archive operation result: ${archiveSuccess ? 'success' : 'failed'}`);
       
-      // Create the new score
+      // Short delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Then create the new score
       return await GroupScoreService.createGroupScore(scoreWithUser);
     },
     onSuccess: () => {
@@ -98,7 +99,6 @@ export const useScoreMutation = () => {
 
   return {
     saveScoreMutation,
-    archiveScoresMutation,
     existingScores,
     refetchScores
   };

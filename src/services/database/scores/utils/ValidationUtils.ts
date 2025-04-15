@@ -27,3 +27,19 @@ export function isValidUuid(id: string): boolean {
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidPattern.test(id);
 }
+
+// Function to help debug what type of ID we're dealing with
+export function logIdType(id: any): void {
+  console.log(`ID Value: ${id}`);
+  console.log(`ID Type: ${typeof id}`);
+  
+  if (typeof id === 'string') {
+    if (id.includes('-') && id.length === 36) {
+      console.log('Appears to be a UUID format');
+    } else if (/^\d+$/.test(id)) {
+      console.log('Appears to be a numeric ID');
+    } else {
+      console.log('Unknown string format');
+    }
+  }
+}
