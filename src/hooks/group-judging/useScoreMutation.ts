@@ -34,7 +34,10 @@ export const useScoreMutation = () => {
         judgeId: String(currentUser.id)
       };
       
-      return await GroupScoreService.createGroupScore(scoreWithUser);
+      console.log('Saving score with data:', scoreWithUser);
+      const result = await GroupScoreService.createGroupScore(scoreWithUser);
+      console.log('Score saved successfully:', result);
+      return result;
     },
     onSuccess: () => {
       refetchScores();

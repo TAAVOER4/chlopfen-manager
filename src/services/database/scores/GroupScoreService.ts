@@ -49,9 +49,6 @@ export class GroupScoreService extends BaseScoreService {
       }
 
       const originalJudgeId = String(score.judgeId);
-      const tournamentId = typeof score.tournamentId === 'string' 
-        ? parseInt(score.tournamentId, 10) 
-        : score.tournamentId;
       
       // Ensure numeric fields have values
       const whipStrikes = score.whipStrikes ?? 0;

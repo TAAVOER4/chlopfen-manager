@@ -11,34 +11,29 @@ export class GroupScoreDbService extends BaseScoreService {
       const normalizedJudgeId = normalizeUuid(judgeId);
       const normalizedModifiedBy = modifiedBy ? normalizeUuid(modifiedBy) : null;
       
-      // First, check if an active record already exists
-      const { data: existingScores } = await supabase
+      console.log('Creating score with normalized judge ID:', normalizedJudgeId);
+      console.log('Score data:', score);
+      
+      // First, archive ALL existing active scores for this group/judge/tournament combination
+      const { error: historyError } = await supabase
         .from('group_scores')
-        .select('*')
+        .update({
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedModifiedBy
+        })
         .eq('group_id', score.groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
         .eq('record_type', 'C');
       
-      // Historize all existing scores
-      if (existingScores && existingScores.length > 0) {
-        for (const existingScore of existingScores) {
-          // Update to set as historical
-          const { error: historyError } = await supabase
-            .from('group_scores')
-            .update({
-              record_type: 'H',
-              modified_at: new Date().toISOString(),
-              modified_by: normalizedModifiedBy
-            })
-            .eq('id', existingScore.id);
-          
-          if (historyError) {
-            console.error('Error historizing group score:', historyError);
-            throw new Error(`Fehler beim Historisieren der Gruppenbewertung: ${historyError.message}`);
-          }
-        }
+      if (historyError) {
+        console.error('Error historizing group scores:', historyError);
+        throw new Error(`Fehler beim Historisieren der Gruppenbewertung: ${historyError.message}`);
       }
+      
+      // Wait a moment to ensure consistency in the database
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Create a new current record
       const { data: newScore, error: insertError } = await supabase
