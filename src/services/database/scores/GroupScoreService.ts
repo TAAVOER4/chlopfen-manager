@@ -1,4 +1,3 @@
-
 import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
@@ -78,68 +77,42 @@ export class GroupScoreService extends BaseScoreService {
       throw error;
     }
   }
-  
-  // Force archive all existing scores
+
   static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
     try {
-      return await GroupScoreDbService.forceArchiveExistingScores(groupId, judgeId, tournamentId);
+      const supabase = this.checkSupabaseClient();
+      const normalizedJudgeId = normalizeUuid(judgeId);
+      
+      console.log(`Archiving scores for group ${groupId}, judge ${normalizedJudgeId}`);
+      
+      // Direct update to archive existing scores
+      const { error } = await supabase
+        .from('group_scores')
+        .update({ 
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedJudgeId
+        })
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (error) {
+        console.error('Error archiving scores:', error);
+        return false;
+      }
+      
+      return true;
     } catch (error) {
       console.error('Error in forceArchiveScores:', error);
       return false;
     }
   }
-  
-  // Archive a single score by ID
-  static async archiveSingleScore(scoreId: number): Promise<boolean> {
-    try {
-      console.log(`Archiving single score with ID: ${scoreId}`);
-      
-      const supabase = this.checkSupabaseClient();
-      
-      // Archive a single score by ID
-      const { error } = await supabase
-        .from('group_scores')
-        .update({
-          record_type: 'H',
-          modified_at: new Date().toISOString()
-        })
-        .eq('id', scoreId)
-        .eq('record_type', 'C');
-        
-      if (error) {
-        console.error(`Error archiving score ${scoreId}:`, error);
-        throw new Error(`Fehler beim Historisieren der Bewertung ID=${scoreId}: ${error.message}`);
-      }
-      
-      // Verify the score was properly archived
-      const { data, error: verifyError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('id', scoreId)
-        .eq('record_type', 'C');
-        
-      if (verifyError) {
-        console.error(`Error verifying score ${scoreId} archive:`, verifyError);
-        return false;
-      }
-      
-      if (data && data.length > 0) {
-        console.error(`Failed to archive score ${scoreId}.`);
-        return false;
-      }
-      
-      console.log(`Successfully archived score ${scoreId}`);
-      return true;
-    } catch (error) {
-      console.error(`Error in archiveSingleScore for ID ${scoreId}:`, error);
-      throw error;
-    }
-  }
 
-  // Create or update a group score
-  static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
+  static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
-      console.log('Creating or updating group score:', score);
+      console.log('Creating new group score:', score);
       
       ScoreValidationService.validateScoreData(score);
       
@@ -148,73 +121,48 @@ export class GroupScoreService extends BaseScoreService {
       }
 
       const originalJudgeId = String(score.judgeId);
+      const normalizedJudgeId = normalizeUuid(originalJudgeId);
       
-      // Ensure numeric fields have values
-      const whipStrikes = score.whipStrikes ?? 0;
-      const rhythm = score.rhythm ?? 0;
-      const tempo = score.tempo ?? 0;
+      const supabase = this.checkSupabaseClient();
+
+      // Create new current record
+      const { data: newScore, error: insertError } = await supabase
+        .from('group_scores')
+        .insert([{
+          group_id: score.groupId,
+          judge_id: normalizedJudgeId,
+          whip_strikes: score.whipStrikes,
+          rhythm: score.rhythm,
+          tempo: score.tempo,
+          time: score.time,
+          tournament_id: score.tournamentId,
+          record_type: 'C',
+          modified_by: normalizedJudgeId,
+          modified_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
       
-      // Handle admin users
-      if (isAdminId(originalJudgeId)) {
-        console.log('Admin user detected, getting valid judge ID');
-        const validJudgeId = await GroupScoreDbService.getValidJudgeId();
-        return await this.createNewScore({
-          ...score,
-          whipStrikes,
-          rhythm,
-          tempo
-        }, validJudgeId, originalJudgeId);
+      if (insertError) {
+        console.error('Error creating new group score:', insertError);
+        throw new Error(`Fehler beim Erstellen der Gruppenbewertung: ${insertError.message}`);
       }
       
-      // Regular judge case - use normalized UUID
-      console.log('Regular judge case, normalizing UUID');
-      const normalizedJudgeId = normalizeUuid(originalJudgeId);
-      return await this.createNewScore({
-        ...score,
-        whipStrikes,
-        rhythm,
-        tempo
-      }, normalizedJudgeId, originalJudgeId);
-      
-    } catch (error) {
-      console.error('Error in createOrUpdateGroupScore:', error);
-      throw error;
-    }
-  }
-  
-  // Create a new score
-  private static async createNewScore(
-    score: Omit<GroupScore, 'id'>, 
-    dbJudgeId: string, 
-    originalJudgeId: string
-  ): Promise<GroupScore> {
-    try {
-      console.log('Creating new score with judge ID:', dbJudgeId);
-      const data = await GroupScoreDbService.createScore(score, dbJudgeId, originalJudgeId);
+      console.log('Successfully created new score:', newScore);
       
       return {
-        id: data.id,
-        groupId: data.group_id,
+        id: newScore.id,
+        groupId: newScore.group_id,
         judgeId: originalJudgeId,
-        whipStrikes: data.whip_strikes,
-        rhythm: data.rhythm,
-        tempo: data.tempo,
-        time: data.time,
-        tournamentId: data.tournament_id
+        whipStrikes: newScore.whip_strikes,
+        rhythm: newScore.rhythm,
+        tempo: newScore.tempo,
+        time: newScore.time,
+        tournamentId: newScore.tournament_id
       };
     } catch (error) {
-      console.error('Error creating new score:', error);
+      console.error('Error in createGroupScore:', error);
       throw error;
     }
-  }
-
-  // Create a new group score
-  static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
-    return this.createOrUpdateGroupScore(score);
-  }
-
-  // Update an existing group score
-  static async updateGroupScore(score: GroupScore): Promise<GroupScore> {
-    return this.createOrUpdateGroupScore(score);
   }
 }

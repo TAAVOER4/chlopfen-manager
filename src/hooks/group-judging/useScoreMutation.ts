@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -31,9 +30,6 @@ export const useScoreMutation = () => {
         throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
       }
       
-      console.log(`Starting archiving process for group ${groupId}`);
-      
-      // Force archive with direct DB call
       return await GroupScoreService.forceArchiveScores(
         groupId,
         String(currentUser.id),
@@ -54,18 +50,21 @@ export const useScoreMutation = () => {
         judgeId: String(currentUser.id)
       };
 
-      console.log('Starting score save process with archiving...');
-      console.log('Score data:', scoreWithUser);
-
-      try {
-        // Create the new score directly - the DB service will handle archiving
-        const newScore = await GroupScoreService.createGroupScore(scoreWithUser);
-        console.log('Successfully created new score:', newScore);
-        return newScore;
-      } catch (error) {
-        console.error('Error creating new score:', error);
-        throw new Error(`Fehler beim Erstellen der neuen Bewertung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      console.log('Starting score save process...');
+      
+      // First archive existing scores
+      const archiveResult = await GroupScoreService.forceArchiveScores(
+        score.groupId,
+        String(currentUser.id),
+        score.tournamentId
+      );
+      
+      if (!archiveResult) {
+        throw new Error('Fehler beim Archivieren der vorhandenen Bewertungen');
       }
+
+      // Create the new score
+      return await GroupScoreService.createGroupScore(scoreWithUser);
     },
     onSuccess: () => {
       refetchScores();
