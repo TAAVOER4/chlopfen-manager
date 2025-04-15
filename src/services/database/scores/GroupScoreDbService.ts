@@ -31,45 +31,7 @@ export class GroupScoreDbService extends BaseScoreService {
       
       if (checkActive && checkActive.length > 0) {
         console.error('Found existing active scores that were not archived:', checkActive.length);
-        
-        // Try one last time to archive all active records
-        console.log('Making one last attempt to archive these records');
-        for (const activeRecord of checkActive) {
-          console.log(`Attempting to archive record ${activeRecord.id}`);
-          
-          const { error: archiveError } = await supabase
-            .from('group_scores')
-            .update({ 
-              record_type: 'H',
-              modified_at: new Date().toISOString(),
-              modified_by: normalizedJudgeId
-            })
-            .eq('id', activeRecord.id);
-            
-          if (archiveError) {
-            console.error(`Failed to archive record ${activeRecord.id}:`, archiveError);
-          }
-        }
-        
-        // Check again
-        const { data: recheckActive, error: recheckError } = await supabase
-          .from('group_scores')
-          .select('id')
-          .eq('group_id', score.groupId)
-          .eq('judge_id', normalizedJudgeId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
-        
-        if (recheckError) {
-          console.error('Error re-checking active records:', recheckError);
-        }
-        
-        if (recheckActive && recheckActive.length > 0) {
-          console.error('Still found active records after final archiving attempt:', recheckActive.length);
-          throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
-        }
-        
-        console.log('Successfully archived all remaining records in final attempt');
+        throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
       }
       
       console.log('No active records found, proceeding with score creation');
@@ -134,32 +96,23 @@ export class GroupScoreDbService extends BaseScoreService {
       
       console.log(`Found ${activeRecords.length} active records to archive`);
       
-      // New approach: archive records individually instead of in bulk
-      let successCount = 0;
-      
-      for (const record of activeRecords) {
-        console.log(`Archiving record ID: ${record.id}`);
-        
-        const { error } = await supabase
-          .from('group_scores')
-          .update({ 
-            record_type: 'H',
-            modified_at: new Date().toISOString(),
-            modified_by: normalizedJudgeId
-          })
-          .eq('id', record.id);
+      // Use direct, single UPDATE statement for all records at once
+      const { error } = await supabase
+        .from('group_scores')
+        .update({ 
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedJudgeId
+        })
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
           
-        if (error) {
-          console.error(`Error archiving record ${record.id}:`, error);
-        } else {
-          successCount++;
-          
-          // Add a small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+      if (error) {
+        console.error('Error archiving records in bulk:', error);
+        throw new Error(`Error archiving records: ${error.message}`);
       }
-      
-      console.log(`Successfully archived ${successCount} of ${activeRecords.length} records`);
       
       // Verify all records were archived
       const { data: remainingActive, error: verifyError } = await supabase
@@ -177,7 +130,51 @@ export class GroupScoreDbService extends BaseScoreService {
       
       if (remainingActive && remainingActive.length > 0) {
         console.error(`Failed to archive all records: ${remainingActive.length} still active`);
-        throw new Error('Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden.');
+        
+        // Try individual record archiving as a fallback
+        console.log('Falling back to individual record archiving');
+        let successCount = 0;
+        
+        for (const record of remainingActive) {
+          console.log(`Archiving individual record ID: ${record.id}`);
+          
+          const { error: individualError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString(),
+              modified_by: normalizedJudgeId
+            })
+            .eq('id', record.id);
+            
+          if (!individualError) {
+            successCount++;
+          }
+          
+          // Add a small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        console.log(`Individually archived ${successCount} of ${remainingActive.length} records`);
+        
+        // Final verification
+        const { data: finalCheck, error: finalCheckError } = await supabase
+          .from('group_scores')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('judge_id', normalizedJudgeId)
+          .eq('tournament_id', tournamentId)
+          .eq('record_type', 'C');
+          
+        if (finalCheckError) {
+          console.error('Error during final verification:', finalCheckError);
+          return false;
+        }
+        
+        if (finalCheck && finalCheck.length > 0) {
+          console.error(`Final archiving attempt failed: ${finalCheck.length} records still active`);
+          return false;
+        }
       }
       
       console.log('Successfully archived all records');

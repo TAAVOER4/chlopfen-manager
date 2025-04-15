@@ -23,13 +23,39 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
+  // Add a separate mutation just for archiving scores
+  const archiveScoresMutation = useMutation({
+    mutationFn: async ({ groupId, tournamentId }: { groupId: number, tournamentId: number }) => {
+      if (!currentUser?.id) {
+        throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
+      }
+      
+      console.log('Starting archive operation for group:', groupId);
+      
+      // First, ensure all existing scores are archived
+      const success = await GroupScoreService.forceArchiveScores(
+        groupId, 
+        String(currentUser.id),
+        tournamentId
+      );
+      
+      console.log('Archive operation completed with result:', success);
+      
+      if (!success) {
+        throw new Error('Die vorhandenen Bewertungen konnten nicht historisiert werden.');
+      }
+      
+      return success;
+    }
+  });
+
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       if (!currentUser?.id) {
         throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
       }
       
-      console.log('Starting score mutation with a completely new approach');
+      console.log('Starting score mutation with two-step approach');
       
       // Create the score object with the current user's ID
       const scoreWithUser = {
@@ -38,59 +64,24 @@ export const useScoreMutation = () => {
       };
       
       try {
-        // Add clear log markers to track the flow
-        console.log('==== SCORE SAVE PROCESS START ====');
-        console.log('First step: Check if there are existing scores to archive');
+        // STEP 1: First, ensure all existing active scores are archived
+        console.log('STEP 1: Archiving all existing active scores');
+        await archiveScoresMutation.mutateAsync({
+          groupId: scoreWithUser.groupId,
+          tournamentId: scoreWithUser.tournamentId
+        });
         
-        // Step 1: First check if there are any active scores
-        const activeScores = await GroupScoreService.getActiveScoresForGroupAndJudge(
-          scoreWithUser.groupId, 
-          String(currentUser.id), 
-          scoreWithUser.tournamentId
-        );
+        // Add a delay to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        console.log(`Found ${activeScores.length} active scores to archive`);
-        
-        // Step 2: If there are active scores, archive them one by one
-        if (activeScores.length > 0) {
-          console.log('Archiving each existing score individually');
-          
-          for (const activeScore of activeScores) {
-            console.log(`Archiving score with ID: ${activeScore.id}`);
-            await GroupScoreService.archiveSingleScore(activeScore.id);
-            
-            // Add a small delay between operations to ensure database consistency
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-          
-          // Verify all scores were archived
-          const remainingScores = await GroupScoreService.getActiveScoresForGroupAndJudge(
-            scoreWithUser.groupId, 
-            String(currentUser.id), 
-            scoreWithUser.tournamentId
-          );
-          
-          if (remainingScores.length > 0) {
-            console.error('Failed to archive all scores:', remainingScores);
-            throw new Error('Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden.');
-          }
-          
-          console.log('All existing scores were successfully archived');
-          
-          // Wait a bit longer after archiving to ensure database consistency
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        // Step 3: Now that we've confirmed all scores are archived, create the new score
-        console.log('Creating new score after confirming no active scores exist');
+        // STEP 2: Create the new score after confirming archiving is complete
+        console.log('STEP 2: Creating new score');
         const result = await GroupScoreService.createGroupScore(scoreWithUser);
         
-        console.log('==== SCORE SAVE PROCESS COMPLETE ====');
-        console.log('Score saved successfully:', result);
+        console.log('Score save process completed successfully');
         return result;
       } catch (error) {
-        console.error('==== SCORE SAVE PROCESS FAILED ====');
-        console.error('Error in saveScoreMutation:', error);
+        console.error('Score save process failed:', error);
         throw error;
       }
     },
