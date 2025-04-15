@@ -37,7 +37,14 @@ export const useScoreMutation = () => {
       try {
         console.log('Saving score with data:', scoreWithUser);
         
-        // Attempt to save the score
+        // First attempt to forcefully archive any existing scores
+        await GroupScoreService.forceArchiveScores(
+          scoreWithUser.groupId, 
+          String(currentUser.id), 
+          scoreWithUser.tournamentId
+        );
+        
+        // Then attempt to save the score
         const result = await GroupScoreService.createGroupScore(scoreWithUser);
         
         console.log('Score saved successfully:', result);

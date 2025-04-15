@@ -14,44 +14,70 @@ export class GroupScoreDbService extends BaseScoreService {
       console.log('Creating score with normalized judge ID:', normalizedJudgeId);
       console.log('Score data:', score);
       
-      // First, check if any active records exist
-      const { data: existingScores, error: checkError } = await supabase
+      // First, archive all existing active records
+      console.log('Archiving existing scores...');
+      const { error: historyError } = await supabase
         .from('group_scores')
-        .select('id')
+        .update({
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedModifiedBy
+        })
         .eq('group_id', score.groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
         .eq('record_type', 'C');
-        
-      if (checkError) {
-        console.error('Error checking existing scores:', checkError);
-        throw new Error(`Error checking existing scores: ${checkError.message}`);
+      
+      if (historyError) {
+        console.error('Error historizing group scores:', historyError);
+        throw new Error(`Fehler beim Historisieren der Gruppenbewertung: ${historyError.message}`);
       }
       
-      // If records exist, archive them
-      if (existingScores && existingScores.length > 0) {
-        console.log('Found existing scores to archive:', existingScores.length);
+      // Wait to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Double-check that all records were archived
+      const { data: checkAfterHistory, error: recheckError } = await supabase
+        .from('group_scores')
+        .select('id, group_id, judge_id')
+        .eq('group_id', score.groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('record_type', 'C');
+          
+      if (recheckError) {
+        console.error('Error verifying history completion:', recheckError);
+        throw new Error(`Error verifying history completion: ${recheckError.message}`);
+      }
+      
+      if (checkAfterHistory && checkAfterHistory.length > 0) {
+        console.error('Failed to archive all existing scores:', checkAfterHistory.length, 'still active');
         
-        // Archive all existing active records
-        const { error: historyError } = await supabase
-          .from('group_scores')
-          .update({
-            record_type: 'H',
-            modified_at: new Date().toISOString(),
-            modified_by: normalizedModifiedBy
-          })
-          .eq('group_id', score.groupId)
-          .eq('judge_id', normalizedJudgeId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
+        // Force explicit deletion as a fallback mechanism
+        const idsToDelete = checkAfterHistory.map(record => record.id);
+        console.log('Attempting force update for these IDs:', idsToDelete);
         
-        if (historyError) {
-          console.error('Error historizing group scores:', historyError);
-          throw new Error(`Fehler beim Historisieren der Gruppenbewertung: ${historyError.message}`);
+        for (const record of checkAfterHistory) {
+          console.log(`Force archiving record: ID=${record.id}, Group=${record.group_id}, Judge=${record.judge_id}`);
+          
+          const { error: forcedUpdateError } = await supabase
+            .from('group_scores')
+            .update({
+              record_type: 'H',
+              modified_at: new Date().toISOString(),
+              modified_by: normalizedModifiedBy
+            })
+            .eq('id', record.id);
+            
+          if (forcedUpdateError) {
+            console.error(`Error forced archiving for ID ${record.id}:`, forcedUpdateError);
+          }
         }
         
-        // Verify that all records were archived
-        const { data: checkAfterHistory, error: recheckError } = await supabase
+        // Check one more time after forced updates
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { data: finalCheck, error: finalCheckError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
@@ -59,19 +85,18 @@ export class GroupScoreDbService extends BaseScoreService {
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
           
-        if (recheckError) {
-          console.error('Error verifying history completion:', recheckError);
-          throw new Error(`Error verifying history completion: ${recheckError.message}`);
+        if (finalCheckError) {
+          console.error('Error on final verification check:', finalCheckError);
+          throw new Error(`Error on final verification: ${finalCheckError.message}`);
         }
         
-        if (checkAfterHistory && checkAfterHistory.length > 0) {
-          console.error('Failed to archive all existing scores:', checkAfterHistory.length, 'still active');
-          throw new Error('Fehler: Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden.');
+        if (finalCheck && finalCheck.length > 0) {
+          console.error('Still failed to archive all records after forced updates:', finalCheck.length, 'records');
+          throw new Error('Fehler: Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden. Bitte versuchen Sie es später erneut.');
         }
-        
-        // Wait a moment to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      console.log('All existing scores successfully archived, proceeding with new score creation');
       
       // Create a new current record
       const { data: newScore, error: insertError } = await supabase

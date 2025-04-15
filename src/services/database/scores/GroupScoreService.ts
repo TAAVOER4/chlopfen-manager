@@ -115,4 +115,16 @@ export class GroupScoreService extends BaseScoreService {
   static async updateGroupScore(score: GroupScore): Promise<GroupScore> {
     return this.createOrUpdateGroupScore(score);
   }
+  
+  static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
+    try {
+      console.log(`Force archiving scores for group ${groupId}, judge ${judgeId}, tournament ${tournamentId}`);
+      // First, attempt to use the database service to archive scores
+      return await GroupScoreDbService.forceArchiveExistingScores(groupId, judgeId, tournamentId);
+    } catch (error) {
+      console.error('Error in forceArchiveScores:', error);
+      // Don't throw here - we want to continue with the score creation even if archiving fails
+      return false;
+    }
+  }
 }
