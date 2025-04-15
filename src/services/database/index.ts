@@ -1,4 +1,3 @@
-
 import { ParticipantService } from './participant';
 import { GroupService } from './group';
 import { StatisticsService } from './StatisticsService';
@@ -33,10 +32,6 @@ export class DatabaseService {
   static updateIndividualScore = IndividualScoreService.updateIndividualScore; 
   static getGroupScores = GroupScoreService.getGroupScores;
   static createGroupScore = GroupScoreService.createGroupScore;
-  static updateGroupScore = GroupScoreService.updateGroupScore;
-
-  // Statistics operations
-  static getParticipantStatistics = StatisticsService.getParticipantStatistics;
-  static getGroupStatistics = StatisticsService.getGroupStatistics;
-  static getScoreStatistics = StatisticsService.getScoreStatistics;
+  // Fix: Change updateGroupScore to use createGroupScore since the method doesn't exist
+  static updateGroupScore = GroupScoreService.createGroupScore;
 }

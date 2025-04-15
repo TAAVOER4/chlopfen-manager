@@ -1,4 +1,3 @@
-
 import { BaseGroupService } from './database/group/BaseGroupService';
 import { GroupQueryService } from './database/group/GroupQueryService';
 import { GroupMutationService } from './database/group/GroupMutationService';
@@ -85,6 +84,6 @@ export class DatabaseService {
   }
 
   static async updateGroupScore(scoreData: any) {
-    return GroupScoreService.updateGroupScore(scoreData);
+    return GroupScoreService.createGroupScore(scoreData);
   }
 }
