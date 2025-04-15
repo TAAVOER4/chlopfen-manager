@@ -14,74 +14,95 @@ export class GroupScoreDbService extends BaseScoreService {
       console.log('Creating score with normalized judge ID:', normalizedJudgeId);
       console.log('Score data:', score);
       
-      // First manually archive any existing active records to ensure none exist
-      console.log('Explicitly archiving any existing active records before creation...');
-      const { error: archiveError } = await supabase
-        .from('group_scores')
-        .update({ 
-          record_type: 'H',
-          modified_at: new Date().toISOString(),
-          modified_by: normalizedModifiedBy
-        })
-        .eq('group_id', score.groupId)
-        .eq('judge_id', normalizedJudgeId)
-        .eq('tournament_id', score.tournamentId)
-        .eq('record_type', 'C');
-        
-      if (archiveError) {
-        console.error('Error archiving existing records:', archiveError);
-        // Continue anyway as we'll check if any remain active
-      }
-      
-      // Double-check that all records were archived before creating a new one
-      console.log('Verifying no active records exist before creation...');
-      const { data: checkActive, error: checkError } = await supabase
+      // First manually check if any active records still exist
+      const { data: activeScores, error: checkError } = await supabase
         .from('group_scores')
         .select('id')
         .eq('group_id', score.groupId)
         .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
         .eq('record_type', 'C');
-          
+        
       if (checkError) {
-        console.error('Error checking for active records:', checkError);
+        console.error('Error checking for active scores:', checkError);
         throw new Error(`Error checking active records: ${checkError.message}`);
       }
       
-      if (checkActive && checkActive.length > 0) {
-        console.error('Found existing active scores that were not archived:', checkActive.length);
+      // If active scores exist, try to archive them directly with low-level operation
+      if (activeScores && activeScores.length > 0) {
+        console.log(`Found ${activeScores.length} active scores that need to be archived first`);
         
-        // One more attempt to force archive each record individually
-        for (const record of checkActive) {
-          console.log(`Attempting to force archive score ID ${record.id}`);
-          await supabase
-            .from('group_scores')
-            .update({ 
-              record_type: 'H',
-              modified_at: new Date().toISOString(),
-              modified_by: normalizedModifiedBy
-            })
-            .eq('id', record.id);
+        // Try archive with direct UPDATE statement first
+        try {
+          const { error: archiveError } = await supabase.rpc('force_archive_group_scores', {
+            p_group_id: score.groupId, 
+            p_judge_id: normalizedJudgeId, 
+            p_tournament_id: score.tournamentId,
+            p_modified_by: normalizedModifiedBy
+          });
             
-          // Small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 300));
+          if (archiveError) {
+            console.error('Error using RPC to archive scores:', archiveError);
+          } else {
+            console.log('Successfully used RPC function to archive scores');
+          }
+        } catch (rpcError) {
+          console.error('Exception during RPC archive call:', rpcError);
         }
         
-        // Final check
-        const { data: finalCheck } = await supabase
+        // Double check if any active records still exist
+        const { data: checkActive, error: recheckError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
           .eq('judge_id', normalizedJudgeId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
+            
+        if (recheckError) {
+          console.error('Error rechecking for active records:', recheckError);
+        }
+        
+        if (checkActive && checkActive.length > 0) {
+          console.error('Failed to archive all records via RPC. Falling back to direct updates.');
           
-        if (finalCheck && finalCheck.length > 0) {
-          throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
+          // Fall back to direct update statement
+          const { error: directUpdateError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString(),
+              modified_by: normalizedModifiedBy
+            })
+            .eq('group_id', score.groupId)
+            .eq('judge_id', normalizedJudgeId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C');
+            
+          if (directUpdateError) {
+            console.error('Error with direct update archiving:', directUpdateError);
+          }
+          
+          // Final check
+          const { data: finalCheck, error: finalCheckError } = await supabase
+            .from('group_scores')
+            .select('id')
+            .eq('group_id', score.groupId)
+            .eq('judge_id', normalizedJudgeId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C');
+            
+          if (finalCheckError) {
+            console.error('Error during final check:', finalCheckError);
+          }
+          
+          if (finalCheck && finalCheck.length > 0) {
+            throw new Error('Auch nach mehreren Versuchen konnten die vorhandenen Bewertungen nicht archiviert werden.');
+          }
         }
       }
       
-      console.log('No active records found, proceeding with score creation');
+      console.log('No remaining active records, proceeding with score creation');
       
       // Create a new current record
       const { data: newScore, error: insertError } = await supabase
@@ -143,7 +164,44 @@ export class GroupScoreDbService extends BaseScoreService {
       
       console.log(`Found ${activeRecords.length} active records to archive`);
       
+      // Try RPC function first if available
+      try {
+        const { error: rpcError } = await supabase.rpc('force_archive_group_scores', {
+          p_group_id: groupId, 
+          p_judge_id: normalizedJudgeId, 
+          p_tournament_id: tournamentId,
+          p_modified_by: normalizedJudgeId
+        });
+        
+        if (rpcError) {
+          console.error('Error using RPC to archive scores:', rpcError);
+          // Continue to fallback method
+        } else {
+          console.log('Successfully used RPC function to archive scores');
+          
+          // Verify all records were archived
+          const { data: afterRpc, error: verifyRpcError } = await supabase
+            .from('group_scores')
+            .select('id')
+            .eq('group_id', groupId)
+            .eq('judge_id', normalizedJudgeId)
+            .eq('tournament_id', tournamentId)
+            .eq('record_type', 'C');
+            
+          if (!verifyRpcError && (!afterRpc || afterRpc.length === 0)) {
+            console.log('RPC function successfully archived all records');
+            return true;
+          }
+          
+          console.log(`RPC function left ${afterRpc?.length || 0} records unarchived`);
+        }
+      } catch (rpcError) {
+        console.error('Exception during RPC archive call:', rpcError);
+      }
+      
       // Use direct, single UPDATE statement for all records at once
+      console.log('Falling back to direct UPDATE statement');
+      
       const { error } = await supabase
         .from('group_scores')
         .update({ 

@@ -39,7 +39,7 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
-  // Simplified method to get active scores
+  // Get active scores for a specific group and judge
   static async getActiveScoresForGroupAndJudge(
     groupId: number, 
     judgeId: string, 
@@ -79,70 +79,17 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
   
-  // This method will be used directly to force archive all existing scores
+  // Force archive all existing scores
   static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
     try {
-      console.log(`Force archiving scores for group ${groupId}, judge ${judgeId}, tournament ${tournamentId}`);
-      
-      // 1. Get all active scores
-      const activeScores = await this.getActiveScoresForGroupAndJudge(groupId, judgeId, tournamentId);
-      console.log(`Found ${activeScores.length} active scores to archive`);
-      
-      if (activeScores.length === 0) {
-        console.log('No active scores to archive');
-        return true; // Nothing to archive
-      }
-      
-      // 2. Archive each score individually with delay between operations
-      for (const score of activeScores) {
-        console.log(`Archiving score ID: ${score.id}`);
-        await this.archiveSingleScore(score.id);
-        // Add a small delay between operations
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      // 3. Verify all scores were archived
-      const remainingScores = await this.getActiveScoresForGroupAndJudge(groupId, judgeId, tournamentId);
-      
-      if (remainingScores.length > 0) {
-        console.error(`Failed to archive all scores. ${remainingScores.length} scores still active.`);
-        
-        // Try one last time with a direct DB call
-        const supabase = this.checkSupabaseClient();
-        const normalizedJudgeId = normalizeUuid(judgeId);
-        
-        const { error } = await supabase
-          .from('group_scores')
-          .update({ 
-            record_type: 'H',
-            modified_at: new Date().toISOString()
-          })
-          .eq('group_id', groupId)
-          .eq('judge_id', normalizedJudgeId)
-          .eq('tournament_id', tournamentId)
-          .eq('record_type', 'C');
-          
-        if (error) {
-          console.error('Error in final archive attempt:', error);
-          return false;
-        }
-        
-        // Final verification
-        const finalCheck = await this.getActiveScoresForGroupAndJudge(groupId, judgeId, tournamentId);
-        if (finalCheck.length > 0) {
-          console.error(`Final archiving failed. ${finalCheck.length} scores still active.`);
-          return false;
-        }
-      }
-      
-      console.log('Successfully archived all scores');
-      return true;
+      return await GroupScoreDbService.forceArchiveExistingScores(groupId, judgeId, tournamentId);
     } catch (error) {
       console.error('Error in forceArchiveScores:', error);
       return false;
     }
   }
   
+  // Archive a single score by ID
   static async archiveSingleScore(scoreId: number): Promise<boolean> {
     try {
       console.log(`Archiving single score with ID: ${scoreId}`);
@@ -189,6 +136,7 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
+  // Create or update a group score
   static async createOrUpdateGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     try {
       console.log('Creating or updating group score:', score);
@@ -234,6 +182,7 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
   
+  // Create a new score
   private static async createNewScore(
     score: Omit<GroupScore, 'id'>, 
     dbJudgeId: string, 
@@ -259,10 +208,12 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
+  // Create a new group score
   static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
     return this.createOrUpdateGroupScore(score);
   }
 
+  // Update an existing group score
   static async updateGroupScore(score: GroupScore): Promise<GroupScore> {
     return this.createOrUpdateGroupScore(score);
   }
