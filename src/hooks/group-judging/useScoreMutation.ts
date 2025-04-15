@@ -42,6 +42,8 @@ export const useScoreMutation = () => {
         console.log(`Archiving existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
         
         // Use our dedicated archive function which has multiple fallback mechanisms
+        // Ensure we pass the userId as modifiedBy parameter to track who made the change
+        console.log(`Using user ID ${userId} for the modifiedBy parameter in archive`);
         const archiveSuccess = await archiveGroupScores(
           score.groupId, 
           score.tournamentId, 
@@ -51,12 +53,12 @@ export const useScoreMutation = () => {
         console.log(`Archive operation result: ${archiveSuccess ? 'successful' : 'failed'}`);
         
         // Add a delay to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Verify archive operation
+        // Double-check archive operation
         const { data: checkArchive, error: checkError } = await supabase
           .from('group_scores')
-          .select('id')
+          .select('id, modified_by')
           .eq('group_id', score.groupId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
@@ -64,9 +66,9 @@ export const useScoreMutation = () => {
         if (checkError) {
           console.error('Error verifying archive operation:', checkError);
         } else if (checkArchive && checkArchive.length > 0) {
-          console.warn(`After archive operation, ${checkArchive.length} records still active. Will try again.`);
+          console.warn(`After archive operation, ${checkArchive.length} records still active. Will try direct update.`);
           
-          // Try one more direct update
+          // Try one more direct update with explicit userId
           const { error: finalArchiveError } = await supabase
             .from('group_scores')
             .update({ 
@@ -82,7 +84,7 @@ export const useScoreMutation = () => {
             console.error('Final archive attempt failed:', finalArchiveError);
           } else {
             console.log('Final archive attempt completed');
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         } else {
           console.log('Archive verification successful, no active records found');
@@ -122,7 +124,7 @@ export const useScoreMutation = () => {
       
       console.log(`Creating new score with judge UUID: ${judgeUuid}`);
       
-      // Create a new score
+      // Create a new score with explicit modifiedBy
       const { data, error } = await supabase
         .from('group_scores')
         .insert([{

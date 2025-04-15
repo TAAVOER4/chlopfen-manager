@@ -100,12 +100,43 @@ export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
 // Archive all scores for a specific group and tournament with explicit modified_by
 export const archiveGroupScores = async (groupId: number, tournamentId: number, modifiedBy: string): Promise<boolean> => {
   try {
-    console.log(`🔄 ARCHIVE OPERATION - Starting for group ${groupId}, tournament ${tournamentId}`);
+    console.log(`🔄 ARCHIVE OPERATION - Starting for group ${groupId}, tournament ${tournamentId}, modified by ${modifiedBy}`);
     
-    // First, try a direct update via the Supabase client - this is the most reliable approach
-    console.log("🔍 ARCHIVE - Method 1: Using direct Supabase update");
+    // Validate we have a non-empty modifiedBy
+    if (!modifiedBy || modifiedBy.trim() === '') {
+      console.error('❌ ARCHIVE ERROR: Empty modifiedBy parameter provided');
+      modifiedBy = 'system-fallback'; // Provide a fallback value
+    }
     
-    const { error: directError, data: directData } = await supabase
+    // STEP 1: First try a direct SQL update via the SQL RPC function
+    // This approach bypasses any API limitations and executes directly on the database
+    console.log("🔍 ARCHIVE - Method 1: Using direct SQL via RPC function");
+    
+    const sqlCommand = `
+      UPDATE public.group_scores 
+      SET record_type = 'H', 
+          modified_at = NOW(), 
+          modified_by = '${modifiedBy}'
+      WHERE group_id = ${groupId} 
+      AND tournament_id = ${tournamentId}
+      AND record_type = 'C'
+    `;
+    
+    const sqlSuccess = await executeRawSql(sqlCommand);
+    
+    if (sqlSuccess) {
+      console.log('✅ SQL RPC method successful');
+      // Add a delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } else {
+      console.error('❌ SQL RPC method failed');
+    }
+    
+    // STEP 2: Whether SQL succeeded or not, try a direct update via the Supabase client
+    // This is a backup approach
+    console.log("🔍 ARCHIVE - Method 2: Using direct Supabase update");
+    
+    const { error: directError } = await supabase
       .from('group_scores')
       .update({ 
         record_type: 'H', 
@@ -114,19 +145,17 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
       })
       .eq('group_id', groupId)
       .eq('tournament_id', tournamentId)
-      .eq('record_type', 'C')
-      .select(); // Add .select() to ensure we get the updated data
+      .eq('record_type', 'C');
     
     if (directError) {
       console.error('❌ Direct update failed:', directError);
     } else {
-      // Fix the TypeScript error by checking if directData is an array
-      console.log('✅ Direct update appears successful, affected records:', Array.isArray(directData) ? directData.length : 0);
+      console.log('✅ Direct update appears successful');
       // Add a delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // Double-check if any records still have record_type = 'C'
+    // STEP 3: Check if any records still have record_type = 'C'
     const { data: remainingRecords, error: checkError } = await supabase
       .from('group_scores')
       .select('id')
@@ -137,64 +166,48 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     if (checkError) {
       console.error('❌ Error checking remaining records:', checkError);
     } else if (remainingRecords && remainingRecords.length > 0) {
-      console.warn(`⚠️ Some records (${remainingRecords.length}) still have record_type='C'`);
+      console.warn(`⚠️ Some records (${remainingRecords.length}) still have record_type='C'. Attempting individual updates...`);
       
-      // Try a different approach - use raw SQL via the RPC function
-      console.log("🔍 ARCHIVE - Method 2: Using execute_sql RPC");
+      // Try updating each record individually
+      console.log("🔍 ARCHIVE - Method 3: Updating records individually");
       
-      const sqlCommand = `
-        UPDATE public.group_scores 
-        SET record_type = 'H', 
-            modified_at = NOW(), 
-            modified_by = '${modifiedBy}'
-        WHERE group_id = ${groupId} 
-        AND tournament_id = ${tournamentId}
-        AND record_type = 'C'
-      `;
-      
-      const sqlSuccess = await executeRawSql(sqlCommand);
-      
-      if (!sqlSuccess) {
-        console.error('❌ SQL RPC method failed');
+      for (const record of remainingRecords) {
+        console.log(`Archiving individual record ${record.id}`);
         
-        // Final attempt - update each record individually
-        console.log("🔍 ARCHIVE - Method 3: Updating records individually");
-        
-        const { data: individualRecords, error: fetchError } = await supabase
+        const { error: indivError } = await supabase
           .from('group_scores')
-          .select('id')
-          .eq('group_id', groupId)
-          .eq('tournament_id', tournamentId)
-          .eq('record_type', 'C');
+          .update({ 
+            record_type: 'H', 
+            modified_at: new Date().toISOString(),
+            modified_by: modifiedBy
+          })
+          .eq('id', record.id);
           
-        if (fetchError) {
-          console.error('❌ Error fetching records for individual update:', fetchError);
-        } else if (individualRecords && individualRecords.length > 0) {
-          console.log(`Attempting to update ${individualRecords.length} records individually`);
-          
-          for (const record of individualRecords) {
-            const { error: indivError } = await supabase
-              .from('group_scores')
-              .update({ 
-                record_type: 'H', 
-                modified_at: new Date().toISOString(),
-                modified_by: modifiedBy
-              })
-              .eq('id', record.id);
-              
-            if (indivError) {
-              console.error(`❌ Failed to update record ${record.id}:`, indivError);
-            } else {
-              console.log(`✅ Successfully updated record ${record.id}`);
-            }
-            
-            // Add a small delay between operations
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
+        if (indivError) {
+          console.error(`❌ Failed to update record ${record.id}:`, indivError);
+        } else {
+          console.log(`✅ Successfully updated record ${record.id}`);
         }
+        
+        // Add a small delay between operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Final verification after individual updates
+      const { data: afterIndividual, error: afterIndividualError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (afterIndividualError) {
+        console.error('❌ Error in final verification after individual updates:', afterIndividualError);
+      } else if (afterIndividual && afterIndividual.length > 0) {
+        console.error(`❌ CRITICAL: ${afterIndividual.length} records still active after all attempts`);
+        return false;
       } else {
-        console.log('✅ SQL RPC method successful');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        console.log('✅ All records successfully archived after individual updates');
       }
     } else {
       console.log('✅ All records successfully archived');
