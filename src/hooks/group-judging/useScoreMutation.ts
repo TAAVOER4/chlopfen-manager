@@ -32,90 +32,96 @@ export const useScoreMutation = () => {
         throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
       }
 
+      // Make sure we have the user ID available for debugging
+      const userId = String(currentUser.id);
+      console.log(`🔍 SAVE SCORE - Starting save process for user ${userId}`);
+      console.log('Score data to save:', score);
+
       const scoreWithUser = {
         ...score,
-        judgeId: String(currentUser.id)
+        judgeId: userId
       };
-
-      console.log('Starting score save process...');
       
-      // First, archive all existing scores for this group and tournament
-      // Pass the current user ID to be used for modified_by
+      // Step 1: Archive all existing scores for this group and tournament
+      console.log(`🔍 SAVE SCORE - Step 1: Archiving existing scores for group ${score.groupId}, tournament ${score.tournamentId}`);
+      
+      // Call archiveGroupScores with the current user ID for modified_by
       const archiveSuccess = await archiveGroupScores(
         score.groupId, 
         score.tournamentId,
-        String(currentUser.id)
+        userId // Explicitly pass user ID for modified_by
       );
       
       if (!archiveSuccess) {
-        console.warn('Could not archive scores using archiveGroupScores, trying direct update');
+        console.warn('⚠️ Could not archive scores using archiveGroupScores function');
+        console.log('🔍 SAVE SCORE - Attempting additional direct record update as fallback');
         
-        // Try a direct update as fallback
-        const { error: updateError } = await supabase
-          .from('group_scores')
-          .update({ 
-            record_type: 'H',
-            modified_at: new Date().toISOString(),
-            modified_by: String(currentUser.id)
-          })
-          .eq('group_id', score.groupId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
+        try {
+          // Log the current state before update
+          const { data: beforeUpdate } = await supabase
+            .from('group_scores')
+            .select('*')
+            .eq('group_id', score.groupId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C');
+            
+          console.log('Records before update:', beforeUpdate);
           
-        if (updateError) {
-          console.error('Error updating existing scores:', updateError);
-          throw new Error('Fehler beim Archivieren der bestehenden Bewertungen');
+          // Try direct SQL command with explicit values
+          const sqlCommand = `
+            UPDATE public.group_scores 
+            SET record_type = 'H', 
+                modified_at = NOW(), 
+                modified_by = '${userId}'
+            WHERE group_id = ${score.groupId} 
+            AND tournament_id = ${score.tournamentId}
+            AND record_type = 'C'
+          `;
+          
+          const { data: sqlResult, error: sqlError } = await supabase.rpc('execute_sql', { 
+            sql_command: sqlCommand 
+          });
+          
+          if (sqlError) {
+            console.error('❌ Error with SQL command:', sqlError);
+          } else {
+            console.log('✅ SQL command executed:', sqlResult);
+          }
+          
+          // Check the state after update
+          const { data: afterUpdate } = await supabase
+            .from('group_scores')
+            .select('*')
+            .eq('group_id', score.groupId)
+            .eq('tournament_id', score.tournamentId)
+            .eq('record_type', 'C');
+            
+          console.log('Records after update:', afterUpdate);
+        } catch (directError) {
+          console.error('❌ Error in direct SQL update:', directError);
         }
       }
       
       // Add delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('🔍 SAVE SCORE - Waiting for database consistency...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Verify that records were actually archived
-      const { data: activeRecords, error: checkError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('group_id', score.groupId)
-        .eq('tournament_id', score.tournamentId)
-        .eq('record_type', 'C');
-        
-      if (checkError) {
-        console.error('Error checking archived records:', checkError);
-      } else if (activeRecords && activeRecords.length > 0) {
-        console.warn(`Archive verification failed: ${activeRecords.length} records still active`);
-        
-        // One last attempt to archive using direct SQL - this should be reliable
-        const sqlCommand = `
-          UPDATE public.group_scores 
-          SET record_type = 'H', 
-              modified_at = NOW(),
-              modified_by = '${String(currentUser.id)}'
-          WHERE group_id = ${score.groupId} 
-          AND tournament_id = ${score.tournamentId}
-          AND record_type = 'C'
-        `;
-        
-        const { data: sqlData, error: sqlError } = await supabase.rpc('execute_sql', { 
-          sql_command: sqlCommand 
-        });
-        
-        if (sqlError) {
-          console.error('Final archive attempt failed:', sqlError);
-        } else {
-          console.log('Final archive attempt completed');
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
+      // Step 2: Create new score record
+      console.log('🔍 SAVE SCORE - Step 2: Creating new score record');
       
-      // Then create the new score with an explicit modified_by value
+      // Add explicit modified_by to ensure it's set
       const newScore = {
         ...scoreWithUser,
-        modified_by: String(currentUser.id)
+        modified_by: userId
       };
       
+      console.log('Final score data being saved:', newScore);
+      
+      // Create the new score with forceArchive=true (belt and suspenders approach)
       return await GroupScoreService.createGroupScore(newScore, true);
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('✅ Score saved successfully:', result);
       refetchScores();
       toast({
         title: "Erfolgreich gespeichert",
@@ -123,7 +129,7 @@ export const useScoreMutation = () => {
       });
     },
     onError: (error) => {
-      console.error('Mutation error:', error);
+      console.error('❌ Mutation error:', error);
       toast({
         title: "Fehler beim Speichern",
         description: error instanceof Error ? error.message : "Unbekannter Fehler beim Speichern der Bewertung",

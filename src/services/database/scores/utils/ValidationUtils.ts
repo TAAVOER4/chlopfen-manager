@@ -1,3 +1,4 @@
+
 export function isAdminId(id: string): boolean {
   // Check if the ID is for an admin user
   // This is a placeholder implementation - in a real app,
@@ -12,8 +13,11 @@ export function normalizeUuid(id: string): string {
     return '00000000-0000-0000-0000-000000000000';
   }
   
+  console.log(`Normalizing UUID input: ${id}, type: ${typeof id}`);
+  
   // If the id already contains hyphens, it might be a valid UUID
   if (id && id.includes('-') && id.length === 36) {
+    console.log(`Using UUID format as is: ${id}`);
     return id;
   }
   
