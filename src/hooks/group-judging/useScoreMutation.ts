@@ -6,6 +6,7 @@ import { GroupScoreService } from '@/services/database/scores/GroupScoreService'
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { isValidUuid, normalizeUuid } from '@/services/database/scores/utils/ValidationUtils';
+import { archiveGroupScores } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -38,70 +39,20 @@ export const useScoreMutation = () => {
       console.log(`Starting score save for user ${userId}, group ${score.groupId}`);
       
       try {
-        // First archive all existing scores for this group and tournament
-        console.log(`Archiving existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
+        // Use our dedicated function to archive all existing scores
+        // This is more reliable than inline SQL
+        console.log(`Using dedicated archive function for group ${score.groupId} and tournament ${score.tournamentId}`);
         
-        // Use a simple, direct SQL UPDATE to archive all existing scores for this group and tournament
-        const archiveSql = `
-          UPDATE public.group_scores 
-          SET record_type = 'H', 
-              modified_at = NOW(), 
-              modified_by = '${userId}'
-          WHERE group_id = ${score.groupId} 
-          AND tournament_id = ${score.tournamentId}
-          AND record_type = 'C'
-        `;
+        const archiveSuccess = await archiveGroupScores(
+          score.groupId, 
+          score.tournamentId, 
+          userId
+        );
         
-        console.log('Executing archive SQL:', archiveSql);
+        console.log(`Archive operation result: ${archiveSuccess ? 'successful' : 'failed'}`);
         
-        // Execute the direct SQL update
-        const { error: archiveError } = await supabase.rpc('execute_sql', { 
-          sql_command: archiveSql 
-        });
-        
-        if (archiveError) {
-          console.error('Error archiving existing scores:', archiveError);
-          throw new Error(`Error archiving existing scores: ${archiveError.message}`);
-        }
-        
-        // Wait a short time for the database to process the archive operation
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Verify all records were archived by checking if any 'C' records remain
-        const { data: remainingActive, error: checkError } = await supabase
-          .from('group_scores')
-          .select('id')
-          .eq('group_id', score.groupId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
-          
-        if (checkError) {
-          console.error('Error checking for remaining active records:', checkError);
-        } else if (remainingActive && remainingActive.length > 0) {
-          console.warn(`Archive operation partially succeeded: ${remainingActive.length} records still active`);
-          console.log('IDs of records that failed to archive:', remainingActive.map(r => r.id).join(', '));
-          
-          // Try to archive each remaining record individually
-          for (const record of remainingActive) {
-            const singleArchiveSql = `
-              UPDATE public.group_scores 
-              SET record_type = 'H', 
-                  modified_at = NOW(), 
-                  modified_by = '${userId}'
-              WHERE id = ${record.id}
-            `;
-            
-            const { error: singleError } = await supabase.rpc('execute_sql', { 
-              sql_command: singleArchiveSql 
-            });
-            
-            if (singleError) {
-              console.error(`Error archiving record ${record.id}:`, singleError);
-            }
-          }
-        } else {
-          console.log('Successfully archived all existing scores');
-        }
+        // Add a delay to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (archiveError) {
         console.error('Exception during archive operation:', archiveError);
         // Continue with creating a new score even if archiving fails
