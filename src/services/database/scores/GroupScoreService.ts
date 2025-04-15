@@ -57,6 +57,7 @@ export class GroupScoreService extends BaseScoreService {
       
       // If it's an admin, use a valid judge ID
       if (isAdminId(originalJudgeId)) {
+        console.log('Admin user detected, getting valid judge ID');
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
         return await this.createNewScore({
           ...score,
@@ -67,6 +68,7 @@ export class GroupScoreService extends BaseScoreService {
       }
       
       // Regular judge case - use normalized UUID
+      console.log('Regular judge case, normalizing UUID');
       const normalizedJudgeId = normalizeUuid(originalJudgeId);
       return await this.createNewScore({
         ...score,
@@ -87,6 +89,7 @@ export class GroupScoreService extends BaseScoreService {
     originalJudgeId: string
   ): Promise<GroupScore> {
     try {
+      console.log('Creating new score with judge ID:', dbJudgeId);
       const data = await GroupScoreDbService.createScore(score, dbJudgeId, originalJudgeId);
       
       return {
