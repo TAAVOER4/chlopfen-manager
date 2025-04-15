@@ -4,6 +4,7 @@ import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
 import { GroupScoreDbService } from './GroupScoreDbService';
 import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
+import { supabase } from '@/lib/supabase';
 
 export class GroupScoreService extends BaseScoreService {
   static async getGroupScores(): Promise<GroupScore[]> {
@@ -55,7 +56,7 @@ export class GroupScoreService extends BaseScoreService {
       const rhythm = score.rhythm ?? 0;
       const tempo = score.tempo ?? 0;
       
-      // If it's an admin, use a valid judge ID
+      // Handle admin users
       if (isAdminId(originalJudgeId)) {
         console.log('Admin user detected, getting valid judge ID');
         const validJudgeId = await GroupScoreDbService.getValidJudgeId();
@@ -119,12 +120,73 @@ export class GroupScoreService extends BaseScoreService {
   static async forceArchiveScores(groupId: number, judgeId: string, tournamentId: number): Promise<boolean> {
     try {
       console.log(`Force archiving scores for group ${groupId}, judge ${judgeId}, tournament ${tournamentId}`);
-      // First, attempt to use the database service to archive scores
-      return await GroupScoreDbService.forceArchiveExistingScores(groupId, judgeId, tournamentId);
+      
+      // Direct database approach to archive scores
+      const normalizedJudgeId = normalizeUuid(judgeId);
+      
+      // 1. First check if there are any active scores that need archiving
+      const { data: activeScores, error: checkError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (checkError) {
+        console.error('Error checking for active scores:', checkError);
+        throw new Error(`Error checking active scores: ${checkError.message}`);
+      }
+      
+      if (!activeScores || activeScores.length === 0) {
+        console.log('No active scores found to archive.');
+        return true; // Nothing to archive, so we succeeded
+      }
+      
+      console.log(`Found ${activeScores.length} active scores to archive.`);
+      
+      // 2. Archive all active scores using UPDATE
+      const { error: archiveError } = await supabase
+        .from('group_scores')
+        .update({
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedJudgeId
+        })
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (archiveError) {
+        console.error('Error archiving scores:', archiveError);
+        throw new Error(`Fehler beim Historisieren: ${archiveError.message}`);
+      }
+      
+      // 3. Verify that all records were archived
+      const { data: remainingActiveScores, error: verifyError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (verifyError) {
+        console.error('Error verifying archive operation:', verifyError);
+        throw new Error(`Error verifying archive: ${verifyError.message}`);
+      }
+      
+      if (remainingActiveScores && remainingActiveScores.length > 0) {
+        console.error(`Failed to archive all scores. ${remainingActiveScores.length} still active.`);
+        throw new Error('Die vorhandenen Bewertungen konnten nicht vollständig historisiert werden.');
+      }
+      
+      console.log('Successfully archived all scores');
+      return true;
     } catch (error) {
       console.error('Error in forceArchiveScores:', error);
-      // Don't throw here - we want to continue with the score creation even if archiving fails
-      return false;
+      throw error;
     }
   }
 }

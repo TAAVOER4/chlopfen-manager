@@ -29,28 +29,41 @@ export const useScoreMutation = () => {
         throw new Error('Benutzer nicht angemeldet oder Benutzer-ID fehlt');
       }
       
+      // Add more debugging information
+      console.log('Starting score mutation:', { 
+        groupId: score.groupId,
+        judgeId: currentUser.id, 
+        tournamentId: score.tournamentId 
+      });
+      
+      // Create the score object with the current user's ID
       const scoreWithUser = {
         ...score,
         judgeId: String(currentUser.id)
       };
       
       try {
-        console.log('Saving score with data:', scoreWithUser);
-        
-        // First attempt to forcefully archive any existing scores
-        await GroupScoreService.forceArchiveScores(
+        // First, explicitly archive any existing scores
+        console.log('First step: Forcing archive of existing scores');
+        const archiveResult = await GroupScoreService.forceArchiveScores(
           scoreWithUser.groupId, 
           String(currentUser.id), 
           scoreWithUser.tournamentId
         );
         
-        // Then attempt to save the score
+        console.log('Archive result:', archiveResult);
+        
+        // Add a small wait after archiving to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Now attempt to save the new score
+        console.log('Second step: Creating new score after archiving');
         const result = await GroupScoreService.createGroupScore(scoreWithUser);
         
         console.log('Score saved successfully:', result);
         return result;
       } catch (error) {
-        console.error('Error saving score:', error);
+        console.error('Error in saveScoreMutation:', error);
         throw error;
       }
     },
