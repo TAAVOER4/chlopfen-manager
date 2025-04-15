@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://ixfgmtscvwixkojsmfrj.supabase.co';
@@ -115,13 +114,14 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
       })
       .eq('group_id', groupId)
       .eq('tournament_id', tournamentId)
-      .eq('record_type', 'C');
+      .eq('record_type', 'C')
+      .select(); // Add .select() to ensure we get the updated data
     
     if (directError) {
       console.error('❌ Direct update failed:', directError);
     } else {
-      // Fix the TypeScript error by safely checking directData before accessing length
-      console.log('✅ Direct update appears successful, affected records:', directData ? directData.length || 0 : 0);
+      // Fix the TypeScript error by checking if directData is an array
+      console.log('✅ Direct update appears successful, affected records:', Array.isArray(directData) ? directData.length : 0);
       // Add a delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));
     }
