@@ -120,7 +120,8 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number, 
     if (directError) {
       console.error('❌ Direct update failed:', directError);
     } else {
-      console.log('✅ Direct update appears successful, affected records:', directData?.length || 0);
+      // Fix the TypeScript error by safely checking directData before accessing length
+      console.log('✅ Direct update appears successful, affected records:', directData ? directData.length || 0 : 0);
       // Add a delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));
     }
