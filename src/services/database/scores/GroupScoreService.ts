@@ -3,7 +3,7 @@ import { GroupScore } from '@/types';
 import { BaseScoreService } from './BaseScoreService';
 import { ScoreValidationService } from './ScoreValidationService';
 import { GroupScoreDbService } from './GroupScoreDbService';
-import { isAdminId, normalizeUuid, getDatabaseJudgeId } from './utils/ValidationUtils';
+import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
 
 export class GroupScoreService extends BaseScoreService {
   static async getGroupScores(): Promise<GroupScore[]> {
