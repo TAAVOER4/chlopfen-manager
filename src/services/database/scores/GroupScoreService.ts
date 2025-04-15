@@ -39,6 +39,26 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
+  // Neue Methode zum direkten Ausführen von SQL für kritische Operationen
+  static async executeRawSql(sqlCommand: string): Promise<boolean> {
+    try {
+      const supabase = this.checkSupabaseClient();
+      
+      // Versuche die RPC-Funktion zu verwenden
+      const { error } = await supabase.rpc('execute_sql', { sql_command: sqlCommand });
+      
+      if (error) {
+        console.error('Error executing raw SQL:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Exception in executeRawSql:', error);
+      return false;
+    }
+  }
+
   // Get active scores for a specific group and judge
   static async getActiveScoresForGroupAndJudge(
     groupId: number, 
@@ -110,12 +130,29 @@ export class GroupScoreService extends BaseScoreService {
       console.log(`Starting aggressive archive operation for group ${groupId}, tournament ${tournamentId}`);
       logIdType(judgeId);
       
-      // STEP 1: First try the most aggressive approach - archive ALL scores for this group in this tournament
+      // STEP 1: Versuche direkt mit Raw SQL alle Records zu archivieren
+      const rawSqlResult = await this.executeRawSql(
+        `UPDATE public.group_scores 
+         SET record_type = 'H', 
+             modified_at = NOW() 
+         WHERE group_id = ${groupId} 
+         AND tournament_id = ${tournamentId}
+         AND record_type = 'C'`
+      );
+      
+      if (rawSqlResult) {
+        console.log('Raw SQL archive operation successful');
+      } else {
+        console.warn('Raw SQL archive operation failed, falling back to standard update');
+      }
+      
+      // STEP 2: Fallback - Standardupdate über Supabase
       const { error: globalArchiveError, count: globalArchiveCount } = await supabase
         .from('group_scores')
         .update({ 
           record_type: 'H',
-          modified_at: new Date().toISOString()
+          modified_at: new Date().toISOString(),
+          modified_by: judgeId
         })
         .eq('group_id', groupId)
         .eq('tournament_id', tournamentId)
@@ -127,10 +164,10 @@ export class GroupScoreService extends BaseScoreService {
         console.log(`Successfully archived ${globalArchiveCount || 'unknown number of'} records globally`);
       }
       
-      // STEP 2: Add delay to ensure database consistency
+      // STEP 3: Warte kurz um Datenbankinkonsistenzen zu vermeiden
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // STEP 3: Double-check to see if any records remain unarchived
+      // STEP 4: Überprüfe, ob noch aktive Records vorhanden sind
       const { data: remaining, error: checkError } = await supabase
         .from('group_scores')
         .select('id')
@@ -144,9 +181,9 @@ export class GroupScoreService extends BaseScoreService {
       }
       
       if (remaining && remaining.length > 0) {
-        console.warn(`${remaining.length} records still active after archive operation, attempting individual updates`);
+        console.warn(`${remaining.length} records still active after archive operations, attempting individual updates`);
         
-        // STEP 4: Try individual updates for any remaining records
+        // STEP 5: Versuche einzelne Records zu archivieren
         for (const record of remaining) {
           console.log(`Archiving individual record ID: ${record.id}`);
           
@@ -154,7 +191,8 @@ export class GroupScoreService extends BaseScoreService {
             .from('group_scores')
             .update({ 
               record_type: 'H',
-              modified_at: new Date().toISOString()
+              modified_at: new Date().toISOString(),
+              modified_by: judgeId
             })
             .eq('id', record.id);
             
@@ -162,12 +200,11 @@ export class GroupScoreService extends BaseScoreService {
             console.error('Error archiving individual record:', individualError);
           }
           
-          // Add a small delay between operations
           await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
-      // STEP 5: Final verification
+      // STEP 6: Abschließende Überprüfung
       const { data: finalCheck, error: finalCheckError } = await supabase
         .from('group_scores')
         .select('id')
@@ -191,9 +228,9 @@ export class GroupScoreService extends BaseScoreService {
     }
   }
 
-  static async createGroupScore(score: Omit<GroupScore, 'id'>): Promise<GroupScore> {
+  static async createGroupScore(score: Omit<GroupScore, 'id'>, forceArchive: boolean = false): Promise<GroupScore> {
     try {
-      console.log('Creating new group score:', score);
+      console.log('Creating new group score:', score, 'forceArchive:', forceArchive);
       
       ScoreValidationService.validateScoreData(score);
       
@@ -267,13 +304,50 @@ export class GroupScoreService extends BaseScoreService {
       
       console.log(`Using judge UUID for DB: ${judgeUuid}`);
       
-      // Archive any existing scores first - but explicitly not filter by judge_id 
-      // to avoid conflicts with multiple current records
+      // Wenn forceArchive true ist, archiviere aggressiv alle existierenden Scores
+      if (forceArchive) {
+        console.log("Force archive flag is set, will perform multiple archive attempts");
+        
+        // Direkte SQL-Aktualisierung, um sicherzustellen, dass alle aktuellen Datensätze archiviert werden
+        await this.executeRawSql(
+          `UPDATE public.group_scores 
+           SET record_type = 'H', 
+               modified_at = NOW(),
+               modified_by = '${judgeUuid}'
+           WHERE group_id = ${score.groupId} 
+           AND tournament_id = ${score.tournamentId}
+           AND record_type = 'C'`
+        );
+        
+        // Kurze Pause, um sicherzustellen, dass die DB-Operation abgeschlossen ist
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      // Reguläre Archivierung nach der forcierten Archivierung
       await this.forceArchiveScores(
         score.groupId,
-        String(score.judgeId),
+        judgeUuid,
         score.tournamentId
       );
+      
+      // Füge weitere Verzögerung hinzu, um sicherzustellen, dass alle Archivierungen abgeschlossen sind
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Überprüfe nochmals, ob wirklich alle Records archiviert wurden
+      const { data: stillActive, error: checkError } = await supabase
+        .from('group_scores')
+        .select('id')
+        .eq('group_id', score.groupId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('record_type', 'C');
+      
+      if (checkError) {
+        console.error('Error checking for active records before insert:', checkError);
+      } else if (stillActive && stillActive.length > 0) {
+        console.warn(`${stillActive.length} records still active after all archive attempts, proceeding anyway`);
+      } else {
+        console.log('All records successfully archived, proceeding with new record creation');
+      }
 
       // Create new current record
       const { data: newScore, error: insertError } = await supabase

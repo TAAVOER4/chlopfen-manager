@@ -1,4 +1,3 @@
-
 import { BaseScoreService } from './BaseScoreService';
 import { GroupScore } from '@/types';
 import { isAdminId, normalizeUuid } from './utils/ValidationUtils';
@@ -14,12 +13,38 @@ export class GroupScoreDbService extends BaseScoreService {
       console.log('Creating score with normalized judge ID:', normalizedJudgeId);
       console.log('Score data:', score);
       
-      // First manually check if any active records still exist
+      // Versuche erst direkt mit SQL alle aktiven Datensätze zu archivieren
+      try {
+        console.log(`Executing direct SQL update for archiving before insert...`);
+        const rawSqlResult = await supabase.rpc('execute_sql', {
+          sql_command: `
+            UPDATE public.group_scores 
+            SET record_type = 'H', 
+                modified_at = NOW(),
+                modified_by = '${normalizedModifiedBy}'
+            WHERE group_id = ${score.groupId} 
+            AND tournament_id = ${score.tournamentId}
+            AND record_type = 'C'
+          `
+        });
+        
+        if (rawSqlResult.error) {
+          console.error('Error with direct SQL archive:', rawSqlResult.error);
+        } else {
+          console.log('Direct SQL archive completed successfully');
+          
+          // Warte nach der SQL-Operation
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      } catch (sqlError) {
+        console.error('Exception during direct SQL archive:', sqlError);
+      }
+      
+      // Dann überprüfe, ob noch aktive Datensätze vorhanden sind
       const { data: activeScores, error: checkError } = await supabase
         .from('group_scores')
         .select('id')
         .eq('group_id', score.groupId)
-        .eq('judge_id', normalizedJudgeId)
         .eq('tournament_id', score.tournamentId)
         .eq('record_type', 'C');
         
@@ -28,11 +53,11 @@ export class GroupScoreDbService extends BaseScoreService {
         throw new Error(`Error checking active records: ${checkError.message}`);
       }
       
-      // If active scores exist, try to archive them directly with low-level operation
+      // Wenn noch aktive Datensätze vorhanden sind, versuche sie mit RPC zu archivieren
       if (activeScores && activeScores.length > 0) {
         console.log(`Found ${activeScores.length} active scores that need to be archived first`);
         
-        // Try archive with direct UPDATE statement first
+        // Versuche zuerst mit der RPC-Funktion zu archivieren
         try {
           const { error: archiveError } = await supabase.rpc('force_archive_group_scores', {
             p_group_id: score.groupId, 
@@ -50,12 +75,14 @@ export class GroupScoreDbService extends BaseScoreService {
           console.error('Exception during RPC archive call:', rpcError);
         }
         
-        // Double check if any active records still exist
+        // Warte nach dem RPC-Aufruf
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Überprüfe erneut, ob noch aktive Datensätze vorhanden sind
         const { data: checkActive, error: recheckError } = await supabase
           .from('group_scores')
           .select('id')
           .eq('group_id', score.groupId)
-          .eq('judge_id', normalizedJudgeId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
             
@@ -63,10 +90,10 @@ export class GroupScoreDbService extends BaseScoreService {
           console.error('Error rechecking for active records:', recheckError);
         }
         
+        // Wenn immer noch aktive Datensätze vorhanden sind, versuche es mit direktem Update
         if (checkActive && checkActive.length > 0) {
           console.error('Failed to archive all records via RPC. Falling back to direct updates.');
           
-          // Fall back to direct update statement
           const { error: directUpdateError } = await supabase
             .from('group_scores')
             .update({ 
@@ -75,7 +102,6 @@ export class GroupScoreDbService extends BaseScoreService {
               modified_by: normalizedModifiedBy
             })
             .eq('group_id', score.groupId)
-            .eq('judge_id', normalizedJudgeId)
             .eq('tournament_id', score.tournamentId)
             .eq('record_type', 'C');
             
@@ -83,12 +109,14 @@ export class GroupScoreDbService extends BaseScoreService {
             console.error('Error with direct update archiving:', directUpdateError);
           }
           
-          // Final check
+          // Warte nach dem direkten Update
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Finale Überprüfung
           const { data: finalCheck, error: finalCheckError } = await supabase
             .from('group_scores')
             .select('id')
             .eq('group_id', score.groupId)
-            .eq('judge_id', normalizedJudgeId)
             .eq('tournament_id', score.tournamentId)
             .eq('record_type', 'C');
             
@@ -97,6 +125,7 @@ export class GroupScoreDbService extends BaseScoreService {
           }
           
           if (finalCheck && finalCheck.length > 0) {
+            console.error(`CRITICAL: After multiple attempts, ${finalCheck.length} records still active.`);
             throw new Error('Auch nach mehreren Versuchen konnten die vorhandenen Bewertungen nicht archiviert werden.');
           }
         }
@@ -104,7 +133,7 @@ export class GroupScoreDbService extends BaseScoreService {
       
       console.log('No remaining active records, proceeding with score creation');
       
-      // Create a new current record
+      // Erstelle einen neuen aktiven Datensatz
       const { data: newScore, error: insertError } = await supabase
         .from('group_scores')
         .insert([{

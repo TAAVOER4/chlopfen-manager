@@ -1,4 +1,3 @@
-
 export function isAdminId(id: string): boolean {
   // Check if the ID is for an admin user
   // This is a placeholder implementation - in a real app,
@@ -7,6 +6,12 @@ export function isAdminId(id: string): boolean {
 }
 
 export function normalizeUuid(id: string): string {
+  // If the id is null or undefined, return a placeholder string
+  if (!id) {
+    console.warn('Received undefined or null ID to normalize');
+    return '00000000-0000-0000-0000-000000000000';
+  }
+  
   // If the id already contains hyphens, it might be a valid UUID
   if (id && id.includes('-') && id.length === 36) {
     return id;
@@ -18,11 +23,14 @@ export function normalizeUuid(id: string): string {
     return id;
   }
   
-  // Otherwise just return as is, the database query will handle validation
-  return id;
+  // Otherwise return placeholder UUID to avoid database errors
+  console.warn(`Received invalid UUID format: ${id}, returning placeholder`);
+  return '00000000-0000-0000-0000-000000000000';
 }
 
 export function isValidUuid(id: string): boolean {
+  if (!id) return false;
+  
   // Basic check for UUID format
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidPattern.test(id);
