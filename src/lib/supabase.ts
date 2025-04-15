@@ -5,7 +5,7 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Function to execute raw SQL commands
+// Function to execute raw SQL commands (keeping this utility function)
 export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
   try {
     console.log('DIRECT SQL EXECUTION - Command:', sqlCommand);
@@ -97,139 +97,104 @@ export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
   }
 };
 
-// Archive all scores for a specific group and tournament with explicit modified_by
+// Archive all scores for a specific group and tournament with simplified approach
 export const archiveGroupScores = async (groupId: number, tournamentId: number, modifiedBy: string): Promise<boolean> => {
   try {
     console.log(`🔄 ARCHIVE OPERATION - Starting for group ${groupId}, tournament ${tournamentId}, modified by ${modifiedBy}`);
     
-    // Validate we have a non-empty modifiedBy
-    if (!modifiedBy || modifiedBy.trim() === '') {
-      console.error('❌ ARCHIVE ERROR: Empty modifiedBy parameter provided');
-      modifiedBy = 'system-fallback'; // Provide a fallback value
-    }
-    
-    // STEP 1: First try a direct SQL update via the SQL RPC function
-    // This approach bypasses any API limitations and executes directly on the database
-    console.log("🔍 ARCHIVE - Method 1: Using direct SQL via RPC function");
-    
-    const sqlCommand = `
-      UPDATE public.group_scores 
-      SET record_type = 'H', 
-          modified_at = NOW(), 
-          modified_by = '${modifiedBy}'
-      WHERE group_id = ${groupId} 
-      AND tournament_id = ${tournamentId}
-      AND record_type = 'C'
-    `;
-    
-    const sqlSuccess = await executeRawSql(sqlCommand);
-    
-    if (sqlSuccess) {
-      console.log('✅ SQL RPC method successful');
-      // Add a delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } else {
-      console.error('❌ SQL RPC method failed');
-    }
-    
-    // STEP 2: Whether SQL succeeded or not, try a direct update via the Supabase client
-    // This is a backup approach
-    console.log("🔍 ARCHIVE - Method 2: Using direct Supabase update");
-    
-    const { error: directError } = await supabase
-      .from('group_scores')
-      .update({ 
-        record_type: 'H', 
-        modified_at: new Date().toISOString(),
-        modified_by: modifiedBy
-      })
-      .eq('group_id', groupId)
-      .eq('tournament_id', tournamentId)
-      .eq('record_type', 'C');
-    
-    if (directError) {
-      console.error('❌ Direct update failed:', directError);
-    } else {
-      console.log('✅ Direct update appears successful');
-      // Add a delay to ensure database consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    // STEP 3: Check if any records still have record_type = 'C'
-    const { data: remainingRecords, error: checkError } = await supabase
+    // STEP 1: Get all current records for this group and tournament that have record_type = 'C'
+    const { data: activeRecords, error: findError } = await supabase
       .from('group_scores')
       .select('id')
       .eq('group_id', groupId)
       .eq('tournament_id', tournamentId)
       .eq('record_type', 'C');
+      
+    if (findError) {
+      console.error('Error finding active records:', findError);
+      return false;
+    }
     
-    if (checkError) {
-      console.error('❌ Error checking remaining records:', checkError);
-    } else if (remainingRecords && remainingRecords.length > 0) {
-      console.warn(`⚠️ Some records (${remainingRecords.length}) still have record_type='C'. Attempting individual updates...`);
+    if (!activeRecords || activeRecords.length === 0) {
+      console.log('No active records found, nothing to archive');
+      return true;
+    }
+    
+    console.log(`Found ${activeRecords.length} active records to archive`);
+    
+    // STEP 2: Archive each record individually by ID for maximum reliability
+    let allArchived = true;
+    
+    for (const record of activeRecords) {
+      console.log(`Archiving record ID: ${record.id}`);
       
-      // Try updating each record individually
-      console.log("🔍 ARCHIVE - Method 3: Updating records individually");
-      
-      for (const record of remainingRecords) {
-        console.log(`Archiving individual record ${record.id}`);
+      const { error: updateError } = await supabase
+        .from('group_scores')
+        .update({
+          record_type: 'H', 
+          modified_at: new Date().toISOString(),
+          modified_by: modifiedBy
+        })
+        .eq('id', record.id);
         
-        const { error: indivError } = await supabase
-          .from('group_scores')
-          .update({ 
-            record_type: 'H', 
-            modified_at: new Date().toISOString(),
-            modified_by: modifiedBy
-          })
-          .eq('id', record.id);
-          
-        if (indivError) {
-          console.error(`❌ Failed to update record ${record.id}:`, indivError);
-        } else {
-          console.log(`✅ Successfully updated record ${record.id}`);
-        }
-        
-        // Add a small delay between operations
-        await new Promise(resolve => setTimeout(resolve, 100));
+      if (updateError) {
+        console.error(`Failed to archive record ${record.id}:`, updateError);
+        allArchived = false;
+      } else {
+        console.log(`Successfully archived record ${record.id}`);
       }
       
-      // Final verification after individual updates
-      const { data: afterIndividual, error: afterIndividualError } = await supabase
+      // Add a small delay between operations
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // STEP 3: Verify that all records were archived
+    const { data: remainingActive, error: checkError } = await supabase
+      .from('group_scores')
+      .select('id')
+      .eq('group_id', groupId)
+      .eq('tournament_id', tournamentId)
+      .eq('record_type', 'C');
+      
+    if (checkError) {
+      console.error('Error checking remaining active records:', checkError);
+      return false;
+    }
+    
+    if (remainingActive && remainingActive.length > 0) {
+      console.warn(`Archive operation partially failed: ${remainingActive.length} records still active`);
+      
+      // Last attempt - try a direct UPDATE to archive all remaining records
+      console.log('Making final attempt to archive remaining records');
+      
+      const { error: finalError } = await supabase
+        .from('group_scores')
+        .update({
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: modifiedBy
+        })
+        .eq('group_id', groupId)
+        .eq('tournament_id', tournamentId)
+        .eq('record_type', 'C');
+        
+      if (finalError) {
+        console.error('Final archive attempt failed:', finalError);
+        return false;
+      }
+      
+      // Final verification
+      const { data: finalCheck, error: finalCheckError } = await supabase
         .from('group_scores')
         .select('id')
         .eq('group_id', groupId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
         
-      if (afterIndividualError) {
-        console.error('❌ Error in final verification after individual updates:', afterIndividualError);
-      } else if (afterIndividual && afterIndividual.length > 0) {
-        console.error(`❌ CRITICAL: ${afterIndividual.length} records still active after all attempts`);
+      if (finalCheckError || (finalCheck && finalCheck.length > 0)) {
+        console.error(`Archive operation failed: ${finalCheck?.length || 0} records still active`);
         return false;
-      } else {
-        console.log('✅ All records successfully archived after individual updates');
       }
-    } else {
-      console.log('✅ All records successfully archived');
-    }
-    
-    // Final verification
-    const { data: finalCheck, error: finalError } = await supabase
-      .from('group_scores')
-      .select('id')
-      .eq('group_id', groupId)
-      .eq('tournament_id', tournamentId)
-      .eq('record_type', 'C');
-      
-    if (finalError) {
-      console.error('❌ Error during final verification:', finalError);
-      return false;
-    }
-    
-    if (finalCheck && finalCheck.length > 0) {
-      console.warn(`⚠️ Archive operation partially failed: ${finalCheck.length} records still active`);
-      console.log('IDs of records still active:', finalCheck.map(r => r.id).join(', '));
-      return false;
     }
     
     console.log('✅ ARCHIVE OPERATION - Successfully completed');

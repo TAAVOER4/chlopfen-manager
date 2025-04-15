@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { isValidUuid, normalizeUuid } from '@/services/database/scores/utils/ValidationUtils';
+import { archiveGroupScores } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -38,78 +38,40 @@ export const useScoreMutation = () => {
       console.log(`Starting score save for user ${userId}, group ${score.groupId}, tournament ${score.tournamentId}`);
       
       try {
-        // First get all current records for this group and tournament
-        const { data: existingRecords, error: findError } = await supabase
-          .from('group_scores')
-          .select('id')
-          .eq('group_id', score.groupId)
-          .eq('tournament_id', score.tournamentId)
-          .eq('record_type', 'C');
-          
-        if (findError) {
-          console.error('Error finding existing records:', findError);
-          throw new Error(`Could not find existing records: ${findError.message}`);
+        // First, archive all existing records for this group and tournament
+        console.log('Archiving existing records...');
+        
+        const archiveSuccess = await archiveGroupScores(
+          score.groupId, 
+          score.tournamentId,
+          userId // Pass the userId for modified_by
+        );
+        
+        if (!archiveSuccess) {
+          console.error('Failed to archive existing records, but will continue with creating the new record');
+        } else {
+          console.log('Successfully archived existing records');
         }
         
-        console.log(`Found ${existingRecords?.length || 0} existing records to archive`);
+        // Add a small delay to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Try to get a valid UUID from the database first
-        let validUserId = userId;
-        try {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id')
-            .limit(1);
-            
-          if (!userError && userData && userData.length > 0) {
-            validUserId = userData[0].id;
-            console.log(`Using valid UUID from database: ${validUserId}`);
-          }
-        } catch (userLookupError) {
-          console.error('Error looking up valid UUID:', userLookupError);
-          // Continue with original ID
-        }
-        
-        // Archive all found records individually
-        if (existingRecords && existingRecords.length > 0) {
-          for (const record of existingRecords) {
-            console.log(`Archiving record ID: ${record.id}`);
-            
-            const { error: updateError } = await supabase
-              .from('group_scores')
-              .update({
-                record_type: 'H',
-                modified_at: new Date().toISOString()
-                // Not passing modified_by as it's causing UUID validation errors
-              })
-              .eq('id', record.id);
-              
-            if (updateError) {
-              console.error(`Failed to archive record ${record.id}:`, updateError);
-            } else {
-              console.log(`Successfully archived record ${record.id}`);
-            }
-          }
-          
-          // Add a small delay to ensure database consistency
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
-        // STEP 3: Create the new score
+        // Create the new score with record_type 'C'
         console.log('Creating new score');
         
         const { data, error } = await supabase
           .from('group_scores')
           .insert([{
             group_id: score.groupId,
-            judge_id: validUserId, // Using the verified UUID
+            judge_id: userId,
             whip_strikes: score.whipStrikes,
             rhythm: score.rhythm,
             tempo: score.tempo,
             time: score.time,
             tournament_id: score.tournamentId,
-            record_type: 'C'
-            // Not passing modified_by as it's causing UUID validation errors
+            record_type: 'C',
+            modified_at: new Date().toISOString(),
+            modified_by: userId
           }])
           .select()
           .single();
@@ -124,7 +86,7 @@ export const useScoreMutation = () => {
         return {
           id: data.id,
           groupId: data.group_id,
-          judgeId: userId, // Return original ID to keep frontend consistent
+          judgeId: userId,
           whipStrikes: data.whip_strikes,
           rhythm: data.rhythm,
           tempo: data.tempo,
