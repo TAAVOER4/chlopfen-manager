@@ -4,7 +4,7 @@ import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/lib/supabase';
+import { archiveGroupScores, supabase } from '@/lib/supabase';
 
 export const useScoreMutation = () => {
   const { toast } = useToast();
@@ -25,79 +25,6 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Direct database operation to archive scores - using the dedicated function
-  const archiveScoresForGroup = async (groupId: number, tournamentId: number) => {
-    if (!currentUser?.id) return false;
-    
-    console.log(`Archiving all scores for group ${groupId}, tournament ${tournamentId}`);
-    
-    try {
-      // First try to use the dedicated archive function
-      const { data, error } = await supabase.rpc('archive_group_scores', {
-        p_group_id: groupId,
-        p_tournament_id: tournamentId
-      });
-      
-      if (error) {
-        console.error('Error using archive_group_scores function:', error);
-        
-        // Fallback to direct SQL execution
-        const { error: sqlError } = await supabase.rpc('execute_sql', {
-          sql_command: `
-            UPDATE public.group_scores 
-            SET record_type = 'H', 
-                modified_at = NOW() 
-            WHERE group_id = ${groupId} 
-            AND tournament_id = ${tournamentId}
-            AND record_type = 'C'
-          `
-        });
-        
-        if (sqlError) {
-          console.error('Error during SQL fallback archive operation:', sqlError);
-          
-          // Last resort: standard update
-          const { error: updateError } = await supabase
-            .from('group_scores')
-            .update({ 
-              record_type: 'H',
-              modified_at: new Date().toISOString()
-            })
-            .eq('group_id', groupId)
-            .eq('tournament_id', tournamentId)
-            .eq('record_type', 'C');
-            
-          if (updateError) {
-            console.error('All archive methods failed:', updateError);
-            return false;
-          }
-        }
-      }
-      
-      // Verify the operation was successful - no active records should remain
-      await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for database consistency
-      
-      const { data: activeRecords, error: checkError } = await supabase
-        .from('group_scores')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('tournament_id', tournamentId)
-        .eq('record_type', 'C');
-        
-      if (checkError) {
-        console.error('Error checking archive results:', checkError);
-        return false;
-      }
-      
-      const success = !activeRecords || activeRecords.length === 0;
-      console.log(`Archive operation ${success ? 'successful' : 'failed'}, ${activeRecords?.length || 0} records still active`);
-      return success;
-    } catch (error) {
-      console.error('Exception during archive operation:', error);
-      return false;
-    }
-  };
-
   // Save score mutation
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
@@ -113,7 +40,27 @@ export const useScoreMutation = () => {
       console.log('Starting score save process...');
       
       // First, archive all existing scores for this group and tournament
-      await archiveScoresForGroup(score.groupId, score.tournamentId);
+      const archiveSuccess = await archiveGroupScores(score.groupId, score.tournamentId);
+      
+      if (!archiveSuccess) {
+        console.warn('Could not archive scores using function, trying direct update');
+        
+        const { error: updateError } = await supabase
+          .from('group_scores')
+          .update({ 
+            record_type: 'H',
+            modified_at: new Date().toISOString(),
+            modified_by: String(currentUser.id)
+          })
+          .eq('group_id', score.groupId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+          
+        if (updateError) {
+          console.error('Error updating existing scores:', updateError);
+          throw new Error('Fehler beim Archivieren der bestehenden Bewertungen');
+        }
+      }
       
       // Add delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));

@@ -1,7 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Use the direct values for the Supabase URL and API key
 const supabaseUrl = 'https://ixfgmtscvwixkojsmfrj.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4ZmdtdHNjdndpeGtvanNtZnJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODU5NzYsImV4cCI6MjA1OTI2MTk3Nn0.Mz9TMFv3G3FEuNfk6eJ8wfaIyKUQRZpvPA2UGyvHR64';
 
@@ -34,7 +33,6 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number):
   try {
     console.log(`Archiving scores for group ${groupId}, tournament ${tournamentId}`);
     
-    // Try using the dedicated function
     const { data, error } = await supabase.rpc('archive_group_scores', {
       p_group_id: groupId,
       p_tournament_id: tournamentId
@@ -44,14 +42,16 @@ export const archiveGroupScores = async (groupId: number, tournamentId: number):
       console.error('Error using archive_group_scores function:', error);
       
       // Fallback to direct SQL execution
-      return await executeRawSql(`
+      const sqlCommand = `
         UPDATE public.group_scores 
         SET record_type = 'H', 
             modified_at = NOW() 
         WHERE group_id = ${groupId} 
         AND tournament_id = ${tournamentId}
         AND record_type = 'C'
-      `);
+      `;
+      
+      return await executeRawSql(sqlCommand);
     }
     
     return true;

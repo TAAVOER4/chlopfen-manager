@@ -492,7 +492,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      archive_group_scores: {
+        Args: { p_group_id: number; p_tournament_id: number }
+        Returns: boolean
+      }
+      execute_sql: {
+        Args: { sql_command: string }
+        Returns: boolean
+      }
     }
     Enums: {
       group_category: "kids_juniors" | "active"
