@@ -14,6 +14,25 @@ export class GroupScoreDbService extends BaseScoreService {
       console.log('Creating score with normalized judge ID:', normalizedJudgeId);
       console.log('Score data:', score);
       
+      // First manually archive any existing active records to ensure none exist
+      console.log('Explicitly archiving any existing active records before creation...');
+      const { error: archiveError } = await supabase
+        .from('group_scores')
+        .update({ 
+          record_type: 'H',
+          modified_at: new Date().toISOString(),
+          modified_by: normalizedModifiedBy
+        })
+        .eq('group_id', score.groupId)
+        .eq('judge_id', normalizedJudgeId)
+        .eq('tournament_id', score.tournamentId)
+        .eq('record_type', 'C');
+        
+      if (archiveError) {
+        console.error('Error archiving existing records:', archiveError);
+        // Continue anyway as we'll check if any remain active
+      }
+      
       // Double-check that all records were archived before creating a new one
       console.log('Verifying no active records exist before creation...');
       const { data: checkActive, error: checkError } = await supabase
@@ -31,7 +50,35 @@ export class GroupScoreDbService extends BaseScoreService {
       
       if (checkActive && checkActive.length > 0) {
         console.error('Found existing active scores that were not archived:', checkActive.length);
-        throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
+        
+        // One more attempt to force archive each record individually
+        for (const record of checkActive) {
+          console.log(`Attempting to force archive score ID ${record.id}`);
+          await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString(),
+              modified_by: normalizedModifiedBy
+            })
+            .eq('id', record.id);
+            
+          // Small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        // Final check
+        const { data: finalCheck } = await supabase
+          .from('group_scores')
+          .select('id')
+          .eq('group_id', score.groupId)
+          .eq('judge_id', normalizedJudgeId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+          
+        if (finalCheck && finalCheck.length > 0) {
+          throw new Error('Es existieren noch aktive Bewertungen. Bitte versuchen Sie es später erneut.');
+        }
       }
       
       console.log('No active records found, proceeding with score creation');

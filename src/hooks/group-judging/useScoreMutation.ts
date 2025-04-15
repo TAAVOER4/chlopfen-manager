@@ -24,7 +24,7 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Archive mutation with retries
+  // Archive mutation with retries and more robust error handling
   const archiveScoresMutation = useMutation({
     mutationFn: async ({ groupId, tournamentId }: { groupId: number, tournamentId: number }) => {
       if (!currentUser?.id) {
@@ -39,7 +39,7 @@ export const useScoreMutation = () => {
         try {
           console.log(`Archivierungsversuch ${retryCount + 1} für Gruppe ${groupId}`);
           
-          // Versuch die Scores zu archivieren
+          // Directly call the DB service to ensure we bypass any caching
           success = await GroupScoreService.forceArchiveScores(
             groupId,
             String(currentUser.id),
@@ -51,12 +51,16 @@ export const useScoreMutation = () => {
             return true;
           }
 
-          // Wenn nicht erfolgreich, warten wir kurz vor dem nächsten Versuch
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Slightly longer delay before retry
+          await new Promise(resolve => setTimeout(resolve, 1500));
           retryCount++;
         } catch (error) {
           console.error(`Fehler beim Archivierungsversuch ${retryCount + 1}:`, error);
           retryCount++;
+          
+          // Add a longer delay after errors
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
           if (retryCount === maxRetries) throw error;
         }
       }
@@ -69,7 +73,7 @@ export const useScoreMutation = () => {
     }
   });
 
-  // Save score mutation with synchronized archiving
+  // Improved save score mutation with more robust synchronization
   const saveScoreMutation = useMutation({
     mutationFn: async (score: Omit<GroupScore, 'id'>) => {
       if (!currentUser?.id) {
@@ -83,7 +87,7 @@ export const useScoreMutation = () => {
 
       console.log('Starte Speichervorgang mit Archivierung...');
 
-      // Erst archivieren
+      // Step 1: Force archiving of all existing scores with retries
       const archived = await archiveScoresMutation.mutateAsync({
         groupId: scoreWithUser.groupId,
         tournamentId: scoreWithUser.tournamentId
@@ -93,10 +97,23 @@ export const useScoreMutation = () => {
         throw new Error('Archivierung fehlgeschlagen');
       }
 
-      // Kurze Pause für Datenbanksynchrosisation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Step 2: Add a longer synchronization delay to ensure DB consistency
+      console.log('Warte auf Datenbanksynchrosisation...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Dann neue Bewertung erstellen
+      // Step 3: Double-check that scores were actually archived before proceeding
+      const activeScores = await GroupScoreService.getActiveScoresForGroupAndJudge(
+        scoreWithUser.groupId,
+        String(currentUser.id),
+        scoreWithUser.tournamentId
+      );
+
+      if (activeScores.length > 0) {
+        console.error('Es sind noch aktive Bewertungen vorhanden:', activeScores.length);
+        throw new Error('Die vorhandenen Bewertungen konnten nicht vollständig archiviert werden. Bitte versuchen Sie es später erneut.');
+      }
+
+      // Step 4: Create the new score after confirming no active scores exist
       console.log('Erstelle neue Bewertung nach erfolgreicher Archivierung');
       return await GroupScoreService.createGroupScore(scoreWithUser);
     },
