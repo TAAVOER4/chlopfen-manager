@@ -4,7 +4,7 @@ import { GroupScore } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { GroupScoreService } from '@/services/database/scores/GroupScoreService';
 import { useUser } from '@/contexts/UserContext';
-import { supabase, archiveGroupScores } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { isValidUuid, normalizeUuid } from '@/services/database/scores/utils/ValidationUtils';
 
 export const useScoreMutation = () => {
@@ -38,27 +38,53 @@ export const useScoreMutation = () => {
       console.log(`Starting score save for user ${userId}, group ${score.groupId}, tournament ${score.tournamentId}`);
       
       try {
-        // Step 1: Archive all existing scores for this group and tournament
-        console.log(`Archiving existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
-        
-        // Use our dedicated archive function which has multiple fallback mechanisms
-        // Ensure we pass the userId as modifiedBy parameter to track who made the change
-        console.log(`Using user ID ${userId} for the modifiedBy parameter in archive`);
-        const archiveSuccess = await archiveGroupScores(
-          score.groupId, 
-          score.tournamentId, 
-          userId
-        );
-        
-        console.log(`Archive operation result: ${archiveSuccess ? 'successful' : 'failed'}`);
+        // Step 1: Find existing scores for this group and tournament
+        console.log(`Checking for existing scores for group ${score.groupId} and tournament ${score.tournamentId}`);
+        const { data: existingScores, error: findError } = await supabase
+          .from('group_scores')
+          .select('id, modified_by')
+          .eq('group_id', score.groupId)
+          .eq('tournament_id', score.tournamentId)
+          .eq('record_type', 'C');
+          
+        if (findError) {
+          console.error('Error finding existing scores:', findError);
+        } else {
+          console.log(`Found ${existingScores?.length || 0} existing scores to archive`);
+          
+          // If we found existing scores, archive them one by one
+          if (existingScores && existingScores.length > 0) {
+            for (const record of existingScores) {
+              console.log(`Archiving record ID: ${record.id}`);
+              
+              const { error: archiveError } = await supabase
+                .from('group_scores')
+                .update({ 
+                  record_type: 'H',
+                  modified_at: new Date().toISOString(),
+                  modified_by: userId
+                })
+                .eq('id', record.id);
+                
+              if (archiveError) {
+                console.error(`Error archiving record ${record.id}:`, archiveError);
+              } else {
+                console.log(`Successfully archived record ${record.id}`);
+              }
+              
+              // Small delay between operations to avoid race conditions
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+          }
+        }
         
         // Add a delay to ensure database consistency
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Double-check archive operation
+        // Double-check that all records are archived
         const { data: checkArchive, error: checkError } = await supabase
           .from('group_scores')
-          .select('id, modified_by')
+          .select('id')
           .eq('group_id', score.groupId)
           .eq('tournament_id', score.tournamentId)
           .eq('record_type', 'C');
@@ -66,9 +92,8 @@ export const useScoreMutation = () => {
         if (checkError) {
           console.error('Error verifying archive operation:', checkError);
         } else if (checkArchive && checkArchive.length > 0) {
-          console.warn(`After archive operation, ${checkArchive.length} records still active. Will try direct update.`);
+          console.warn(`After archive operation, ${checkArchive.length} records still active. Will try one final direct update.`);
           
-          // Try one more direct update with explicit userId
           const { error: finalArchiveError } = await supabase
             .from('group_scores')
             .update({ 
