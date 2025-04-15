@@ -7,6 +7,60 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Function to execute raw SQL commands
+export const executeRawSql = async (sqlCommand: string): Promise<boolean> => {
+  try {
+    console.log('Executing SQL command:', sqlCommand);
+    
+    const { data, error } = await supabase.rpc('execute_sql', { 
+      sql_command: sqlCommand 
+    });
+    
+    if (error) {
+      console.error('Error executing raw SQL:', error);
+      return false;
+    }
+    
+    console.log('SQL execution result:', data);
+    return true;
+  } catch (error) {
+    console.error('Exception in executeRawSql:', error);
+    return false;
+  }
+};
+
+// Archive all scores for a specific group and tournament
+export const archiveGroupScores = async (groupId: number, tournamentId: number): Promise<boolean> => {
+  try {
+    console.log(`Archiving scores for group ${groupId}, tournament ${tournamentId}`);
+    
+    // Try using the dedicated function
+    const { data, error } = await supabase.rpc('archive_group_scores', {
+      p_group_id: groupId,
+      p_tournament_id: tournamentId
+    });
+    
+    if (error) {
+      console.error('Error using archive_group_scores function:', error);
+      
+      // Fallback to direct SQL execution
+      return await executeRawSql(`
+        UPDATE public.group_scores 
+        SET record_type = 'H', 
+            modified_at = NOW() 
+        WHERE group_id = ${groupId} 
+        AND tournament_id = ${tournamentId}
+        AND record_type = 'C'
+      `);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Exception in archiveGroupScores:', error);
+    return false;
+  }
+};
+
 // Export a function to check if the Supabase client is correctly configured
 export const checkSupabaseConnection = async () => {
   try {

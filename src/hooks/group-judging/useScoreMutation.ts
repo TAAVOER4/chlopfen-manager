@@ -25,66 +25,75 @@ export const useScoreMutation = () => {
     enabled: !!currentUser?.id
   });
 
-  // Direct database operation to archive scores - now using a more direct approach
-  const forceDirectArchiveOperation = async (groupId: number, tournamentId: number) => {
+  // Direct database operation to archive scores - using the dedicated function
+  const archiveScoresForGroup = async (groupId: number, tournamentId: number) => {
     if (!currentUser?.id) return false;
     
-    console.log(`Performing DIRECT SQL archive operation for group ${groupId}, tournament ${tournamentId}`);
+    console.log(`Archiving all scores for group ${groupId}, tournament ${tournamentId}`);
     
     try {
-      // First try to execute raw SQL update directly to ensure more control
-      // This bypasses the ORM layer entirely to ensure the operation happens
-      const { error: rawError } = await supabase.rpc('execute_sql', {
-        sql_command: `UPDATE public.group_scores 
-                    SET record_type = 'H', 
-                        modified_at = NOW() 
-                    WHERE group_id = ${groupId} 
-                    AND tournament_id = ${tournamentId}
-                    AND record_type = 'C'`
+      // First try to use the dedicated archive function
+      const { data, error } = await supabase.rpc('archive_group_scores', {
+        p_group_id: groupId,
+        p_tournament_id: tournamentId
       });
       
-      if (rawError) {
-        console.error('Error during raw SQL archive operation:', rawError);
+      if (error) {
+        console.error('Error using archive_group_scores function:', error);
         
-        // Fallback to standard UPDATE if RPC fails
-        const { error } = await supabase
-          .from('group_scores')
-          .update({ 
-            record_type: 'H',
-            modified_at: new Date().toISOString()
-          })
-          .eq('group_id', groupId)
-          .eq('tournament_id', tournamentId)
-          .eq('record_type', 'C');
+        // Fallback to direct SQL execution
+        const { error: sqlError } = await supabase.rpc('execute_sql', {
+          sql_command: `
+            UPDATE public.group_scores 
+            SET record_type = 'H', 
+                modified_at = NOW() 
+            WHERE group_id = ${groupId} 
+            AND tournament_id = ${tournamentId}
+            AND record_type = 'C'
+          `
+        });
         
-        if (error) {
-          console.error('Error during fallback archive operation:', error);
-          return false;
+        if (sqlError) {
+          console.error('Error during SQL fallback archive operation:', sqlError);
+          
+          // Last resort: standard update
+          const { error: updateError } = await supabase
+            .from('group_scores')
+            .update({ 
+              record_type: 'H',
+              modified_at: new Date().toISOString()
+            })
+            .eq('group_id', groupId)
+            .eq('tournament_id', tournamentId)
+            .eq('record_type', 'C');
+            
+          if (updateError) {
+            console.error('All archive methods failed:', updateError);
+            return false;
+          }
         }
       }
       
-      // Verify the operation worked by checking if any records are still active
-      const { data: stillActive, error: checkError } = await supabase
+      // Verify the operation was successful - no active records should remain
+      await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for database consistency
+      
+      const { data: activeRecords, error: checkError } = await supabase
         .from('group_scores')
         .select('id')
         .eq('group_id', groupId)
         .eq('tournament_id', tournamentId)
         .eq('record_type', 'C');
-      
+        
       if (checkError) {
         console.error('Error checking archive results:', checkError);
         return false;
       }
       
-      if (stillActive && stillActive.length > 0) {
-        console.warn(`${stillActive.length} records still active after archive operation`);
-        return false;
-      }
-      
-      console.log('Archive operation successful, all records archived');
-      return true;
+      const success = !activeRecords || activeRecords.length === 0;
+      console.log(`Archive operation ${success ? 'successful' : 'failed'}, ${activeRecords?.length || 0} records still active`);
+      return success;
     } catch (error) {
-      console.error('Exception during direct archive operation:', error);
+      console.error('Exception during archive operation:', error);
       return false;
     }
   };
@@ -103,14 +112,13 @@ export const useScoreMutation = () => {
 
       console.log('Starting score save process...');
       
-      // First perform direct database archive operation and wait for it to complete
-      const archiveSuccess = await forceDirectArchiveOperation(score.groupId, score.tournamentId);
-      console.log(`Direct archive operation result: ${archiveSuccess ? 'success' : 'failed'}`);
+      // First, archive all existing scores for this group and tournament
+      await archiveScoresForGroup(score.groupId, score.tournamentId);
       
       // Add delay to ensure database consistency
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Then create the new score - using the createGroupScore method with explicit archive setting
+      // Then create the new score - pass true to force archiving again as a safety measure
       return await GroupScoreService.createGroupScore(scoreWithUser, true);
     },
     onSuccess: () => {
